@@ -211,3 +211,7 @@ nav.tabs{border-bottom:1px solid var(--line);gap:2px;padding-bottom:0}
 nav.tabs button{background:none;border:0;border-radius:0;border-bottom:3px solid transparent;color:var(--mute);padding:12px 14px}
 nav.tabs button.on{background:none;color:var(--ink);border-bottom-color:var(--green)}
 @media (max-width:700px){#fieldline{display:none}.top .brand span{display:none}}
+nav.tabs{scrollbar-width:none}nav.tabs::-webkit-scrollbar{display:none}
+th{white-space:nowrap}
+.scroll{scrollbar-width:thin}
+html{font-size:18.5px}
