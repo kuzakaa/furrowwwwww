@@ -726,6 +726,7 @@ select{background-color:#123d27!important;color:#F5FAF2;border-color:rgba(163,23
 select:hover,select:focus{background-color:#175033!important;border-color:#a3e635!important;outline:none}
 select option{background:#0f2a1c!important;color:#F5FAF2}
 select option:checked,select option:hover{background:#1f6b3f!important;color:#fff}
+#intro.quick .ghost,#intro.quick .lock,#intro.quick .hair,#intro.quick .sk,#intro.quick .shade{display:none!important}
 
 </style>
 </head>
@@ -1933,11 +1934,12 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
     const el = $('intro'), off = () => { document.body.classList.remove('intro'); S.intro = false; introPick = null; };
     if (!el) { off(); return; }
     const calm = quick || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (quick) el.classList.add('quick');
     S.intro = true; let phase = 1, tick, y = 2001, pins = [];
     const fmt = c => Math.abs(c.lat).toFixed(2) + '°' + (c.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(c.lng).toFixed(2) + '°' + (c.lng < 0 ? 'W' : 'E');
     if (map) {
-      map.setView(quick ? [S.lat, S.lon] : [DEMOS[0].lat, DEMOS[0].lon], calm ? 9.5 : 5.5, { animate: false });
-      const ll = $('introll'), upd = () => { const c = map.getCenter(); ll.textContent = fmt(c); if (document.activeElement !== $('ilat') && document.activeElement !== $('ilon')) { $('ilat').value = c.lat.toFixed(4); $('ilon').value = c.lng.toFixed(4); } }; upd(); map.on('move', upd);
+      if (quick) map.setView([30, 15], 3, { animate: false }); else map.setView([DEMOS[0].lat, DEMOS[0].lon], calm ? 9.5 : 5.5, { animate: false });
+      const ll = $('introll'), upd = () => { const c = map.getCenter(); ll.textContent = fmt(c); }; upd(); map.on('move', upd);
     }
     const bar = $('introbar'), yr = $('introyr'), big = $('introbig');
     if (!calm) setTimeout(() => {
@@ -1966,7 +1968,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
       if (map) DEMOS.forEach(d => { const m = window.L.marker([d.lat, d.lon], { icon: window.L.divIcon({ className: 'cpin', html: '<i></i><span class="' + d.lab + '">' + d.short + '</span>', iconSize: [0, 0] }) }).addTo(map); m.on('click', () => pick(d.lat, d.lon, d)); pins.push(m); });
     };
     $('introchips').addEventListener('click', e => { const b = e.target.closest('[data-demo]'); if (b) { e.stopPropagation(); const d = DEMOS.find(x => x.id === b.dataset.demo); pick(d.lat, d.lon, d); } });
-    $('introgo').onclick = e => { e.stopPropagation(); const la = parseFloat($('ilat').value), lo = parseFloat($('ilon').value); if (!(isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180)) { $('ilat').classList.add('bad'); return; } $('ilat').classList.remove('bad'); const d = DEMOS.find(x => Math.abs(x.lat - la) < 0.02 && Math.abs(x.lon - lo) < 0.02); pick(la, lo, d || null); };
+    $('introgo').onclick = e => { e.stopPropagation(); let la = parseFloat($('ilat').value), lo = parseFloat($('ilon').value); if ($('ilat').value === '' && $('ilon').value === '' && map) { const c = map.getCenter(); la = c.lat; lo = c.lng; } if (!(isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180)) { $('ilat').classList.add('bad'); return; } $('ilat').classList.remove('bad'); const d = DEMOS.find(x => Math.abs(x.lat - la) < 0.02 && Math.abs(x.lon - lo) < 0.02); pick(la, lo, d || null); };
     ['ilat', 'ilon'].forEach(id => { $(id).onkeydown = e => { if (e.key === 'Enter') $('introgo').click(); }; $(id).onchange = () => { const la = parseFloat($('ilat').value), lo = parseFloat($('ilon').value); if (map && isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180) map.setView([la, lo], Math.max(map.getZoom(), 11)); }; });
     $('ifind').onsubmit = async e => {
       e.preventDefault(); e.stopPropagation(); const q = $('iq').value.trim(), msg = $('ifmsg'); if (!q || !map) return;
@@ -2221,7 +2223,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
     $('reset').onclick = () => { try { localStorage.removeItem(KEY); } catch (e) {} window.location.reload(); };
     const saved = restore();
     let reloc = false; try { reloc = sessionStorage.getItem('furrow:reloc') === '1'; sessionStorage.removeItem('furrow:reloc'); } catch (e) {}
-    if (saved && !reloc) { const el = $('intro'); if (el) el.remove(); document.body.classList.remove('intro'); S.intro = false; } else intro(reloc && saved);
+    if (saved && !reloc) { const el = $('intro'); if (el) el.remove(); document.body.classList.remove('intro'); S.intro = false; } else intro(reloc);
     setTab('result');
     window.addEventListener('resize', moveInk); setTimeout(moveInk, 400); if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveInk);
     if (saved) setPlace(saved.lat, saved.lon, DEMOS.find(d => d.id === saved.demo) || null, true); else setPlace(DEMOS[0].lat, DEMOS[0].lon, DEMOS[0]);

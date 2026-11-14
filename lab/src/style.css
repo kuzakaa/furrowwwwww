@@ -715,3 +715,4 @@ select{background-color:#123d27!important;color:#F5FAF2;border-color:rgba(163,23
 select:hover,select:focus{background-color:#175033!important;border-color:#a3e635!important;outline:none}
 select option{background:#0f2a1c!important;color:#F5FAF2}
 select option:checked,select option:hover{background:#1f6b3f!important;color:#fff}
+#intro.quick .ghost,#intro.quick .lock,#intro.quick .hair,#intro.quick .sk,#intro.quick .shade{display:none!important}
