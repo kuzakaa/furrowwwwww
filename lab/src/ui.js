@@ -703,7 +703,7 @@
   let coOff = '';
   function callout(html) {
     const key = $('layer').value + '|' + $('ldate').value; if (coOff === key) return;
-    const m = window.L.marker([S.lat, S.lon], { interactive: true, keyboard: false, icon: window.L.divIcon({ className: 'co', html: '<i></i><div><button class="cox" type="button" aria-label="Hide this label" title="Hide this label">&times;</button>' + html + '</div>', iconSize: [0, 0] }) }).addTo(map);
+    const top = S.poly && S.poly.length ? S.poly.reduce((a, p) => p[0] > a[0] ? p : a) : [S.lat, S.lon], m = window.L.marker([top[0], S.lon], { interactive: true, keyboard: false, icon: window.L.divIcon({ className: 'co', html: '<i></i><div><button class="cox" type="button" aria-label="Hide this label" title="Hide this label">&times;</button>' + html + '</div>', iconSize: [0, 0] }) }).addTo(map);
     m.on('click', e => { window.L.DomEvent.stop(e); setPlaying(false); const t = e.originalEvent && e.originalEvent.target; if (t && t.closest && t.closest('.cox')) { coOff = key; co.forEach(x => map.removeLayer(x)); co = []; } });
     co.push(m);
     setTimeout(() => { const el = m.getElement && m.getElement(); if (el) el.classList.add('cofade'); setTimeout(() => { if (map.hasLayer(m)) map.removeLayer(m); co = co.filter(x => x !== m); }, 700); }, 5000);
