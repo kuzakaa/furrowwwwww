@@ -1651,7 +1651,7 @@ body.wiz.wfree #free{height:64px;min-height:0}
     return '<svg viewBox="0 0 ' + W + ' ' + y + '" role="img" aria-label="Monthly rain and evaporative demand above a calendar of ground cover for each rotation">' + grid + s + '</svg>';
   }
   function anomFigure(cl) {
-    const L = 66, cw = 40, chh = 17, W = L + 12 * cw + 6, H = 22 + cl.n * chh + 34;
+    const L = 66, cw = 40, chh = 17, W = L + 12 * cw + 6, H = 22 + cl.n * chh + 50;
     const mix = (a, b, t) => 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')';
     const col = z => { const t = Math.min(1, Math.abs(z) / 2); return z < 0 ? mix([40, 40, 36], [242, 165, 65], t) : mix([40, 40, 36], [124, 198, 232], t); };
     let s = '';
@@ -1661,9 +1661,9 @@ body.wiz.wfree #free{height:64px;min-height:0}
       s += '<text x="' + (L - 6) + '" y="' + (y + 10) + '" text-anchor="end" font-size="13" fill="' + COL.muted + '">' + cl.years[i].label + '</text>';
       row.forEach((z, m) => { s += '<rect x="' + (L + m * cw) + '" y="' + y + '" width="' + (cw - 2) + '" height="' + (chh - 2) + '" rx="2.5" fill="' + col(z) + '"><title>' + cl.monthName(m) + ' ' + cl.years[i].label + ': ' + (z > 0 ? '+' : '') + z.toFixed(1) + ' standard deviations</title></rect>'; });
     });
-    const ly = 22 + cl.n * chh + 10;
-    for (let j = 0; j <= 8; j++) s += '<rect x="' + (L + j * 22) + '" y="' + ly + '" width="22" height="9" fill="' + col(-2 + j * 0.5) + '"/>';
-    s += '<text x="' + L + '" y="' + (ly + 21) + '" font-size="13" fill="' + COL.muted + '">much drier</text><text x="' + (L + 99) + '" y="' + (ly + 21) + '" text-anchor="middle" font-size="13" fill="' + COL.muted + '">normal</text><text x="' + (L + 198) + '" y="' + (ly + 21) + '" text-anchor="end" font-size="13" fill="' + COL.muted + '">much wetter</text>';
+    const ly = 22 + cl.n * chh + 12;
+    for (let j = 0; j <= 8; j++) s += '<rect x="' + (L + j * 44) + '" y="' + ly + '" width="44" height="12" fill="' + col(-2 + j * 0.5) + '"/>';
+    s += '<text x="' + L + '" y="' + (ly + 30) + '" font-size="13" fill="' + COL.muted + '">much drier</text><text x="' + (L + 198) + '" y="' + (ly + 30) + '" text-anchor="middle" font-size="13" fill="' + COL.muted + '">normal</text><text x="' + (L + 396) + '" y="' + (ly + 30) + '" text-anchor="end" font-size="13" fill="' + COL.muted + '">much wetter</text>';
     return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="min-width:420px" role="img" aria-label="Soil wetness anomaly by month and year">' + s + '</svg>';
   }
 
