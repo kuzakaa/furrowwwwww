@@ -742,11 +742,13 @@
       add('<b>Satellite view of the field</b> (Copernicus Sentinel-2, 10 m pixels, cloudy shots removed): on ' + last[0] + ' the greenness index was <b>' + v.toFixed(2) + '</b>, which means ' + word + '. ' + (v < 0.2 ? 'Bare soil over winter loses topsoil to rain and wind; a cover crop would hold it.' : 'Living plants are protecting the soil right now.'));
     }).catch(() => {});
     if (h.earthdata) {
-      const el = add('<b>NASA SMAP soil moisture</b>: asking NASA for the last 60 days at this point. This takes a few minutes…');
+      const el = add('<b>NASA SMAP soil moisture</b>: asking NASA for the last 60 days at this point. NASA queues these requests, so it can take 5 to 30 minutes; you can keep working.');
       try {
-        const t = (await (await fetch(PROXY + '/ae/start/smap' + q + '&from=' + d(60) + '&to=' + d(3))).json()).task; if (!t) throw 0;
-        for (let i = 0; i < 30 && same(); i++) {
-          await new Promise(r => setTimeout(r, 20000));
+        const key = 'furrow:smap:' + lat + ',' + lon; let mem = null; try { mem = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
+        let t = mem && Date.now() - mem.at < 864e5 ? mem.task : null;
+        if (!t) { t = (await (await fetch(PROXY + '/ae/start/smap' + q + '&from=' + d(60) + '&to=' + d(3))).json()).task; if (!t) throw 0; try { localStorage.setItem(key, JSON.stringify({ task: t, at: Date.now() })); } catch (e) {} }
+        for (let i = 0; i < 120 && same(); i++) {
+          if (i) await new Promise(r => setTimeout(r, 20000));
           const st = (await (await fetch(PROXY + '/ae/status/' + t)).json()).status;
           if (st === 'done') {
             const s = ((await (await fetch(PROXY + '/ae/result/' + t)).json()).series || []); if (!s.length) throw 0;
