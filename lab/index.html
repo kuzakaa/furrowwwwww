@@ -130,7 +130,7 @@ code{background:#38332c;border-radius:5px;padding:1px 5px;font-size:13px}
     } catch (e) { $('status').innerHTML = '<span class="bad">Couldn’t load NASA data.</span> ' + esc(e.message); }
   }
 
-  const rotTxt = s => s.rot.map(r => C[r.c].short + (r.cv ? ' + cover' : '')).join(' → ') + (s.till === 'notill' ? ' (no-till)' : '');
+  const rotTxt = s => s.rot.map(r => C[r.c].short + (r.cv ? ' + cover' : '')).join(', then ') + (s.till === 'notill' ? ' (no-till)' : '');
   const meter = v => '<div class="meter"><i style="width:' + Math.max(2, Math.min(100, v)) + '%"></i></div>';
 
   function render() { strat(); params(); stress(); farm(); care(); }
@@ -229,7 +229,7 @@ code{background:#38332c;border-radius:5px;padding:1px 5px;font-size:13px}
     };
     ['cs', 'ha', 'pr', 'yr'].forEach(id => $(id).oninput = calc); calc();
     const LK = 'furrowlab:ledger:' + fieldKey;
-    const show = () => { const lg = store.get(LK, []); $('ledger').innerHTML = lg.length ? lg.map((e, i) => '<div style="margin:8px 0"><b>' + (i + 1) + '. ' + esc(e.what) + '</b> <span class="mute">' + e.at.slice(0, 16).replace('T', ' ') + '</span><div class="hash">prev ' + e.prev.slice(0, 16) + '… → ' + e.hash.slice(0, 16) + '…</div></div>').join('') : '<p class="mute">Nothing signed yet.</p>'; };
+    const show = () => { const lg = store.get(LK, []); $('ledger').innerHTML = lg.length ? lg.map((e, i) => '<div style="margin:8px 0"><b>' + (i + 1) + '. ' + esc(e.what) + '</b> <span class="mute">' + e.at.slice(0, 16).replace('T', ' ') + '</span><div class="hash">prev ' + e.prev.slice(0, 16) + '…, now ' + e.hash.slice(0, 16) + '…</div></div>').join('') : '<p class="mute">Nothing signed yet.</p>'; };
     const push = async what => { const lg = store.get(LK, []), prev = lg.length ? lg[lg.length - 1].hash : '0'.repeat(64), at = new Date().toISOString(); lg.push({ what, at, prev, hash: await sha(prev + what + at) }); store.set(LK, lg); show(); };
     $('sign').onclick = () => { const c = calc(), s = R.list.find(x => x.id === $('cs').value); push('Signed: ' + s.name + ' on ' + $('ha').value + ' ha for ' + $('yr').value + ' years, up to €' + Math.round(c.money).toLocaleString()); };
     $('check').onclick = () => {

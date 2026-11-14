@@ -122,7 +122,7 @@
     const cl = A.cl, cur = A.current, m = s.m, cm = cur.m, isCur = s.id === 'current';
     const hot = cl.yearTypes && cl.yearTypes.types.find(t => t.name.indexOf('Hot') === 0);
     const relHot = x => hot ? E.mean(hot.idx.map(i => x.m.relByYear[i])) : null;
-    const ar = (a, b) => isCur ? '<b>' + a + '</b>' : a + ' → <b>' + b + '</b>';
+    const ar = (a, b) => isCur ? '<b>' + a + '</b>' : a + ' to <b>' + b + '</b>';
     const ev = [];
     ev.push('Bare soil: ' + ar(r0(cm.bare), r0(m.bare)) + ' days a year');
     ev.push('Heavy rain landing on poorly covered soil: ' + ar(r0(cm.exposed), r0(m.exposed)) + ' mm a year, out of ' + r0(cl.erosTotal) + ' mm from days of 12.7 mm or more');
@@ -229,7 +229,7 @@
     h += '<h2>How the rotations rank</h2><table><thead><tr><th>Option</th><th>Rotation</th><th>Match</th>' + DIMS.map(d => '<th>' + d[1] + '</th>').join('') + '<th>Beats yours in</th></tr></thead><tbody>' + list.map(s => '<tr><td>' + esc(s.name) + '</td><td>' + esc(E.rotLabel(s.rot)) + '</td><td><b>' + r0(s.match) + '</b></td>' + DIMS.map(d => '<td>' + s.sc[d[0]] + '</td>').join('') + '<td>' + (s.boot ? Math.round(s.boot.win * 100) + '% of reshuffles' : '') + '</td></tr>').join('') + '</tbody></table>';
     if (best) {
       const x = explain(best, A);
-      h += '<h2>Best match: ' + esc(best.name) + '</h2><p>' + x.why + '</p><h3>What the data says (yours now → this option)</h3><ul>' + x.ev.map(e => '<li>' + e + '</li>').join('') + '</ul><h3>Double-check this locally first</h3><ul>' + x.rev.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul><h3>What we can’t know from here</h3><ul>' + x.gaps.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul>';
+      h += '<h2>Best match: ' + esc(best.name) + '</h2><p>' + x.why + '</p><h3>What the data says (yours now vs this option)</h3><ul>' + x.ev.map(e => '<li>' + e + '</li>').join('') + '</ul><h3>Double-check this locally first</h3><ul>' + x.rev.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul><h3>What we can’t know from here</h3><ul>' + x.gaps.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul>';
     }
     h += '<h2>Weather here, ' + cl.years[0].label + ' to ' + cl.years[cl.n - 1].label + '</h2><table><thead><tr><th>Measure</th><th>Average</th><th>8 years out of 10</th><th>Trend per decade</th></tr></thead><tbody>' + cl.indicators.map(i => '<tr><td>' + i.name + '</td><td>' + i.mean.toFixed(i.digits) + ' ' + i.unit + '</td><td>' + i.lo.toFixed(i.digits) + ' to ' + i.hi.toFixed(i.digits) + '</td><td>' + (i.trend.perDecade > 0 ? '+' : '') + i.trend.perDecade.toFixed(i.digits ? 1 : 0) + ', ' + TREND[i.trend.label] + '</td></tr>').join('') + (cl.noFrost ? '' : '<tr><td>Typical frost dates</td><td colspan="3">last in spring ' + cl.fmtDay(cl.lastFrost) + ', first in autumn ' + cl.fmtDay(cl.firstFrost) + '</td></tr>') + '</tbody></table>';
     h += '<h2>Read this before acting</h2><p>Furrow replays each rotation through ' + cl.n + ' years of NASA POWER weather for this spot. That weather describes an area about 50 km wide, not one field. Soil health and easy-to-sell are rough scores, crop numbers are generic, and nobody has checked this model against field trials. Use it to start a conversation with an agronomist or adviser, and try any change on a strip first. NASA does not endorse this tool.</p>';
@@ -257,7 +257,7 @@
       R += '<div class="vs"><div class="win"><span class="n">' + r0(best.match) + '</span><span class="l">' + esc(E.rotLabel(best.rot)) + '</span></div><div><span class="n">' + r0(A.current.match) + '</span><span class="l">' + esc(E.rotLabel(A.current.rot)) + ', what you grow now</span></div></div>';
       const cm = A.current.m, bm2 = best.m, hot = cl.yearTypes && cl.yearTypes.types.find(t => t.name.indexOf('Hot') === 0);
       const rh = q => hot ? E.mean(hot.idx.map(i => q.m.relByYear[i])) : q.m.relMean;
-      const kp = (a, b, unit, main, sub, go) => '<div class="kp" data-go="' + go + '" title="Tap to see the chart"><div class="big ' + (b < a ? 'good' : b > a ? 'bad' : '') + '"><s>' + a + unit + ' → </s><em>' + b + unit + '</em></div><p>' + main + '<span>' + sub + '</span></p></div>';
+      const kp = (a, b, unit, main, sub, go) => '<div class="kp" data-go="' + go + '" title="Tap to see the chart"><div class="big ' + (b < a ? 'good' : b > a ? 'bad' : '') + '"><s>' + a + unit + ' to </s><em>' + b + unit + '</em></div><p>' + main + '<span>' + sub + '</span></p></div>';
       R += '<div class="key"><h3>The big changes</h3>' +
         kp(r0(cm.bare), r0(bm2.bare), '', 'days of bare soil a year', 'Right now it’s bare ' + bareMonths(A.current, cl), 'calendar') +
         kp(r0(cm.exposed), r0(bm2.exposed), '', 'mm of heavy rain a year hitting poorly covered soil', 'Out of ' + r0(cl.erosTotal) + ' mm that falls on really rainy days (12.7 mm or more)', 'calendar') +

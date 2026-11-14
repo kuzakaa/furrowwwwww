@@ -371,7 +371,7 @@
   }
   function match(sc, w) { const ks = ['water', 'soil', 'erosion', 'income', 'resilience']; const tw = ks.reduce((s, k) => s + (w[k] || 0), 0); return tw ? ks.reduce((s, k) => s + sc[k] * (w[k] || 0), 0) / tw : mean(ks.map(k => sc[k])); }
 
-  function rotLabel(rot) { return rot.map(r => CROPS[r.c].short + (r.cv ? ' + ' + COVERS[r.cv].short : '')).join(' → '); }
+  function rotLabel(rot) { return rot.map(r => CROPS[r.c].short + (r.cv ? ' + ' + COVERS[r.cv].short : '')).join(', then '); }
   function candidates(cur, curRes, cal, inp) {
     const ex = inp.exclude || new Set(), ok = id => !ex.has(id), has = id => cur.some(r => r.c === id), out = [];
     const cp = rot => rot.map(r => ({ c: r.c, cv: r.cv || null }));
