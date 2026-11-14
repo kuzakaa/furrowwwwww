@@ -1603,7 +1603,7 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 
     const K = '<h2>When it rains vs. what’s on the field</h2><p class="sub">Top: rain in an average year next to how much water the air pulls out of the ground. Below: each rotation, year by year. Amber is bare soil, so amber under tall bright-blue bars means heavy rain is hitting bare ground. Tap any bar or strip for details.</p><div class="legend"><span><i style="background:' + COL.waterSoft + '"></i>Rain</span><span><i style="background:' + COL.water + '"></i>on heavy-rain days</span><span><i style="background:' + COL.et + ';border-radius:50%"></i>Water the air pulls out</span><span><i style="background:' + COL.crop + '"></i>Cash crop</span><span><i style="background:' + COL.cover + '"></i>Cover crop</span><span><i style="background:' + COL.peren + '"></i>Perennial</span><span><i style="background:' + COL.straw + '"></i>Residue</span><span><i style="background:' + COL.bare + '"></i>Bare soil</span></div><div class="fig">' + yearFigure(cl, all) + '</div>' + ndviNote(A);
 
-    if (S.sel >= all.length) S.sel = 0;
+    if (S.sel >= all.length + A.others.length) S.sel = 0;
     const allx = all.concat(A.others), rk = []; let O = '';
     allx.slice().sort((p, q) => q.match - p.match).forEach(s => { const i = allx.indexOf(s); rk.push('<button class="rk" data-sel="' + i + '" aria-pressed="' + (i === S.sel) + '"><span class="dot"></span><span class="nm"><b>' + esc(s.name) + '</b><small>' + esc(E.rotLabel(s.rot)) + (s.boot ? ' · beats yours in ' + Math.round(s.boot.win * 100) + '% of reshuffles' : '') + '</small></span><span class="sc">' + r0(s.match) + '</span><span class="br"><i style="width:' + r0(s.match) + '%"></i></span></button>'); });
     if (S.sel >= allx.length) S.sel = 0;
