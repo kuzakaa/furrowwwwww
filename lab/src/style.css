@@ -783,3 +783,4 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .co .cox{width:32px;height:32px;top:2px;right:2px;font-size:24px;font-weight:700}
 .co div{padding-right:40px!important}
 .co{transition:opacity .7s ease}.co.cofade{opacity:0}
+.co div{pointer-events:auto!important;cursor:default}

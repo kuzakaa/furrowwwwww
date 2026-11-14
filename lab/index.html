@@ -794,6 +794,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .co .cox{width:32px;height:32px;top:2px;right:2px;font-size:24px;font-weight:700}
 .co div{padding-right:40px!important}
 .co{transition:opacity .7s ease}.co.cofade{opacity:0}
+.co div{pointer-events:auto!important;cursor:default}
 
 </style>
 </head>
@@ -2074,7 +2075,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
   function callout(html) {
     const key = $('layer').value + '|' + $('ldate').value; if (coOff === key) return;
     const m = window.L.marker([S.lat, S.lon], { interactive: true, keyboard: false, icon: window.L.divIcon({ className: 'co', html: '<i></i><div><button class="cox" type="button" aria-label="Hide this label" title="Hide this label">&times;</button>' + html + '</div>', iconSize: [0, 0] }) }).addTo(map);
-    m.on('click', e => { const t = e.originalEvent && e.originalEvent.target; if (t && t.closest && t.closest('.cox')) { coOff = key; co.forEach(x => map.removeLayer(x)); co = []; } });
+    m.on('click', e => { window.L.DomEvent.stop(e); setPlaying(false); const t = e.originalEvent && e.originalEvent.target; if (t && t.closest && t.closest('.cox')) { coOff = key; co.forEach(x => map.removeLayer(x)); co = []; } });
     co.push(m);
     setTimeout(() => { const el = m.getElement && m.getElement(); if (el) el.classList.add('cofade'); setTimeout(() => { if (map.hasLayer(m)) map.removeLayer(m); co = co.filter(x => x !== m); }, 700); }, 8000);
   }
