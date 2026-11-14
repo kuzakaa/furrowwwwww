@@ -80,17 +80,33 @@
     }).then(v => { if (id !== runId) return; D.soil = v; note('Soil carbon', v ? v.ocs + ' t C/ha' : 'no data here'); render(); })
       .catch(() => note('Soil carbon', 'failed'));
     note('Satellite 2015-2025', 'loading');
-    cached('furrowlabn1:' + fieldKey, async () => {
-      const yrs = []; for (let y = 2015; y <= 2025; y++) yrs.push(y);
-      const parts = [['001', '145'], ['161', '305'], ['321', '365']], jobs = [], by = {};
-      yrs.forEach(y => { by[y] = new Array(23).fill(null); parts.forEach(q => jobs.push('https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=' + lat + '&longitude=' + lon + '&band=250m_16_days_NDVI&startDate=A' + y + q[0] + '&endDate=A' + y + q[1] + '&kmAboveBelow=0&kmLeftRight=0')); });
-      let i = 0, done = 0;
-      const worker = async () => { while (i < jobs.length) { const u = jobs[i++]; try { const j = await getJSON(u, 30000); (j.subset || []).forEach(r => { const m = String(r.modis_date), y = +m.slice(1, 5), k = Math.round((+m.slice(5) - 1) / 16), v = Array.isArray(r.data) ? +r.data[0] : NaN; if (by[y] && k >= 0 && k < 23 && v > -2000 && v <= 10000) by[y][k] = Math.round(v * 0.1) / 1000; }); } catch (e) {} done++; if (id === runId) note('Satellite 2015-2025', done + '/' + jobs.length); } };
-      await Promise.all([1, 2, 3, 4, 5, 6].map(worker));
-      const good = yrs.filter(y => by[y].filter(v => v != null).length >= 15);
-      return good.length >= 4 ? { yrs: good, by } : null;
-    }).then(v => { if (id !== runId) return; D.nd = v; note('Satellite 2015-2025', v ? v.yrs.length + ' years' : 'not enough'); render(); })
-      .catch(() => note('Satellite 2015-2025', 'failed'));
+    (async () => {
+      const yrs = []; for (let y = 2025; y >= 2015; y--) yrs.push(y);
+      const parts = [['001', '145'], ['161', '305'], ['321', '365']], by = {}, main = store.get('furrown2:' + fieldKey, null);
+      if (main) main.yrs.forEach(y => { by[y] = main.by[y]; store.set('furrowlabny1:' + fieldKey + ':' + y, main.by[y]); });
+      const good = () => Object.keys(by).map(Number).filter(y => by[y] && by[y].filter(v => v != null).length >= 15).sort();
+      const publish = () => { if (id !== runId) return; const g = good(); note('Satellite 2015-2025', g.length + ' of 11 years'); if (g.length >= 3) { D.nd = { yrs: g, by }; render(); } };
+      yrs.forEach(y => { const c = store.get('furrowlabny1:' + fieldKey + ':' + y, null); if (c) by[y] = c; });
+      publish();
+      const todo = yrs.filter(y => !by[y]);
+      let i = 0;
+      const worker = async () => {
+        while (i < todo.length) {
+          if (id !== runId) return;
+          const y = todo[i++], row = new Array(23).fill(null);
+          for (const q of parts) {
+            const u = 'https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=' + lat + '&longitude=' + lon + '&band=250m_16_days_NDVI&startDate=A' + y + q[0] + '&endDate=A' + y + q[1] + '&kmAboveBelow=0&kmLeftRight=0';
+            for (let t = 0; t < 2; t++) {
+              try { const j = await getJSON(u, 90000); (j.subset || []).forEach(r => { const m = String(r.modis_date), k = Math.round((+m.slice(5) - 1) / 16), v = Array.isArray(r.data) ? +r.data[0] : NaN; if (k >= 0 && k < 23 && v > -2000 && v <= 10000) row[k] = Math.round(v * 0.1) / 1000; }); break; } catch (e) {}
+            }
+          }
+          if (row.filter(v => v != null).length >= 15) { by[y] = row; store.set('furrowlabny1:' + fieldKey + ':' + y, row); }
+          publish();
+        }
+      };
+      await Promise.all([1, 2].map(worker));
+      if (id === runId && good().length < 3) note('Satellite 2015-2025', 'NASA’s server is slow, try again later');
+    })();
   }
 
   const rotTxt = s => s.rot.map(r => C[r.c].short + (r.cv ? ' + cover' : '')).join(', then ') + (s.till === 'notill' ? ' (no-till)' : '');
