@@ -365,7 +365,7 @@ body.wiz .setup{width:min(600px,calc(100vw - 24px))}
 body.wiz.wacc .setup,body.wiz.wpri .setup{width:min(900px,calc(100vw - 24px))}
 body.wiz.wacc #acc,body.wiz.wpri #weights,body.wiz.wpri #weights2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
 @media (max-width:760px){body.wiz.wacc #acc,body.wiz.wpri #weights,body.wiz.wpri #weights2{display:block}}
-.why{background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:2px 10px;font-size:13.5px;cursor:pointer;margin:2px 0}
+button.why{background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:2px 10px;font-size:13.5px;cursor:pointer;margin:2px 0}
 .explain{display:none;background:rgba(220,245,225,.08);border-radius:12px;padding:10px 14px;margin:4px 0 10px}
 .explain.on{display:block;animation:paneIn .3s ease both}
 .explain p{margin:4px 0}
@@ -521,6 +521,27 @@ body.wiz.wfree .setup{width:min(820px,calc(100vw - 24px))}
 #limchips .chip[aria-pressed=true]{text-decoration:none!important;opacity:1}
 #limchips .chip[aria-pressed=true]::before{content:'✓ ';font-weight:700}
 body.wiz.wfree #free{height:64px;min-height:0}
+
+.res .conf{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center;padding:16px 18px;border-radius:16px;background:rgba(220,245,225,.07);border:1px solid rgba(168,224,138,.3);max-width:none;margin:18px 0}
+.res .conf .cn{grid-row:1/3;font-size:40px;font-weight:700;color:var(--em);line-height:1;font-variant-numeric:tabular-nums}
+.res .conf .cn small{display:block;font-size:14px;font-weight:500;color:var(--muted);margin-top:4px}
+.res .conf .ct{font-size:18px;font-weight:600;color:#fff}
+.res .conf .cs{font-size:15.5px;color:var(--muted)}
+.res p.why{font-size:17.5px;line-height:1.55;margin:16px 0;max-width:none;border:0;padding:0;background:none}
+.res .tolist{display:block;width:100%;margin:6px 0 14px;padding:14px 20px;font-size:17px}
+.res .acts{gap:10px}
+.res .acts .btn{padding:11px 18px}
+.res p.fine{font-size:14.5px;line-height:1.55;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.ask{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+.ask h3{font-size:18px;margin:0 0 8px}
+.ask .sugg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.ask .sugg button{font-size:14px;padding:6px 12px;border-radius:999px;border:1px solid rgba(168,224,138,.35);background:rgba(168,224,138,.08);color:var(--ink);cursor:pointer}
+.ask form{display:flex;gap:8px}
+.ask input{flex:1;background:rgba(220,245,225,.06);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:11px 14px;font:inherit}
+.ask .ans{margin-top:12px;font-size:16.5px;line-height:1.55;background:rgba(220,245,225,.07);border-radius:14px;padding:12px 14px;animation:paneIn .35s cubic-bezier(.2,.8,.2,1) both}
+.ask .ans .src{display:block;margin-top:8px;font-size:13.5px;color:var(--muted)}
+.ask .q2{font-weight:600;margin-bottom:4px;color:var(--em)}
+.mbox{max-height:88vh;overflow:auto}
 
 </style>
 </head>
@@ -1420,11 +1441,11 @@ body.wiz.wfree #free{height:64px;min-height:0}
         '</div><h2 class="second">How the scores change (tap a row to see what it means)</h2>';
       R += dumbbell(A.current, best);
       const bt = best.boot, w = Math.round(bt.win * 100);
-      R += '<p class="conf"><b>Beats your current rotation in ' + Math.round(bt.win * bt.runs) + ' of ' + bt.runs + ' reshuffles.</b> To check this isn’t luck, we rebuilt the ' + cl.n + '-year record ' + bt.runs + ' times by drawing years at random (some twice, some not at all) and scored both rotations on each version' + (bt.win >= 0.9 ? '. The result holds regardless of which years are included.' : bt.win >= 0.7 ? '. Probably better, but not certain.' : '. The two are effectively tied.') + ' The gap goes from ' + (bt.lo > 0 ? '+' : '') + bt.lo.toFixed(1) + ' to ' + (bt.hi > 0 ? '+' : '') + bt.hi.toFixed(1) + ' points in 8 out of 10 runs.</p>';
-      R += '<p class="why">' + explain(best, A).why + '</p><button class="link" data-go="options">See all the rotations side by side</button>';
+      R += '<div class="conf"><span class="cn">' + Math.round(bt.win * bt.runs) + '<small>of ' + bt.runs + '</small></span><span class="ct">' + (bt.win >= 0.9 ? 'Reliably better than what you grow now' : bt.win >= 0.7 ? 'Probably better than what you grow now' : 'About the same as what you grow now') + ' <button class="q" data-term="boot" aria-label="Explain">?</button></span><span class="cs">Wins in ' + Math.round(bt.win * bt.runs) + ' of ' + bt.runs + ' reshuffled versions of the ' + cl.n + ' years' + '</div>';
+      R += '<p class="why">' + explain(best, A).why + '</p><button class="btn tolist" data-go="options">Open the full breakdown and all options</button>';
     } else R += '<p class="why">Un-cross a few crops under “Crops you can’t grow or sell” and we’ll have something to compare.</p>';
     R += '<div class="acts"><button class="btn ghost" data-act="print">Print or save as PDF</button><button class="btn ghost" data-act="share">Copy a link to this result</button><span id="shared" class="small muted"></span></div>';
-    R += '<p class="fine">How to read this: every score goes from 0 to 100 and comes from replaying the rotation through ' + cl.n + ' years of NASA weather for this spot. The match score is the average, weighted by what you said matters. A few points’ difference doesn’t mean much. NASA’s weather grid is about 50 km wide (the dashed box on the map), so this is your area’s weather, not exactly your field’s. Soil health and easy-to-sell are rough guesses, not measurements.</p>';
+    R += '<p class="fine">Scores run from 0 to 100 and come from replaying each rotation through ' + cl.n + ' years of NASA weather for this spot, weighted by your priorities. Differences of a few points are not meaningful. The weather grid is about 50 km wide (dashed box on the map), so it describes your area rather than the exact field. Soil health and profit are estimates, not measurements.</p>';
     let Cm = '<h2>The last ' + cl.n + ' years here</h2><p class="sub">Daily NASA POWER data, ' + cl.years[0].label + ' to ' + cl.years[cl.n - 1].label + '. One point per year, and the dashed line is the trend. A coloured dot means it’s changing. Tap a line to see any year.</p>';
     for (const i of cl.indicators) {
       const t = i.trend, cls = t.label === 'clear trend' ? ' clear' : t.label === 'possible trend' ? ' possible' : '';
@@ -1647,10 +1668,47 @@ body.wiz.wfree #free{height:64px;min-height:0}
     s_erosion: ['Keeping soil in place', 'rain', ['How much of the heavy rain falls on covered ground rather than bare soil, adjusted for slope and tillage.', '100 means no heavy rain ever hits bare soil.']],
     s_resilience: ['Steady harvest in bad years', 'score', ['How the rotation does in the hottest, driest years of the 25, not just on average.', 'A high score means fewer failed seasons.']]
   };
+  const KB = [
+    [['bare', 'голая', 'гола', 'empty', 'fallow'], 'What does bare soil mean?', 'Bare soil is any day when no crop or cover crop is growing and little straw is left on top. Bare ground dries out faster and loses topsoil in storms. Cover crops, leaving straw on the surface and ploughing less all cut bare days.'],
+    [['cover', 'покров', 'rye', 'рож', 'vetch', 'clover', 'mix', 'смес'], 'What is a cover crop and is it worth it?', 'A cover crop is sown between cash crops to protect and feed the soil, not to sell. Rye survives winter and holds soil; legume mixes (vetch, clover, peas) also add nitrogen for the next crop. Costs are seed and one extra pass to sow it. It pays back mainly through less erosion, more organic matter and lower nitrogen needs over several years, less so in the first season.'],
+    [['no-till', 'notill', 'no till', 'плуг', 'вспаш', 'tillage', 'оранк', 'обработ'], 'What is no-till?', 'No-till means sowing directly into last year’s stubble without ploughing. Straw stays on top, so heavy rain does less damage and less water evaporates. It needs a no-till drill and usually more attention to weeds in the first years.'],
+    [['legume', 'бобов', 'nitrogen', 'азот', 'pea', 'горох', 'soy', 'соя', 'alfalfa', 'люцерн'], 'Why add legumes?', 'Legumes such as peas, soybean and alfalfa host bacteria in their roots that take nitrogen from the air. Part of it stays in the soil for the next crop, so you can buy less fertiliser. They also break the disease and pest cycles of cereals and sunflower.'],
+    [['reshuffl', 'bootstrap', 'sure', 'уверен', 'надежн', '300', 'luck', 'случайн'], 'How sure are these results?', 'We rebuild the 25-year weather record 300 times by drawing years at random and score every option again each time. If an option beats yours in nearly all 300, the advice does not depend on a few unusual years. Around half means the two are effectively tied.'],
+    [['score', 'балл', 'оценк', '100', 'points', 'очк'], 'What do the scores mean?', 'Each score runs from 0 to 100 and compares options on the same field and weather. Your overall score averages the five, weighted by the priorities you set. A difference of a few points is not meaningful; 10 points or more is a real difference.'],
+    [['profit', 'прибыл', 'income', 'доход', 'money', 'деньг', 'price', 'цен', 'sell', 'прода'], 'Does it know prices?', 'No. Profit is estimated from how much each crop typically costs to grow and how many buyers it has, reduced when the crop runs short of water. It ranks options against each other; it does not predict income. Check local prices before deciding.'],
+    [['water', 'вод', 'drought', 'засух', 'missed', 'дефицит', 'rain', 'дожд', 'осадк'], 'How is water shortage worked out?', 'Every day for 25 years we track the soil like a bucket: rain fills it, the crop drinks from it, extra drains away. When the bucket runs low the crop goes short. The percentage is how much of the water the crop wanted that it did not get.'],
+    [['heavy', 'ливн', 'storm', 'erosion', 'эрози', 'washed', 'смыв'], 'Why does heavy rain matter?', 'Days with 12.7 mm of rain or more are the ones that move soil. If they land on covered ground, leaves and straw absorb the impact and water soaks in. On bare ground water runs off and carries topsoil with it.'],
+    [['root', 'корн', 'living', 'живы'], 'Why do living roots matter?', 'Roots hold soil together, feed the microbes that build organic matter and take up nutrients that would otherwise wash out. More days with living roots usually means healthier soil.'],
+    [['nasa', 'power', 'weather', 'погод', 'data', 'данн', 'satellite', 'спутник'], 'Where does the data come from?', 'Weather is NASA POWER daily data for 2001 to 2025, built from satellites and weather models on a grid about 50 km wide. Field greenness is from NASA’s MODIS satellite at 250 m. Soil texture is from SoilGrids and slope from elevation data.'],
+    [['ndvi', 'green', 'зелен'], 'What is NDVI?', 'NDVI is a greenness index satellites measure from red and near-infrared light. Dense healthy crops score high, bare soil scores low. We use it to check whether our crop calendar matches what the field actually looked like.'],
+    [['slope', 'уклон', 'hill', 'склон'], 'How does slope change things?', 'Water runs off slopes faster and carries soil with it. The model increases erosion risk with slope; above about 6% keeping the soil covered matters much more.'],
+    [['soil', 'почв', 'clay', 'глин', 'sand', 'песо', 'loam', 'суглин'], 'Why does soil type matter?', 'Texture sets how much water the root zone can store. Sandy soil drains fast and dries out early in a drought; clay holds a lot but waterlogs and compacts. If unsure, use the SoilGrids suggestion in the settings.'],
+    [['experiment', 'new', 'нов', 'тест', 'double', 'два урож', 'relay'], 'Should I try the newer strategies?', 'Newer practices like two crops a year or sowing a legume into standing wheat can work, but there is less evidence and few farms nearby may have tried them. Test on one field or strip first and ask a local adviser.'],
+    [['climate', 'климат', 'future', 'будущ', 'warm', 'тепл'], 'What about future climate?', 'We do not forecast weather. We replay the past 25 years warmer and drier, including the change seven climate models expect for 2036 to 2050, and check whether the same option still wins. See More tools, Future climate.'],
+    [['bad year', 'плох', 'hot', 'жар', 'k-means', 'cluster'], 'What are bad years?', 'We group the 25 seasons into kinds of year by warm-season rain, evaporation and hot days, then show how each option did in each group. The hot, dry group shows which rotation fails least when it matters.'],
+    [['trust', 'довер', 'accurate', 'точн', 'agronom', 'агроном', 'check', 'провер'], 'Can I trust this?', 'Treat it as a well-informed second opinion. Formulas follow FAO standards and crop dates match USDA records, but no agronomist has reviewed it and local prices, pests and varieties are not included. Discuss any change with a local adviser and try it on part of a field first.'],
+    [['what should', 'что делать', 'next', 'дальше', 'start', 'начать'], 'What should I do next?', 'Open the best option in Options, read “Check locally before acting”, and talk it through with an adviser or neighbour who has tried it. If it still looks good, try it on one field for a season and compare.']
+  ];
+  function answer(q) {
+    const t = q.toLowerCase(); let best = null, bs = 0;
+    KB.forEach(e => { const sc = e[0].reduce((s, k) => s + (t.indexOf(k) >= 0 ? k.length : 0), 0); if (sc > bs) { bs = sc; best = e; } });
+    return best ? best : null;
+  }
+  const SUGG = { bare: [1, 0, 2], heavy: [8, 1, 12], water: [7, 13, 0], roots: [9, 1, 3], boot: [4, 5, 17], s_income: [6, 5, 17], s_water: [7, 13, 15], s_soil: [3, 1, 2], s_erosion: [8, 12, 2], s_resilience: [16, 15, 4] };
+  function askBox(k) {
+    const sg = (SUGG[k] || [5, 17, 18]).map(i => KB[i]);
+    return '<div class="ask"><h3>Ask a question</h3><div class="sugg">' + sg.map(e => '<button type="button" data-ask="' + esc(e[1]) + '">' + esc(e[1]) + '</button>').join('') + '</div><form id="askf"><input id="askq" placeholder="Type your question, any language" autocomplete="off"><button class="btn">Ask</button></form><div id="asko"></div></div>';
+  }
+  function showAnswer(q) {
+    const e = answer(q), o = $('asko'); if (!o) return;
+    o.innerHTML = '<div class="ans"><div class="q2">' + esc(q) + '</div>' + (e ? esc(e[2]) : 'There is no answer to that in Furrow’s guide yet. The How it works tab explains every number, and a local agronomist or extension adviser can answer questions about your farm.') + '<span class="src">Answer from Furrow’s built-in guide</span></div>'; o.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
   function explainTerm(k) {
     const t = TERMS[k]; if (!t) return;
-    $('mbox').innerHTML = '<div class="mhead"><h2>' + t[0] + '</h2><button class="btn ghost xbtn" data-close aria-label="Close">×</button></div><div class="animbox">' + ANIM[t[1]] + '</div>' + t[2].map((p, i) => '<p class="step" style="animation-delay:' + (0.25 + i * 0.35) + 's">' + p + '</p>').join('') + '<div class="mrow"><button class="btn bigbtn" data-close>Got it</button></div>';
+    $('mbox').innerHTML = '<div class="mhead"><h2>' + t[0] + '</h2><button class="btn ghost xbtn" data-close aria-label="Close">×</button></div><div class="animbox">' + ANIM[t[1]] + '</div>' + t[2].map((p, i) => '<p class="step" style="animation-delay:' + (0.25 + i * 0.35) + 's">' + p + '</p>').join('') + askBox(k) + '<div class="mrow"><button class="btn bigbtn" data-close>Got it</button></div>';
     $('modal').classList.add('on');
+    $('askf').onsubmit = ev => { ev.preventDefault(); const q = $('askq').value.trim(); if (q) showAnswer(q); };
+    $('mbox').querySelectorAll('[data-ask]').forEach(b => b.onclick = () => showAnswer(b.dataset.ask));
   }
   function soilTxt() { if ($('soiltxt')) $('soiltxt').textContent = SOILTXT[S.soil] || ''; }
   function showUnd() {
