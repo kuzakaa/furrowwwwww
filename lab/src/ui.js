@@ -1062,7 +1062,7 @@
     $('addyr').onclick = () => { if (S.rot.length < 6) { S.rot.push({ c: 'soy', cv: null }); renderRot(); recompute(); } };
     $('load').onclick = () => { const la = parseFloat($('lat').value), lo = parseFloat($('lon').value); if (isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180) { setPlace(la, lo, null); if (S.wiz != null && S.wiz > 0) wizard(0); else setTab('result'); } else status('err', 'Enter a latitude between -60 and 70 and a longitude between -180 and 180.'); };
     $('out').addEventListener('click', e => { if (e.target.id === 'showrank') openRank(); });
-    document.addEventListener('click', e => { if (e.target.closest('[data-pane="options"]') && !playing && !S.intro) setPlaying(true); }, true);
+    document.addEventListener('click', e => { if (e.target.closest('#scroll, #setup, #tabs') && !document.body.classList.contains('wiz') && !playing && !S.intro) setPlaying(true); }, true);
     document.addEventListener('click', e => { const q = e.target.closest('[data-term]'); if (q) { e.stopPropagation(); explainTerm(q.dataset.term); } }, true);
     $('modal').addEventListener('click', e => { if (e.target.id === 'modal' || e.target.closest('[data-close]')) closeModal(); const o = e.target.closest('#mbox [data-sel]'); if (o && !o.dataset.done) { o.dataset.done = 1; S.sel = +o.dataset.sel; S.animOpt = true; closeModal(); render(); $('scroll').scrollTop = 0; } });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
