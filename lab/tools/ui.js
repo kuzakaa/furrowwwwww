@@ -479,7 +479,7 @@
       + '<div class="card"><b>Satellite check, replayed on past years</b><div id="orc"></div></div>'
       + '<div class="card"><b>Agreement</b><div class="bar"><button id="sign">Sign (simulation)</button><button id="check">Next year’s check</button><button id="reset">Start over</button></div><div id="ledger"></div></div>'
       + '<div class="card"><b>On a real blockchain (test network)</b><div class="bar"><button id="wal">Connect wallet</button><input id="farmer" placeholder="Farmer address 0x…" style="flex:1;min-width:220px"><input id="eth" type="number" step="0.001" value="0.01" title="Test ETH per year"><button id="dep" disabled>Deploy contract</button><button id="rep" disabled>Send next satellite check</button></div><div id="chain" class="mute"></div>'
-      + '<p class="mute"><a href="contract/CoverAgreement.sol" style="color:var(--green)">Contract code</a></p></div>';
+      + '<p class="mute"><a href="../contract/CoverAgreement.sol" style="color:var(--green)">Contract code</a></p></div>';
     $('care').innerHTML = h;
     const pick = () => R.list.find(x => x.id === $('cs').value), yrs = () => Math.max(1, Math.min(11, +$('yr').value));
     const calc = () => {

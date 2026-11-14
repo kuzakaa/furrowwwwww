@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Furrow lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="lab.css?v=9">
+</head>
+<body>
+<div class="top">
+  <button id="toggle" class="big" aria-expanded="true">Hide setup</button>
+  <h1>Furrow lab</h1>
+</div>
+<div class="wrap" id="wrap">
+  <aside id="setup"></aside>
+  <div id="out">
+    <div id="status" class="mute"></div>
+    <div id="extras" class="mute"></div>
+    <nav class="tabs" id="tabs">
+      <button data-t="strat" class="on">Your options</button>
+      <button data-t="summary">Summary</button>
+      <button data-t="mapt">Map</button>
+      <button data-t="weather">Weather</button>
+      <button data-t="calendar">Calendar</button>
+      <button data-t="years">Bad years</button>
+      <button data-t="stress">Future climate</button>
+      <button data-t="veg">Rain and plant stress</button>
+      <button data-t="crops">Crop facts</button>
+      <button data-t="params">All numbers</button>
+      <button data-t="farm">Your records</button>
+      <button data-t="shared">Shared notes</button>
+      <button data-t="care">Land care rewards</button>
+      <button data-t="method">How it works</button>
+      <button data-t="sources">More data</button>
+    </nav>
+    <section id="strat" class="on"></section>
+    <section id="summary" class="mv"></section>
+    <section id="mapt"><div class="bar"><select id="layer"><option value="">Satellite photo</option><option value="ndvi">Greenness (MODIS NDVI, 8 days)</option><option value="smap">Root-zone soil moisture (SMAP)</option><option value="imerg">Rain rate (IMERG)</option></select><input type="date" id="ldate"></div><div id="map2"></div><p class="mute">Tap the map to move the field. Dashed box: the NASA POWER weather cell, about 50 km.</p></section>
+    <section id="weather" class="mv"></section>
+    <section id="calendar" class="mv"></section>
+    <section id="years" class="mv"></section>
+    <section id="stress"></section>
+    <section id="veg"></section>
+    <section id="crops"></section>
+    <section id="params"></section>
+    <section id="farm"></section>
+    <section id="shared"></section>
+    <section id="care"></section>
+    <section id="method"></section>
+    <section id="sources"></section>
+  </div>
+</div>
+<div id="sheet"></div>
+<div id="tip"></div>
+<div class="modal" id="modal"><div class="box" id="mbox"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="../../src/engine.js?v=9"></script>
+<script src="views.js?v=9"></script>
+<script src="../lab.js?v=9"></script>
+<script src="../contract/compiled.js?v=9"></script>
+<script src="ui.js?v=9"></script>
+</body>
+</html>
