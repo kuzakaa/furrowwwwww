@@ -430,6 +430,9 @@ details.box[open] > *:not(summary){animation:paneIn .35s cubic-bezier(.2,.8,.2,1
 .explain.on{animation:paneIn .3s cubic-bezier(.2,.8,.2,1) both}
 .modal.on{animation:fadeIn .25s ease both}.modal.on .mbox{animation:paneIn .35s cubic-bezier(.2,.8,.2,1) both}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.handle svg{pointer-events:none}
+.handle:active{transform:translate(-50%,-50%) scale(.94)}
+body.noset .handle:active{transform:translate(0,-50%) scale(.94)}
 
 </style>
 </head>
