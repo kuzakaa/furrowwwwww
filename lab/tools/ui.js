@@ -599,6 +599,13 @@
   drawSetup(); sources(); method();
   const nm = (FIELDS.find(f => f.id === S.field) || { name: 'Your field' }).name;
   $('fieldline').textContent = nm + ', ' + S.rot.map(c => C[c].short).join(', then ');
+  (function bg() {
+    const z = 14, n = Math.pow(2, z), x = (S.lon + 180) / 360 * n, la = S.lat * Math.PI / 180, y = (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n;
+    const cx = Math.floor(x), cy = Math.floor(y), el = $('bgmap'), size = 256, cols = Math.ceil(innerWidth / size) + 2, rows = Math.ceil(innerHeight / size) + 2;
+    let h = '';
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const tx = cx - Math.floor(cols / 2) + c, ty = cy - Math.floor(rows / 2) + r; h += '<img alt="" loading="lazy" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + z + '/' + ty + '/' + tx + '" style="left:' + (c * size - (x - cx) * size + innerWidth / 2 - Math.floor(cols / 2) * size) + 'px;top:' + (r * size - (y - cy) * size + innerHeight / 2 - Math.floor(rows / 2) * size) + 'px">'; }
+    el.innerHTML = h;
+  })();
   if (S.exp == null) S.exp = false;
   go();
   ['summary', 'weather', 'calendar', 'years', 'strat', 'stress', 'veg', 'crops', 'params', 'farm', 'shared', 'care'].forEach(id => $(id).innerHTML = '<p class="mute">Complete the setup first.</p>');

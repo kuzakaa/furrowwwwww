@@ -658,6 +658,38 @@ body.wiz.wacc .setup{width:min(1060px,calc(100vw - 24px))}
 body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 @media (max-width:1000px){body.wiz.wacc #acc{grid-template-columns:1fr 1fr}}
 *{scrollbar-width:none}*::-webkit-scrollbar{display:none;width:0;height:0}
+.optd .bars{grid-template-columns:minmax(0,260px) 1fr 40px 46px!important;align-items:center!important;row-gap:12px}
+.optd .bars>span:first-child,.optd .bars>span:nth-child(4n+1){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px;min-width:0}
+.optd .bars .q{flex:none}
+.optd .bars .num,.optd .bars .d{text-align:right;font-variant-numeric:tabular-nums}
+.optd .bars .track{height:10px;align-self:center}
+@media (max-width:760px){.optd .bars{grid-template-columns:minmax(0,150px) 1fr 34px 40px!important}}
+
+.flow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 18px;counter-reset:f}
+.fstep{display:flex;gap:12px;align-items:flex-start;background:#1a4630;border:1px solid rgba(180,236,143,.25);border-radius:14px;padding:12px 14px;animation:paneIn .45s cubic-bezier(.2,.8,.2,1) both}
+.fstep .fi{flex:none;width:40px;height:40px;border-radius:12px;background:rgba(180,236,143,.15);display:grid;place-items:center}
+.fstep .fi svg{width:22px;height:22px;fill:none;stroke:#b4ec8f;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.fstep b{display:flex;align-items:center;gap:8px;font-size:16.5px;color:#fff}
+.fstep .fn{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#b4ec8f;color:#0c2117;font-size:12.5px}
+.fstep p{margin:4px 0 0;font-size:14.5px;line-height:1.45;color:#dbeadb}
+.cando{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cd{border-radius:14px;padding:12px 16px;border:1px solid rgba(180,236,143,.25);background:#1a4630}
+.cd h3{font-size:16.5px;margin:0 0 6px}
+.cd ul{list-style:none;margin:0;padding:0}
+.cd li{position:relative;padding:5px 0 5px 26px;font-size:15px;line-height:1.4}
+.cd li::before{position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700}
+.cd.yes li::before{content:'✓';background:#b4ec8f;color:#0c2117}
+.cd.no li::before{content:'✕';background:rgba(243,154,134,.25);color:#f39a86}
+.cd.yes h3{color:#c6f5a3}.cd.no h3{color:#f6b8a8}
+.decide{margin:12px 0 4px;padding:12px 16px;border-radius:14px;background:rgba(180,236,143,.12);border:1px solid #b4ec8f;font-size:15.5px}
+.gloss{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.gt{background:#1a4630;border:1px solid rgba(180,236,143,.22);border-radius:12px;padding:0 14px}
+.gt>summary{list-style:none;cursor:pointer;padding:11px 0;font-weight:600;font-size:15.5px;display:flex;justify-content:space-between}
+.gt>summary::-webkit-details-marker{display:none}
+.gt>summary::after{content:'+';color:#b4ec8f;transition:transform .25s ease}
+.gt[open]>summary::after{transform:rotate(45deg)}
+.gt p{margin:0 0 12px;font-size:14.5px;line-height:1.45;animation:paneIn .3s ease both}
+@media (max-width:760px){.flow,.cando,.gloss{grid-template-columns:1fr}}
 
 </style>
 </head>
@@ -772,47 +804,15 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
     <div class="banner" id="status"><span class="spin"></span>Grabbing 25 years of NASA weather data…</div>
     <div id="out"></div>
     <div class="pane" data-pane="method">
-      <h2>What the words mean</h2>
-      <dl>
-        <div><dt>Evapotranspiration (ET)</dt><dd>Water leaving the field as evaporation from soil plus water plants draw up and release through their leaves. ET0 is the reference amount a well-watered grass surface would use; each crop uses a share of it that changes through its season.</dd></div>
-        <div><dt>Unmet water demand</dt><dd>The share of the water a crop wanted that the soil could not supply. Furrow tracks a daily soil-water account for your field: rain goes in, crop water use and runoff come out.</dd></div>
-        <div><dt>Soil moisture anomaly</dt><dd>How wet or dry the soil was compared with what is normal for that place and month. A dry anomaly in July means drier than a usual July, not drier than a desert.</dd></div>
-        <div><dt>Heavy rain on bare soil</dt><dd>Furrow counts rain on days with 12.7 mm or more, the cut-off the RUSLE erosion method uses to decide which storms matter. True erosivity depends on how hard the rain falls within half an hour, which daily data cannot show, so treat this as a rough exposure measure, not an erosion estimate.</dd></div>
-        <div><dt>Growing degree days</dt><dd>A running total of useful warmth. Each crop needs a certain total to mature, so this tells you whether a crop fits between your last spring frost and first autumn frost.</dd></div>
-        <div><dt>NDVI</dt><dd>A greenness score satellites calculate from red and near-infrared light. Dense healthy crops score high, bare soil scores low. Choose the greenness layer on the map to see it.</dd></div>
-        <div><dt>Cover crop</dt><dd>A crop grown between cash crops to protect and feed the soil, not to sell. Cereal rye survives winter; legumes such as vetch and clover also add nitrogen.</dd></div>
-        <div><dt>Satellite versus ground data</dt><dd>Satellites see every field on Earth regularly but in coarse blocks and only the top few centimetres of soil. A rain gauge or soil probe is exact but covers one spot. The best picture uses both, which is why Furrow asks for your soil and your knowledge.</dd></div>
-      </dl>
-      <h2>How it works, and what it can’t do</h2>
-      <div class="limits">
-        <div class="box"><h3>What it does</h3><ul>
-          <li>Downloads daily maximum and minimum temperature, precipitation, root-zone soil wetness, sunlight reaching the ground, wind and humidity for your point from NASA POWER, 2001 to 2025. The sunlight values come from NASA's CERES satellite instruments.</li>
-          <li>Works out frost dates, heat, heavy rain, dry spells and evaporative demand (FAO Penman-Monteith), and tests each for a trend (Theil-Sen slope, Mann-Kendall test).</li>
-          <li>Builds crop calendars from your site's own temperatures using growing degree days, so sowing and harvest dates move with your climate.</li>
-          <li>Replays every rotation through all 25 years with a daily soil-water account, then scores water, soil, storm exposure, market fit and resilience.</li>
-          <li>Groups the 25 seasons into kinds of year two ways, with k-means clustering and with a simple thirds rule, and reports how far they agree.</li>
-          <li>Reshuffles the 25 years 300 times (a bootstrap) to see how often each alternative still outscores your current rotation.</li>
-          <li>Reads two years of MODIS greenness (NDVI) for a 250 m square at your point and compares it with the modelled crop calendar, as a field-scale check on the model.</li>
-          <li>Reads a 90 m elevation model on a 5 by 5 grid around your point to find steep ground and frost-prone hollows, and reads SoilGrids for a soil texture suggestion.</li>
-        </ul></div>
-        <div class="box"><h3>What it can’t see</h3><ul>
-          <li>NASA POWER describes a grid cell about 50 km across. It gives your district's climate, not the frost pocket at the bottom of your field.</li>
-          <li>Soil texture comes from you or from a 250 m global map. A soil test for organic matter, pH and compaction will always beat a texture class.</li>
-          <li>Market fit uses generic 1 to 5 ratings, not your local prices, contracts or input costs. It is not an income forecast.</li>
-          <li>Soil health is a proxy built from living-root days, legume nitrogen, residue, crop diversity and bare-soil days. Furrow does not measure organic matter or soil life.</li>
-          <li>Storm exposure uses daily rain totals, not measured storm intensity.</li>
-          <li>Crop traits are generic values in the range given by FAO Irrigation and Drainage Paper 56 and extension guides, not your varieties. The table below shows every value used.</li>
-          <li>Trend tags are exploratory: 25 years is a short record.</li>
-          <li>Pests, diseases, weeds, herbicide carry-over, equipment and labour are not modelled.</li>
-          <li>Calendars assume a temperate, frost-defined season. Results in the tropics are rough.</li>
-          <li>The model has not been checked against field trials or by an agronomist.</li>
-        </ul></div>
-        <div class="box"><h3>Who decides</h3><ul>
-          <li>You do. Furrow shows patterns and possibilities; it does not give instructions.</li>
-          <li>Take any option that interests you to an agronomist or extension adviser, and try it on a strip before the whole field.</li>
-          <li>Every rotation lists what needs local review before acting.</li>
-        </ul></div>
+      <h2>How Furrow works</h2>
+      <div class="flow"><div class="fstep" style="animation-delay:0.00s"><div class="fi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.6 1.5A3.5 3.5 0 0 0 7 18z"/></svg></div><div><b><span class="fn">1</span>Satellite weather</b><p>25 years of daily temperature, rain, soil wetness, sun, wind and humidity for your point from NASA POWER.</p></div></div><div class="fstep" style="animation-delay:0.06s"><div class="fi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20l4-8 3 4 3-6 4 10"/></svg></div><div><b><span class="fn">2</span>Your field</b><p>Slope from elevation data, soil texture from SoilGrids, greenness from NASA MODIS at 250 m.</p></div></div><div class="fstep" style="animation-delay:0.12s"><div class="fi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><div><b><span class="fn">3</span>Crop calendar</b><p>Sowing and harvest dates from your own frost dates and warmth, tuned to USDA usual dates.</p></div></div><div class="fstep" style="animation-delay:0.18s"><div class="fi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg></div><div><b><span class="fn">4</span>Daily water account</b><p>Every day for 25 years: rain fills the soil, the crop drinks, extra drains away.</p></div></div><div class="fstep" style="animation-delay:0.24s"><div class="fi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M10 20V4M15 20v-7M20 20v-4"/></svg></div><div><b><span class="fn">5</span>Five scores</b><p>Water, soil health, soil kept in place, profit and bad years, weighted by your priorities.</p></div></div><div class="fstep" style="animation-delay:0.30s"><div class="fi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h11l-3-3M20 17H9l3 3"/></svg></div><div><b><span class="fn">6</span>Stress test</b><p>300 reshuffles of the years and warmer, drier futures check the answer is not luck.</p></div></div></div>
+      <div class="cando">
+        <div class="cd yes"><h3>What it does</h3><ul><li>Real NASA weather for your exact point, 2001 to 2025</li><li>Crop dates from your own climate, checked against USDA</li><li>A daily soil-water account for every rotation and year</li><li>Satellite check of the calendar against your field</li><li>Your limits, priorities and field size</li></ul></div>
+        <div class="cd no"><h3>What it can’t do</h3><ul><li>Weather is a ~50 km grid, not your frost pocket</li><li>No local prices, tariffs or input costs</li><li>Soil health is estimated, not measured</li><li>Pests, weeds and diseases are not modelled</li><li>Not reviewed by an agronomist yet</li></ul></div>
       </div>
+      <div class="decide"><b>You decide.</b> Furrow shows patterns, not instructions. Take an option to an adviser and try it on a strip first.</div>
+      <h2>Words you’ll see</h2>
+      <div class="gloss"><details class="gt"><summary>ET (evapotranspiration)</summary><p>Water leaving the field: evaporation from soil plus water plants breathe out.</p></details><details class="gt"><summary>Unmet water demand</summary><p>Share of the water the crop wanted that the soil could not supply.</p></details><details class="gt"><summary>Soil moisture anomaly</summary><p>How wet or dry the soil was compared with normal for that month.</p></details><details class="gt"><summary>Heavy rain</summary><p>Days with 12.7 mm or more, the storms that move soil.</p></details><details class="gt"><summary>Growing degree days</summary><p>Running total of useful warmth that decides when a crop ripens.</p></details><details class="gt"><summary>NDVI</summary><p>Satellite greenness score: dense crops high, bare soil low.</p></details><details class="gt"><summary>Cover crop</summary><p>Grown between cash crops to protect and feed the soil, not to sell.</p></details><details class="gt"><summary>Bootstrap</summary><p>Rebuilding the 25-year record from random years to test if a result is luck.</p></details></div>
       <h3 style="margin-top:22px">Do the crop dates match real life?</h3>
       <p class="sub">We compared the sowing and harvest dates Furrow works out from 25 years of NASA temperatures with the "most active" dates in USDA's <a href="https://esmis.nal.usda.gov/sites/default/release-files/vm40xr56k/9p290c614/j9602330g/planting-12-05-1997.html">Usual Planting and Harvesting Dates</a> handbook. We tuned three crop settings until all six dates landed inside USDA's windows, so this shows the model can be made to fit, not that it was right first time.</p>
       <div class="scroll"><table><thead><tr><th>Crop and place</th><th>Furrow sows</th><th>USDA most active</th><th>Furrow harvests</th><th>USDA most active</th></tr></thead><tbody>
@@ -1619,7 +1619,7 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
       O += '<div class="kpis">' + kpi('Bare soil, days a year', r0(cur.m.bare), r0(s.m.bare), '', false, 'bare') + kpi('Heavy rain on open soil, mm', r0(cur.m.exposed), r0(s.m.exposed), '', false, 'heavy') + kpi('Water crops missed', Math.round(cur.m.relMean * 100), Math.round(s.m.relMean * 100), '%', false, 'water') + kpi('Living roots, days a year', r0(cur.m.living), r0(s.m.living), '', true, 'roots') + '</div>';
     }
     O += '<div class="bars">';
-    for (const d of DIMS) { const v = s.sc[d[0]], dl = v - cur.sc[d[0]]; O += '<span>' + d[1] + ' <button class="q" data-term="s_' + d[0] + '" aria-label="Explain">?</button></span><span class="track"><b style="width:' + v + '%"></b></span><span class="num">' + v + '</span><span class="d ' + (isCur || !dl ? '' : dl > 0 ? 'up' : 'dn') + '">' + (isCur || !dl ? '' : (dl > 0 ? '+' : '') + dl) + '</span>'; }
+    for (const d of DIMS) { const v = s.sc[d[0]], dl = v - cur.sc[d[0]]; O += '<span>' + d[1] + ' <button class="q" data-term="s_' + d[0] + '" aria-label="Explain">?</button></span><span class="track"><b style="width:' + v + '%"></b></span><span class="num">' + v + '</span><span class="d ' + (isCur || !dl ? '' : dl > 0 ? 'up' : 'dn') + '">' + (isCur ? '' : !dl ? '0' : (dl > 0 ? '+' : '') + dl) + '</span>'; }
     O += '</div>';
     const sec = (title, body, open, cls) => '<details class="osec' + (cls ? ' ' + cls : '') + '"' + (open ? ' open' : '') + '><summary>' + title + '</summary><div class="ob">' + body + '</div></details>';
     const ul = a => '<ul>' + a.map(e => '<li>' + e + '</li>').join('') + '</ul>';

@@ -362,7 +362,7 @@
       O += '<div class="kpis">' + kpi('Bare soil, days a year', r0(cur.m.bare), r0(s.m.bare), '', false, 'bare') + kpi('Heavy rain on open soil, mm', r0(cur.m.exposed), r0(s.m.exposed), '', false, 'heavy') + kpi('Water crops missed', Math.round(cur.m.relMean * 100), Math.round(s.m.relMean * 100), '%', false, 'water') + kpi('Living roots, days a year', r0(cur.m.living), r0(s.m.living), '', true, 'roots') + '</div>';
     }
     O += '<div class="bars">';
-    for (const d of DIMS) { const v = s.sc[d[0]], dl = v - cur.sc[d[0]]; O += '<span>' + d[1] + ' <button class="q" data-term="s_' + d[0] + '" aria-label="Explain">?</button></span><span class="track"><b style="width:' + v + '%"></b></span><span class="num">' + v + '</span><span class="d ' + (isCur || !dl ? '' : dl > 0 ? 'up' : 'dn') + '">' + (isCur || !dl ? '' : (dl > 0 ? '+' : '') + dl) + '</span>'; }
+    for (const d of DIMS) { const v = s.sc[d[0]], dl = v - cur.sc[d[0]]; O += '<span>' + d[1] + ' <button class="q" data-term="s_' + d[0] + '" aria-label="Explain">?</button></span><span class="track"><b style="width:' + v + '%"></b></span><span class="num">' + v + '</span><span class="d ' + (isCur || !dl ? '' : dl > 0 ? 'up' : 'dn') + '">' + (isCur ? '' : !dl ? '0' : (dl > 0 ? '+' : '') + dl) + '</span>'; }
     O += '</div>';
     const sec = (title, body, open, cls) => '<details class="osec' + (cls ? ' ' + cls : '') + '"' + (open ? ' open' : '') + '><summary>' + title + '</summary><div class="ob">' + body + '</div></details>';
     const ul = a => '<ul>' + a.map(e => '<li>' + e + '</li>').join('') + '</ul>';
