@@ -297,7 +297,7 @@
   const carbon = s => D.soil ? L.carbonIPCC(s, R.list.find(x => x.id === 'current'), D.soil.ocs, moist(), (meanT() == null || meanT() > 10)) : null;
   const INFO = id => L.INFO[id] || L.EXPERIMENTAL[id];
 
-  function render() { if (!R) return; strat(); params(); stress(); veg(); crops(); farm(); shared(); care(); method(); sources(); }
+  function render() { if (!R) return; strat(); params(); stress(); veg(); crops(); farm(); shared(); method(); sources(); }
 
   function confText(s) {
     if (!s.conf) return '';
@@ -318,7 +318,7 @@
     if (R.plan) {
       const P = R.plan;
       h += '<div class="card"><h3>Phased plan</h3>' + (P.same ? '<p>Same option fits both phases: <b>' + esc(P.first.name) + '</b>. </p>'
-        : '<div class="plan"><div><div class="mute">Years 1 to ' + P.switchAfter + '</div><b>' + esc(P.first.name) + '</b><div class="mute">' + esc(rotTxt(P.first)) + '</div></div><div><div class="mute">From year ' + (P.switchAfter + 1) + '</div><b>' + esc(P.then.name) + '</b><div class="mute">' + esc(rotTxt(P.then)) + '</div></div></div><p class="mute" style="margin-top:10px">Switch when priorities change. See Land care rewards for how a soil agreement could fund the second phase.</p>') + '</div>';
+        : '<div class="plan"><div><div class="mute">Years 1 to ' + P.switchAfter + '</div><b>' + esc(P.first.name) + '</b><div class="mute">' + esc(rotTxt(P.first)) + '</div></div><div><div class="mute">From year ' + (P.switchAfter + 1) + '</div><b>' + esc(P.then.name) + '</b><div class="mute">' + esc(rotTxt(P.then)) + '</div></div></div><p class="mute" style="margin-top:10px">Switch when priorities change.</p>') + '</div>';
     }
     const pre = h; h = '';
     const bestIdx = Math.max(0, R.list.findIndex(s => s.id !== 'current' && s.id !== 'mono' && !s.adj.blocked.length));
@@ -336,7 +336,6 @@
         + '<dt>Requirements</dt><dd>' + needText(s) + '</dd>'
         + (s.conf ? '<dt>Confidence</dt><dd>' + confText(s) + '</dd>' : '')
         + '<dt>Climate sensitivity</dt><dd>' + (s.spread <= 4 ? 'Robust: ' : s.spread <= 8 ? 'Moderate: ' : 'Sensitive: ') + 'score range of ' + s.spread.toFixed(0) + ' points across all climate scenarios.</dd>'
-        + (c ? '<dt>Soil carbon</dt><dd>' + (c.perYear >= 0 ? '+' : '') + c.perYear.toFixed(2) + ' t C/ha/yr over 20 years (IPCC Tier 1)</dd>' : '')
         + '<dt>Gaps</dt><dd>' + esc(I.gap || '') + '</dd><dt>Needs local review</dt><dd>' + esc(I.risk || '') + '</dd>'
         + (I.since ? '<dt>Status</dt><dd>' + esc(I.since) + '</dd>' : '')
         + (v ? '<dt>Other farms</dt><dd>' + v.works + ' positive, ' + v.no + ' negative, ' + v.tried + ' tried' + (v.fields.size >= 2 ? ' (' + v.fields.size + ' fields, confirmed)' : ' (1 field, unconfirmed)') + '</dd>' : '')
@@ -360,7 +359,7 @@
       ['Sure (of 300)', s => s.conf ? s.conf.beats : '–'], ['Worst future climate', s => s.worst.toFixed(0)], ['Swing', s => s.spread.toFixed(0)],
       ['Bare soil days a year', s => s.x.bare], ['Heavy rain on bare soil %', s => s.x.heavyBare], ['Nitrogen from legumes kg/ha/yr', s => s.x.nfix],
       ['Crop families', s => s.x.fams], ['Same family in a row', s => s.x.famRun], ['Short of water, average %', s => s.x.waterGap], ['Short of water, worst years %', s => s.x.badYear],
-      ['Hot days at flowering', s => s.x.heat], ['Soil carbon t/ha/yr', s => { const c = carbon(s); return c ? c.perYear.toFixed(2) : '–'; }], ['Sowings a year', s => s.x.ops]
+      ['Hot days at flowering', s => s.x.heat], ['Sowings a year', s => s.x.ops]
     ];
     let h = '';
     if (D.soil) h += '<div class="card">Soil (SoilGrids, 0-30 cm): ' + D.soil.ocs + ' t C/ha' + (D.soil.soc != null ? ', organic carbon ' + D.soil.soc + ' g/kg' : '') + (D.soil.n != null ? ', nitrogen ' + D.soil.n + ' g/kg' : '') + (D.soil.ph != null ? ', pH ' + D.soil.ph : '') + '. Climate class: ' + (moist() ? 'moist' : 'dry') + ' (annual rain ' + (moist() ? 'above' : 'below') + ' reference ET).</div>';
@@ -581,7 +580,7 @@
       + '<h3>8. The future climate</h3><p>We don’t forecast the weather. We take the 25 real years and replay them warmer and drier: by hand (+1.5 °C, +3 °C, less or more rain), and using seven global climate models (CMIP6, high resolution) that say how much warmer and wetter or drier your spot will be in 2036-2050 than in 2001-2025. If the same option wins in all of them, the advice holds even if the future isn’t like the past. “Swing” is how far an option’s score moves across these futures.</p>'
       + '<h3>9. Rain and plant stress</h3><p>For each of the 25 years we count days with over 25 mm of rain, the longest run of days with almost no rain, and how unevenly rain fell across the months. We test whether these rise or fall over time with the Mann-Kendall test, a standard trend test that doesn’t assume a straight line. Then we compare MODIS satellite greenness (NDVI) for your exact field in 2015-2025 with the weather of each year, to see which weather hurts your crops most.</p>'
       + '<h3>10. Learning from farmers, with checks</h3><p>Farmers can enter when they really sowed and harvested. Before the model uses a record it checks it: records more than 2 months off are treated as typos, and records far from the others for the same crop are set aside. From the rest it shifts the crop settings to cut the average error. Notes shared by other farms are used too, and a vote on an option only counts as confirmed when farmers from at least two different fields agree.</p>'
-      + '<h3>11. Soil carbon</h3><p>We take the carbon in your top 30 cm of soil from SoilGrids, then apply the IPCC’s standard factors (Tier 1) for tillage and for how much plant material goes back into the soil. Covers and alfalfa count as high input, mostly fallow as low. The change is spread over 20 years. It is an estimate, not a measurement.</p>'
+
       + '<h3>Where people have to check our work</h3><ul><li>Whether a crop actually sells, and at what price, near you.</li><li>Local varieties, which can be sown a week or two earlier or later than our dates.</li><li>Pests, weeds and diseases, which we only cover through the change of crop families.</li><li>Whether there is enough rain after the wheat harvest for a cover crop or second crop to establish.</li><li>Irrigation, fertiliser and the farm’s machinery, which we don’t model.</li><li>Laws, subsidies and contracts.</li></ul><p>When farmers mark an option as working or not and add their dates, the tool uses it to improve (step 10).</p>'
       + '</div>';
     const box = $('method').querySelector('.method'), parts = box.innerHTML.split('<h3>').filter(Boolean);
@@ -593,7 +592,7 @@
       ['Weather 2001-2025', 'NASA POWER', on(D.raw, 'In use', 'Loading')],
       ['Climate 2036-2050', '7 CMIP6 high-res models via Open-Meteo', on(D.proj, 'In use: climate stress test', 'Loading or failed')],
       ['Greenness 2015-2025', 'MODIS NDVI via ORNL DAAC', on(D.nd, 'In use: plant stress, satellite check', 'Loading or failed')],
-      ['Soil carbon, nitrogen, pH', 'ISRIC SoilGrids', on(D.soil, 'In use: carbon estimate', 'Loading or failed')],
+      ['Soil carbon, nitrogen, pH', 'ISRIC SoilGrids', on(D.soil, 'In use: soil info', 'Loading or failed')],
       ['Farmer records and votes', 'Farmers, through the shared list', on(D.shared.length, 'In use: ' + D.shared.length + ' notes', 'Ready, none loaded')],
       ['Soil moisture from space', 'NASA SMAP L4', 'Needs a NASA Earthdata login and a server'],
       ['Plant water stress', 'NASA ECOSTRESS', 'Needs a NASA Earthdata login and a server'],
@@ -625,6 +624,6 @@
   })();
   if (S.exp == null) S.exp = false;
   go();
-  ['summary', 'weather', 'calendar', 'years', 'strat', 'stress', 'veg', 'crops', 'params', 'farm', 'shared', 'care'].forEach(id => $(id).innerHTML = '<p class="mute">Complete the setup first.</p>');
+  ['summary', 'weather', 'calendar', 'years', 'strat', 'stress', 'veg', 'crops', 'params', 'farm', 'shared'].forEach(id => $(id).innerHTML = '<p class="mute">Complete the setup first.</p>');
   crops();
 })();
