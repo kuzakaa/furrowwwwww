@@ -497,8 +497,8 @@ body.wiz [data-wiz=field] #reset{display:none}
 .xanim .a-card{fill:#9fd67a;animation:a-shuf 2.4s cubic-bezier(.5,0,.3,1) infinite}
 .xanim .a-c1{fill:#7cc6e8}.xanim .a-c2{fill:#f2b04f}.xanim .a-c3{fill:#ead9b2}.xanim .a-c4{fill:#f39a86}
 @keyframes a-shuf{0%,100%{transform:translate(0,0)}30%{transform:translate(12px,-22px)}60%{transform:translate(-10px,10px)}}
-.xanim .a-root{stroke-dasharray:110;stroke-dashoffset:110;animation:a-grow 2.6s ease-out infinite}
-@keyframes a-grow{70%,100%{stroke-dashoffset:0}}
+.xanim .a-root{stroke-dasharray:110;stroke-dashoffset:110;animation:a-grow 2.6s ease-out 1 forwards}
+@keyframes a-grow{to{stroke-dashoffset:0}}
 .xanim .a-bar{transform-origin:0 50%;transform-box:fill-box;animation:a-barg 1.6s cubic-bezier(.2,.8,.2,1) both}
 @keyframes a-barg{from{transform:scaleX(0)}}
 .mbox .step{opacity:0;animation:paneIn .5s cubic-bezier(.2,.8,.2,1) forwards;font-size:17px;line-height:1.55}
