@@ -58,216 +58,25 @@ code{background:#38332c;border-radius:5px;padding:1px 5px;font-size:13px}
     <button data-t="strat" class="on">All strategies</button>
     <button data-t="params">Parameters</button>
     <button data-t="stress">Climate stress test</button>
+    <button data-t="veg">Rain and plant stress</button>
     <button data-t="farm">Your data</button>
+    <button data-t="shared">Shared notes</button>
     <button data-t="care">Land care rewards</button>
     <button data-t="sources">More data</button>
   </nav>
+  <div id="extras" class="mute"></div>
   <section id="strat" class="on"></section>
   <section id="params"></section>
   <section id="stress"></section>
+  <section id="veg"></section>
   <section id="farm"></section>
+  <section id="shared"></section>
   <section id="care"></section>
   <section id="sources"></section>
 </main>
 <script src="../src/engine.js"></script>
 <script src="lab.js"></script>
-<script>
-(function () {
-  const E = Engine, L = Lab, $ = id => document.getElementById(id), C = E.CROPS;
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  const FIELDS = [
-    { id: 'odesa', name: 'Odesa region, Ukraine', lat: 46.85, lon: 30.6, rot: 'wheat-sunflower', soil: 'clay_loam', till: 'conv' },
-    { id: 'minsk', name: 'Minsk region, Belarus', lat: 53.7, lon: 27.2, rot: 'wheat-canola-oats', soil: 'sandy_loam', till: 'conv' },
-    { id: 'iowa', name: 'Central Iowa, USA', lat: 42.03, lon: -93.62, rot: 'corn-soy', soil: 'loam', till: 'reduced' },
-    { id: 'freestate', name: 'Free State, South Africa', lat: -27.39, lon: 26.62, rot: 'corn-sunflower', soil: 'sandy_loam', till: 'reduced' },
-    { id: 'heilongjiang', name: 'Heilongjiang, China', lat: 45.9, lon: 126.9, rot: 'corn-soy', soil: 'clay_loam', till: 'conv' }
-  ];
-  const ROTS = ['wheat-sunflower', 'wheat-canola-oats', 'corn-soy', 'corn-sunflower', 'corn', 'wheat-fallow', 'wheat-corn-sunflower', 'sunflower-wheat-wheat'];
-  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
-  let R = null, inp = null, fieldKey = '';
-
-  function fillSelects() {
-    const saved = store.get('furrow:choices1', null);
-    let o = FIELDS.map(f => '<option value="' + f.id + '">' + esc(f.name) + '</option>').join('');
-    if (saved && isFinite(saved.lat)) o = '<option value="saved">Your field from the main app</option>' + o;
-    $('field').innerHTML = o + '<option value="custom">Type coordinates</option>';
-    $('rot').innerHTML = ROTS.map(r => '<option>' + r + '</option>').join('');
-    $('soil').innerHTML = Object.keys(E.SOILS).map(k => '<option value="' + k + '">' + E.SOILS[k].name + '</option>').join('');
-    $('till').innerHTML = Object.keys(E.TILLAGE).map(k => '<option value="' + k + '">' + E.TILLAGE[k].name + '</option>').join('');
-    pickField();
-  }
-  function pickField() {
-    const v = $('field').value, saved = store.get('furrow:choices1', null);
-    let f = FIELDS.find(x => x.id === v);
-    if (v === 'saved' && saved) {
-      f = { lat: saved.lat, lon: saved.lon, soil: saved.soil, till: saved.till, rotArr: saved.rot };
-      const s = saved.rot.map(r => r.c).join('-'); if (!ROTS.includes(s)) { ROTS.push(s); $('rot').innerHTML += '<option>' + s + '</option>'; }
-      f.rot = s;
-    }
-    if (!f) return;
-    $('lat').value = f.lat; $('lon').value = f.lon; $('rot').value = f.rot; $('soil').value = f.soil; $('till').value = f.till;
-  }
-
-  async function power(lat, lon) {
-    const key = 'furrow1:' + lat.toFixed(2) + ',' + lon.toFixed(2), c = store.get(key, null);
-    if (c) return c;
-    const url = 'https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,GWETROOT&community=AG&longitude=' + lon + '&latitude=' + lat + '&start=20010101&end=20251231&format=JSON';
-    const r = await fetch(url); if (!r.ok) throw new Error('NASA POWER answered ' + r.status);
-    const raw = E.parsePower(await r.json()); store.set(key, raw); return raw;
-  }
-
-  async function go() {
-    const lat = +$('lat').value, lon = +$('lon').value;
-    if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 70) { $('status').textContent = 'Need a real latitude and longitude.'; return; }
-    $('status').textContent = 'Getting 25 years of NASA weather and running every strategy under 5 climates…';
-    try {
-      const raw = await power(lat, lon);
-      inp = { lat, rot: $('rot').value.split('-').map(c => ({ c, cv: null })), soil: $('soil').value, slope: 'gentle', till: $('till').value, irrigated: false, livestock: false, exclude: new Set(), weights: { water: 3, soil: 3, erosion: 3, income: 3, resilience: 3 } };
-      await new Promise(r => setTimeout(r, 30));
-      R = L.run(raw, inp); fieldKey = lat.toFixed(2) + ',' + lon.toFixed(2);
-      $('status').innerHTML = '<span class="ok">Done.</span> ' + R.list.length + ' strategies, ' + R.cl.n + ' years of weather, 5 climate versions each.';
-      render();
-    } catch (e) { $('status').innerHTML = '<span class="bad">Couldn’t load NASA data.</span> ' + esc(e.message); }
-  }
-
-  const rotTxt = s => s.rot.map(r => C[r.c].short + (r.cv ? ' + cover' : '')).join(', then ') + (s.till === 'notill' ? ' (no-till)' : '');
-  const meter = v => '<div class="meter"><i style="width:' + Math.max(2, Math.min(100, v)) + '%"></i></div>';
-
-  function render() { strat(); params(); stress(); farm(); care(); }
-
-  function strat() {
-    const fb = store.get('furrowlab:fb', {}), mine = fb[fieldKey] || {};
-    let h = '';
-    R.list.forEach((s, i) => {
-      const I = L.INFO[s.id], f = mine[s.id] || {};
-      h += '<div class="card"><details' + (i === 0 ? ' open' : '') + '><summary>' + (i + 1) + '. ' + esc(s.name) + ' <span class="mute">· ' + s.match.toFixed(0) + '</span></summary>'
-        + '<div class="mute" style="margin-top:6px">' + esc(rotTxt(s)) + '</div>' + meter(s.match)
-        + '<dl><dt>Why it’s here</dt><dd>' + esc(I.why) + '</dd><dt>Evidence</dt><dd>' + esc(I.ev) + '</dd><dt>Could help with</dt><dd>' + esc(I.ben) + '</dd><dt>What we don’t know</dt><dd>' + esc(I.gap) + '</dd><dt>Ask someone local</dt><dd>' + esc(I.risk) + '</dd></dl>'
-        + '<div class="fb" data-s="' + s.id + '">'
-        + ['works', 'no', 'tried'].map(k => '<button data-k="' + k + '" class="' + (f.v === k ? 'on' : '') + '">' + { works: 'Would work here', no: 'Wouldn’t work here', tried: 'We tried this' }[k] + '</button>').join('')
-        + '<input placeholder="Why? (optional)" value="' + esc(f.note || '') + '" style="flex:1;min-width:180px"></div></details></div>';
-    });
-    $('strat').innerHTML = h;
-    $('strat').querySelectorAll('.fb').forEach(el => {
-      const id = el.dataset.s, save = patch => { const all = store.get('furrowlab:fb', {}); all[fieldKey] = all[fieldKey] || {}; all[fieldKey][id] = Object.assign(all[fieldKey][id] || {}, patch, { at: new Date().toISOString() }); store.set('furrowlab:fb', all); };
-      el.querySelectorAll('button').forEach(b => b.onclick = () => { el.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); save({ v: b.dataset.k }); });
-      el.querySelector('input').onchange = e => save({ note: e.target.value });
-    });
-  }
-
-  function params() {
-    const cols = [
-      ['Overall', s => s.match.toFixed(0), 'Weighted mix of the five scores'],
-      ['Water', s => s.sc.water], ['Soil', s => s.sc.soil], ['Storms', s => s.sc.erosion], ['Selling', s => s.sc.income], ['Bad weather', s => s.sc.resilience],
-      ['Bare days/yr', s => s.x.bare], ['Heavy rain on open soil %', s => s.x.heavyBare], ['N from legumes kg/ha/yr', s => s.x.nfix],
-      ['Crop families', s => s.x.fams], ['Same family in a row (max)', s => s.x.famRun], ['Water short, avg %', s => s.x.waterGap], ['Water short, worst 10% yrs', s => s.x.badYear],
-      ['Hot days at flowering', s => s.x.heat], ['Soil carbon gain t C/ha/yr (rough)', s => s.x.carbon], ['Sowings per year', s => s.x.ops]
-    ];
-    let h = '<div class="card scroll"><table><tr><th>Strategy</th>' + cols.map(c => '<th class="n">' + c[0] + '</th>').join('') + '</tr>';
-    R.list.forEach(s => { h += '<tr><td>' + esc(s.name) + '</td>' + cols.map(c => '<td class="n">' + c[1](s) + '</td>').join('') + '</tr>'; });
-    h += '</table></div>';
-    $('params').innerHTML = h;
-  }
-
-  function stress() {
-    const sc = L.SCEN, top = R.winners, nm = id => R.list.find(s => s.id === id).name;
-    const col = (v, best) => '<span class="cell" style="background:' + (v === best ? 'rgba(143,196,106,.25)' : 'transparent') + '">' + v.toFixed(0) + '</span>';
-    let h = '<div class="card"><b>' + (R.stable ? '<span class="ok">The winner holds up.</span> ' + esc(nm(top.base)) : '<span class="warn">The winner changes.</span>') + '</b>'
-      + '</div>';
-    h += '<div class="card scroll"><table><tr><th>Strategy</th>' + sc.map(s => '<th class="n">' + s.name + '</th>').join('') + '<th class="n">Only 2013-2025</th><th class="n">Worst case</th><th class="n">Swing</th></tr>';
-    const best = {}; sc.forEach(x => best[x.id] = Math.max.apply(null, R.list.map(s => s.byScen[x.id]))); const bestR = Math.max.apply(null, R.list.map(s => s.recent));
-    R.list.forEach(s => { h += '<tr><td>' + esc(s.name) + '</td>' + sc.map(x => '<td class="n">' + col(s.byScen[x.id], best[x.id]) + '</td>').join('') + '<td class="n">' + col(s.recent, bestR) + '</td><td class="n">' + s.worst.toFixed(0) + '</td><td class="n">' + s.spread.toFixed(0) + '</td></tr>'; });
-    h += '</table></div>';
-    $('stress').innerHTML = h;
-  }
-
-  function farm() {
-    const saved = store.get('furrowlab:farm', {})[fieldKey] || '';
-    $('farm').innerHTML = '<div class="card"><b>Your own records</b><p class="mute"><code>year, crop, sowing date, harvest date, yield t/ha</code></p>'
-      + '<textarea id="csv" placeholder="2024, wheat, 2023-10-01, 2024-07-05, 5.1&#10;2024, sunflower, 2024-04-25, 2024-09-20, 2.4">' + esc(saved) + '</textarea><div class="bar"><button class="go" id="cmp">Compare</button></div><div id="cmpout"></div></div>'
-      + '<div class="card"><b>Share and collect feedback</b>'
-      + '<div class="bar"><button id="exp">Export my notes</button><label><button id="impb">Import notes</button><input id="imp" type="file" accept=".json" hidden></label></div><div id="fbsum" class="mute"></div></div>';
-    $('cmp').onclick = () => {
-      const t = $('csv').value, all = store.get('furrowlab:farm', {}); all[fieldKey] = t; store.set('furrowlab:farm', all);
-      const rows = L.compareFarm(L.parseFarm(t), R.cal, R.cl.south);
-      if (!rows.length) { $('cmpout').innerHTML = '<p class="warn">No lines we could read. Start each with a 4-digit year.</p>'; return; }
-      const d = v => v == null ? '–' : (v > 0 ? '+' : '') + v + ' d';
-      $('cmpout').innerHTML = '<div class="scroll"><table><tr><th>Year</th><th>Crop</th><th class="n">Sowing vs ours</th><th class="n">Harvest vs ours</th><th class="n">Yield</th></tr>'
-        + rows.map(r => '<tr><td>' + r.year + '</td><td>' + esc(r.crop ? C[r.crop].short : r.raw + ' (unknown)') + '</td><td class="n">' + d(r.sowDiff) + '</td><td class="n">' + d(r.harvDiff) + '</td><td class="n">' + (r.yield || '–') + '</td></tr>').join('') + '</table></div>';
-    };
-    $('exp').onclick = () => {
-      const blob = new Blob([JSON.stringify({ app: 'furrow-lab', at: new Date().toISOString(), feedback: store.get('furrowlab:fb', {}), records: store.get('furrowlab:farm', {}) }, null, 1)], { type: 'application/json' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'furrow-notes.json'; a.click();
-    };
-    $('impb').onclick = () => $('imp').click();
-    $('imp').onchange = async e => {
-      try {
-        const j = JSON.parse(await e.target.files[0].text()), fb = store.get('furrowlab:fb', {}), fr = store.get('furrowlab:farm', {});
-        for (const k in j.feedback || {}) fb[k] = Object.assign({}, j.feedback[k], fb[k] || {});
-        for (const k in j.records || {}) if (!fr[k]) fr[k] = j.records[k];
-        store.set('furrowlab:fb', fb); store.set('furrowlab:farm', fr); render();
-      } catch (er) { $('fbsum').innerHTML = '<span class="bad">That file isn’t a Furrow notes file.</span>'; }
-    };
-    const fb = store.get('furrowlab:fb', {}), n = Object.values(fb).reduce((s, f) => s + Object.keys(f).length, 0);
-    $('fbsum').textContent = n ? n + ' notes saved across ' + Object.keys(fb).length + ' field(s).' : 'No notes yet.';
-  }
-
-  async function sha(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join(''); }
-
-  function care() {
-    const base = R.list.find(s => s.id === 'current'), opts = R.list.filter(s => s.id !== 'current' && s.x.carbon > base.x.carbon);
-    let h = '<div class="card"><b>Paying farmers for looking after the soil</b>'
-      + '<div class="bar"><select id="cs">' + opts.map(s => '<option value="' + s.id + '">' + esc(s.name) + '</option>').join('') + '</select>'
-      + '<label>Hectares <input id="ha" type="number" value="100" min="1"></label><label>€ per t CO₂ <input id="pr" type="number" value="40" min="0"></label><label>Years <input id="yr" type="number" value="5" min="1" max="20"></label></div><div id="cres"></div></div>'
-      + '<div class="card"><b>Agreement log</b><div class="bar"><button id="sign">1. Farmer and buyer sign</button><button id="check">2. Satellite check for a year</button><button id="reset">Start over</button></div><div id="ledger"></div></div>';
-    $('care').innerHTML = h;
-    if (!opts.length) { $('cres').textContent = 'No option adds soil cover.'; return; }
-    const calc = () => {
-      const s = R.list.find(x => x.id === $('cs').value), c = L.credits(s, base, +$('ha').value, +$('pr').value, +$('yr').value);
-      $('cres').innerHTML = '<table><tr><td>Extra soil carbon, rough</td><td class="n">' + c.tC.toFixed(2) + ' t C/ha/yr</td></tr><tr><td>Same as CO₂</td><td class="n">' + c.tCO2.toFixed(2) + ' t/ha/yr</td></tr><tr><td>Total over the agreement</td><td class="n">' + c.total.toFixed(0) + ' t CO₂</td></tr><tr><td>Possible payout</td><td class="n"><b>€' + Math.round(c.money).toLocaleString() + '</b></td></tr><tr><td>Per year, per hectare</td><td class="n">€' + (c.money / +$('yr').value / +$('ha').value).toFixed(0) + '</td></tr></table>';
-      return c;
-    };
-    ['cs', 'ha', 'pr', 'yr'].forEach(id => $(id).oninput = calc); calc();
-    const LK = 'furrowlab:ledger:' + fieldKey;
-    const show = () => { const lg = store.get(LK, []); $('ledger').innerHTML = lg.length ? lg.map((e, i) => '<div style="margin:8px 0"><b>' + (i + 1) + '. ' + esc(e.what) + '</b> <span class="mute">' + e.at.slice(0, 16).replace('T', ' ') + '</span><div class="hash">prev ' + e.prev.slice(0, 16) + '…, now ' + e.hash.slice(0, 16) + '…</div></div>').join('') : '<p class="mute">Nothing signed yet.</p>'; };
-    const push = async what => { const lg = store.get(LK, []), prev = lg.length ? lg[lg.length - 1].hash : '0'.repeat(64), at = new Date().toISOString(); lg.push({ what, at, prev, hash: await sha(prev + what + at) }); store.set(LK, lg); show(); };
-    $('sign').onclick = () => { const c = calc(), s = R.list.find(x => x.id === $('cs').value); push('Signed: ' + s.name + ' on ' + $('ha').value + ' ha for ' + $('yr').value + ' years, up to €' + Math.round(c.money).toLocaleString()); };
-    $('check').onclick = () => {
-      const lg = store.get(LK, []); if (!lg.length) { push('Check refused: nothing signed yet'); return; }
-      const done = lg.filter(e => e.what.startsWith('Year')).length, yrs = +$('yr').value, s = R.list.find(x => x.id === $('cs').value);
-      if (done >= yrs) { push('Agreement finished'); return; }
-      const cov = s.x.bare < 60, c = calc(), pay = Math.round(c.money / yrs);
-      push('Year ' + (done + 1) + ': simulated satellite check, ' + s.x.bare + ' bare days, ' + (cov ? 'paid €' + pay.toLocaleString() : 'not paid, too many bare days'));
-    };
-    $('reset').onclick = () => { store.set(LK, []); show(); };
-    show();
-  }
-
-  function sources() {
-    const rows = [
-      ['Weather 2001-2025', 'NASA POWER', 'In the main app', 'ok'],
-      ['Greenness of the field', 'MODIS NDVI via ORNL DAAC', 'In the main app', 'ok'],
-      ['Soil type', 'ISRIC SoilGrids', 'In the main app', 'ok'],
-      ['Slope and low spots', 'Open-Meteo elevation', 'In the main app', 'ok'],
-      ['Soil moisture from space', 'NASA SMAP L4', 'On the map only, next to use in the water model', 'warn'],
-      ['Plant water stress', 'NASA ECOSTRESS (evaporation, stress index)', 'Not yet: patchy coverage, would check our water numbers', 'warn'],
-      ['Groundwater', 'NASA GRACE-FO', 'Not yet: very coarse, good for irrigation questions', 'warn'],
-      ['Sharper field images', 'Sentinel-2 (10 m)', 'Not yet: would show the real field edge', 'warn'],
-      ['What was grown where', 'USDA Cropland Data Layer, ESA WorldCover', 'Not yet: would fill in crop history automatically', 'warn'],
-      ['Soil organic carbon', 'SoilGrids SOC', 'Not yet: easy add, same service we already use', 'warn'],
-      ['Crop prices', 'FAOSTAT, local exchanges', 'Not yet: the selling score is rough without it', 'bad'],
-      ['What farmers actually did', 'Farmers themselves (Your data tab)', 'Started: notes and records you can export and share', 'ok'],
-      ['Field sensors', 'Farm soil moisture and weather stations', 'Idea: farmers could plug their own sensors in', 'bad']
-    ];
-    $('sources').innerHTML = '<div class="card scroll"><table><tr><th>What</th><th>From</th><th>Status</th></tr>'
-      + rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td class="' + r[3] + '">' + r[2] + '</td></tr>').join('') + '</table></div>';
-  }
-
-  $('tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b)); document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === b.dataset.t)); };
-  $('field').onchange = pickField; $('run').onclick = go;
-  fillSelects(); sources();
-  ['strat', 'params', 'stress', 'farm', 'care'].forEach(id => $(id).innerHTML = '<p class="mute">Run a field first.</p>');
-})();
-</script>
+<script src="contract/compiled.js"></script>
+<script src="ui.js"></script>
 </body>
 </html>
