@@ -24,7 +24,7 @@
   };
   const DIMTIP = { water: 'How much of the water your crops wanted they actually got from rain and the soil. 100 means they never ran short.', soil: 'Estimated from days with living roots, nitrogen from legumes, leftover residue, how many crop families you grow, deep roots, and few bare days.', erosion: 'How much of the heavy rain lands on covered ground instead of bare soil. 100 means none of it hits bare soil.', income: 'Margin after costs, estimated from typical production cost and market depth per crop (1 to 5), reduced when the crop runs short of water. Local prices are not included.', resilience: 'How rarely crops get stressed by drought or heat, whether they ripen before frost, and how spread out your crops are across families and seasons.' };
   const TREND = { 'clear trend': 'trend, p < 0.05', 'possible trend': 'weak signal, p < 0.2', 'no clear trend': 'no clear trend' };
-  const S = { slopePct: 3, later: false, years: 3, w2: { water: 3, soil: 5, erosion: 4, income: 2, resilience: 3 }, acc: {}, text: '', exp: null, lat: 0, lon: 0, name: '', rot: [], soil: 'loam', slope: 'custom', till: 'reduced', irrigated: false, livestock: false, exclude: new Set(), weights: { water: 3, soil: 3, erosion: 3, income: 3, resilience: 3 }, scen: { rain: 0, temp: 0 }, raw: null, demo: null, sel: 0, terrain: null, soilSug: null, touched: {} };
+  const S = { area: 100, stockOn: false, stockType: 'beef', stockN: 0, maxDrop: 15, mY: 4.5, mP: 200, mC: 550, slopePct: 3, later: false, years: 3, w2: { water: 3, soil: 5, erosion: 4, income: 2, resilience: 3 }, acc: {}, text: '', exp: null, lat: 0, lon: 0, name: '', rot: [], soil: 'loam', slope: 'custom', till: 'reduced', irrigated: false, livestock: false, exclude: new Set(), weights: { water: 3, soil: 3, erosion: 3, income: 3, resilience: 3 }, scen: { rain: 0, temp: 0 }, raw: null, demo: null, sel: 0, terrain: null, soilSug: null, touched: {} };
   const COL = { bare: '#F2A541', et: '#F2907E', straw: '#B7A98A', crop: '#8FD694', cover: '#D6EBAE', peren: '#3E8E5A', water: '#7CC6E8', waterSoft: '#2F5D6B', ink: '#EEF2E6', muted: '#A8A89C', line: 'rgba(240,236,220,.13)', panel: '#171816' };
 
   async function fetchPower(lat, lon) {
@@ -99,10 +99,12 @@
     })();
   }
   function suggest() {
-    let h = '';
-    if (S.soilSug) { if (!S.demo && !S.touched.soil) { S.soil = S.soilSug.cls; $('soil').value = S.soil; } h += '<p class="small">SoilGrids maps this spot as <b>' + E.SOILS[S.soilSug.cls].name.toLowerCase() + '</b> (' + r0(S.soilSug.sand) + '% sand, ' + r0(S.soilSug.clay) + '% clay)' + (S.soil !== S.soilSug.cls ? ' <button class="link" data-use="soil">Use it</button>' : '') + '</p>'; }
-    if (S.terrain) { if (!S.demo && !S.touched.slope) setSlope(Math.round(S.terrain.typical * 2) / 2); h += '<p class="small">Elevation data shows <b>' + 'typical slope ' + S.terrain.typical.toFixed(1) + '%' + '</b> ground (typical slope ' + S.terrain.typical.toFixed(1) + '%, steepest ' + S.terrain.steepest.toFixed(1) + '%)' + (S.slope !== S.terrain.cls ? ' <button class="link" data-use="slope">Use it</button>' : '') + '</p>'; }
-    $('sug').innerHTML = h; if ((S.soilSug || S.terrain) && !S.demo) recompute();
+    const sp = S.terrain ? Math.round(S.terrain.typical * 2) / 2 : null;
+    if (S.soilSug && !S.demo && !S.touched.soil) { S.soil = S.soilSug.cls; $('soil').value = S.soil; soilTxt(); }
+    if (S.terrain && !S.demo && !S.touched.slope) setSlope(sp);
+    $('sugsoil').innerHTML = S.soilSug ? '<div class="sug"><span>Soil map (SoilGrids): <b>' + E.SOILS[S.soilSug.cls].name + '</b>, ' + r0(S.soilSug.sand) + '% sand, ' + r0(S.soilSug.clay) + '% clay</span>' + (S.soil !== S.soilSug.cls ? '<button class="btn usebtn" data-use="soil">Use this</button>' : '<span class="inuse">In use</span>') + '</div>' : '';
+    $('sugslope').innerHTML = S.terrain ? '<div class="sug"><span>Elevation data: typical slope <b>' + S.terrain.typical.toFixed(1) + '%</b>, steepest ' + S.terrain.steepest.toFixed(1) + '%</span>' + (Math.abs(S.slopePct - sp) > 0.01 ? '<button class="btn usebtn" data-use="slope">Use this</button>' : '<span class="inuse">In use</span>') + '</div>' : '';
+    if ((S.soilSug || S.terrain) && !S.demo) recompute();
   }
   let req = 0;
   async function load() {
@@ -211,8 +213,17 @@
   }
 
   const KEY = 'furrowlab:choices1';
+  const ANIMALS = { beef: ['Beef cattle', 4.5], dairy: ['Dairy cows', 6], sheep: ['Sheep or goats', 0.6], horse: ['Horses', 4] };
+  const YIELD = { wheat: 4.5, corn: 7, soy: 2.5, sunflower: 2.3, sorghum: 4, oats: 3, pea: 2.5, canola: 2.8, alfalfa: 6 };
+  function herd() {
+    if (!S.stockOn) { S.livestock = false; return ''; }
+    const need = (S.stockN || 0) * ANIMALS[S.stockType || 'beef'][1], share = 2 / (S.rot.length + 2), supply = (S.area || 0) * share * YIELD.alfalfa, use = supply ? Math.min(1, need / supply) : 0;
+    S.livestock = use >= 0.5;
+    return 'Your animals eat about <b>' + r0(need) + ' t</b> of hay a year. Two years of alfalfa in your rotation on ' + (S.area || 0) + ' ha would give about <b>' + r0(supply) + ' t</b> a year, so about <b>' + Math.round(use * 100) + '%</b> would be used' + (S.livestock ? '. Alfalfa counts as feed for your own animals.' : '. That is too little to count alfalfa as feed; it would need a hay buyer.');
+  }
+  function margin() { return Math.max(0, (S.mY || 0) * (S.mP || 0) - (S.mC || 0)); }
   function setSlope(p) { S.slopePct = Math.max(0, Math.min(20, +p || 0)); S.slope = 'custom'; E.SLOPES.custom = { name: S.slopePct + '%', f: Math.max(0.3, Math.min(3, S.slopePct / 4)) }; if ($('slopep')) { $('slopep').value = S.slopePct; $('slopev').textContent = S.slopePct + '%'; } }
-  const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights, slopePct: S.slopePct, later: S.later, years: S.years, w2: S.w2, acc: S.acc, text: S.text, exp: S.exp });
+  const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights, area: S.area, stockOn: S.stockOn, stockType: S.stockType, stockN: S.stockN, maxDrop: S.maxDrop, mY: S.mY, mP: S.mP, mC: S.mC, slopePct: S.slopePct, later: S.later, years: S.years, w2: S.w2, acc: S.acc, text: S.text, exp: S.exp });
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(Object.assign(choices(), { done: !S.intro && S.wiz == null }))); } catch (e) {}
   }
@@ -227,10 +238,10 @@
     let v = fromLink(); if (!v) { try { v = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
     if (!v || !v.done || !isFinite(v.lat) || !isFinite(v.lon) || Math.abs(v.lat) > 70 || Math.abs(v.lon) > 180 || !Array.isArray(v.rot) || !v.rot.length || v.rot.length > 6 || v.rot.some(r => !r || !C[r.c])) return null;
     S.rot = v.rot.map(r => ({ c: r.c, cv: CV[r.cv] ? r.cv : null }));
-    if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
+    if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp', 'area', 'stockOn', 'stockType', 'stockN', 'maxDrop', 'mY', 'mP', 'mC'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
     S.irrigated = !!v.irrigated; S.livestock = !!v.livestock; S.exclude = new Set((Array.isArray(v.exclude) ? v.exclude : []).filter(k => C[k] || CV[k]));
     DIMS.forEach(d => { const w = v.weights && v.weights[d[0]]; if (w >= 0 && w <= 5) S.weights[d[0]] = Math.round(w); $('w_' + d[0]).value = S.weights[d[0]]; $('w_v' + d[0]).textContent = LEVEL[S.weights[d[0]]]; });
-    $('soil').value = S.soil; $('till').value = S.till; $('irrig').checked = S.irrigated; $('stock').checked = S.livestock; $('later').checked = !!S.later; $('laterbox').hidden = !S.later; $('years').value = S.years; $('yearsv').textContent = S.years + ' yrs'; $('free').value = S.text || ''; showUnd(); if (window.syncChips) window.syncChips(); DIMS.forEach(d => { $('w2_' + d[0]).value = S.w2[d[0]]; $('w2_v' + d[0]).textContent = LEVEL[S.w2[d[0]]]; });
+    $('soil').value = S.soil; $('till').value = S.till; $('irrig').checked = S.irrigated; if (window.syncExtra) window.syncExtra(); $('later').checked = !!S.later; $('laterbox').hidden = !S.later; $('years').value = S.years; $('yearsv').textContent = S.years + ' yrs'; $('free').value = S.text || ''; showUnd(); if (window.syncChips) window.syncChips(); DIMS.forEach(d => { $('w2_' + d[0]).value = S.w2[d[0]]; $('w2_v' + d[0]).textContent = LEVEL[S.w2[d[0]]]; });
     document.querySelectorAll('#excl .chip').forEach(b => b.setAttribute('aria-pressed', S.exclude.has(b.dataset.id) ? 'true' : 'false'));
     renderRot(); return v;
   }
@@ -257,6 +268,7 @@
     const cons = window.Lab ? Lab.parseConstraints(S.text) : [], w = Object.assign({}, S.weights), acc = Object.assign({}, S.acc), ex = new Set(S.exclude); let stock = S.livestock;
     cons.forEach(c => { Object.assign(w, c.act.w || {}); for (const k in c.act.acc || {}) acc[k] = Math.min(acc[k] == null ? 5 : acc[k], c.act.acc[k]); (c.act.avoid || []).forEach(x => { if (!S.rot.some(r => r.c === x)) ex.add(x); }); if (c.act.livestock) stock = true; });
     if (Object.values(w).every(v => !v)) w.income = 1;
+    herd(); if (S.livestock) stock = true;
     const inp = Object.assign({}, S, { weights: w, exclude: ex, livestock: stock });
     try { LAST = E.analyse(S.raw, inp); labAdjust(LAST, inp, acc, cons); } catch (e) { status('err', 'Something went wrong while analysing this field: ' + esc(e.message)); return; }
     S.sel = LAST.alts.length ? 1 : 0; render(); save(); if (S.wiz != null && WIZ[S.wiz][0] === 'acc') drawAcc();
@@ -276,10 +288,18 @@
         all = all.concat(exps);
       }
     }
-    if (window.Lab) all.forEach(x => { x.need = Lab.needs(x, S.rot); x.adj = Lab.adjust(x, x.need, acc); x.rawMatch = x.match; x.match = x.adj.final; });
+    const mg = margin(), curC = new Set(S.rot.map(r => r.c));
+    if (window.Lab) all.forEach(x => {
+      x.need = Lab.needs(x, S.rot); x.adj = Lab.adjust(x, x.need, acc); x.rawMatch = x.match;
+      const ci = A.current.sc.income || 1; x.incPct = (x.sc.income - ci) / ci * 100; x.incEur = x.incPct / 100 * mg * (S.area || 0);
+      if (x.incPct < -S.maxDrop && x.id !== 'current') { x.adj.blocked.push('incomeDip'); x.need.incomeDip = 'about ' + Math.round(-x.incPct) + '% less income, more than the ' + S.maxDrop + '% you can accept'; }
+      const big = x.rot.map(r => r.c).filter(c => !curC.has(c) && Lab.CROPINFO[c] && Lab.CROPINFO[c].niche >= 3).map(c => { const t = (S.area || 0) / x.rot.length * (YIELD[c] || 3); return t >= 300 ? C[c].short.toLowerCase() + ' (about ' + r0(t) + ' t a year)' : null; }).filter(Boolean);
+      if (big.length) { x.need.market = big.join(', ') + ' is a lot for a thin local market'; x.adj.pen += 3; }
+      x.adj.final = Math.round((x.rawMatch - x.adj.pen) * 10) / 10; x.match = x.adj.final;
+    });
     all.sort((a, b) => (a.adj && a.adj.blocked.length ? 1 : 0) - (b.adj && b.adj.blocked.length ? 1 : 0) || b.match - a.match);
     const ok = all.filter(x => !(x.adj && x.adj.blocked.length));
-    A.alts = ok.slice(0, 3); A.others = all.filter(x => A.alts.indexOf(x) < 0); A.cons = cons; A.acc = acc;
+    A.alts = (ok.length ? ok : all).slice(0, 3); A.others = all.filter(x => A.alts.indexOf(x) < 0); A.cons = cons; A.acc = acc;
     if (S.later && ok.length) { const by = ww => ok.slice().sort((a, b) => (E.match(b.sc, ww) - (b.adj ? b.adj.pen : 0)) - (E.match(a.sc, ww) - (a.adj ? a.adj.pen : 0)))[0]; A.plan = { first: by(inp.weights), then: by(S.w2), after: S.years }; } else A.plan = null;
   }
   function render() {
@@ -336,6 +356,7 @@
     O += '<div class="optd' + (S.animOpt ? ' in' : '') + '"><div class="ohead"><span class="tag">' + tagt + '</span>' + (s.adj && s.adj.blocked.length ? '<span class="tag no">Needs something you ruled out</span>' : '') + '</div>';
     O += '<h3 class="big">' + esc(E.rotLabel(s.rot)) + '</h3><div class="oscore"><b>' + r0(s.match) + '</b><span>/ 100 for your priorities' + (isCur ? '' : ', <em class="' + (delta >= 0 ? 'up' : 'dn') + '">' + (delta >= 0 ? '+' : '') + delta + '</em> vs now') + '</span></div>';
     O += '<p class="lead">' + x.why + '</p>';
+    if (!isCur && s.incPct != null) O += '<div class="money ' + (s.incPct >= 0 ? 'up' : 'dn') + '">Estimated income: <b>' + (s.incPct >= 0 ? '+' : '') + Math.round(s.incPct) + '%</b>' + (margin() && S.area ? ', about <b>' + (s.incEur >= 0 ? '+' : '−') + '€' + Math.abs(Math.round(s.incEur / 100) * 100).toLocaleString('en') + '</b> a year on ' + S.area + ' ha' : '') + ' <button class="q" data-term="s_income" aria-label="Explain">?</button></div>';
     if (!isCur) {
       const kpi = (lab, a, b, unit, good, term) => { const better = good ? b > a : b < a, same = a === b; return '<div class="kpi"><span class="kl">' + lab + ' <button class="q" data-term="' + term + '" aria-label="Explain">?</button></span><span class="kv"><s>' + a + unit + '</s> ' + b + unit + '</span><span class="kd ' + (same ? '' : better ? 'up' : 'dn') + '">' + (same ? 'same' : better ? 'better' : 'worse') + '</span></div>'; };
       O += '<div class="kpis">' + kpi('Bare soil, days a year', r0(cur.m.bare), r0(s.m.bare), '', false, 'bare') + kpi('Heavy rain on open soil, mm', r0(cur.m.exposed), r0(s.m.exposed), '', false, 'heavy') + kpi('Water crops missed', Math.round(cur.m.relMean * 100), Math.round(s.m.relMean * 100), '%', false, 'water') + kpi('Living roots, days a year', r0(cur.m.living), r0(s.m.living), '', true, 'roots') + '</div>';
@@ -687,7 +708,7 @@
   function drawZones() {
     if (!map) return; zones.forEach(z => map.removeLayer(z)); zones = []; const T = S.terrain; if (!T) return;
     const dl = T.step / 111320, dn = T.step / (111320 * Math.cos(S.lat * Math.PI / 180));
-    T.slopes.forEach((v, i) => { const r = Math.floor(i / T.n), c = i % T.n, la = S.lat + (2 - r) * dl, lo = S.lon + (c - 2) * dn; zones.push(window.L.rectangle([[la - dl / 2, lo - dn / 2], [la + dl / 2, lo + dn / 2]], { stroke: T.low[i], color: '#7CC6E8', weight: 2, fillColor: v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#3E8E5A', fillOpacity: 0.3, interactive: false }).addTo(map)); });
+    T.slopes.forEach((v, i) => { const r = Math.floor(i / T.n), c = i % T.n, la = S.lat + (2 - r) * dl, lo = S.lon + (c - 2) * dn; const z = window.L.rectangle([[la - dl / 2, lo - dn / 2], [la + dl / 2, lo + dn / 2]], { stroke: true, color: T.low[i] ? '#7CC6E8' : 'rgba(255,255,255,.85)', weight: T.low[i] ? 3 : 1.2, fillColor: v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#5FBF73', fillOpacity: 0.42, interactive: true }).addTo(map); z.bindTooltip(v.toFixed(1) + '% slope' + (T.low[i] ? ', low spot' : ''), { direction: 'top' }); zones.push(z); });
   }
   function setPlaying(on) { playing = on; $('play').textContent = on ? 'Pause tour' : 'Play tour'; $('play').setAttribute('aria-pressed', on ? 'true' : 'false'); }
   function setPlace(lat, lon, demo, keep) {
@@ -696,7 +717,7 @@
     S.name = demo ? demo.name : 'Your field';
     if (demo && !keep) { S.rot = demo.rot.map(r => ({ c: r.c, cv: r.cv || null })); S.soil = demo.soil; setSlope(demo.slope); S.till = demo.till; $('soil').value = S.soil; $('till').value = S.till; renderRot(); }
     $('lat').value = S.lat; $('lon').value = S.lon; $('demo').value = S.demo || '';
-    S.terrain = null; S.soilSug = null; S.ndvi = null; S.touched = {}; $('sug').innerHTML = ''; drawZones();
+    S.terrain = null; S.soilSug = null; S.ndvi = null; S.touched = {}; $('sugsoil').innerHTML = ''; $('sugslope').innerHTML = ''; drawZones();
     if (map) { marker.setLatLng([S.lat, S.lon]); cell.setBounds(cellBounds()); goStep(0, true); }
     load();
   }
@@ -757,12 +778,22 @@
     const ex = Object.keys(C).filter(k => k !== 'fallow').map(k => [k, C[k].short]).concat(Object.keys(CV).map(k => [k, CV[k].short]));
     $('excl').innerHTML = ex.map(x => '<button class="chip" data-id="' + x[0] + '" aria-pressed="false">' + x[1] + '</button>').join('');
     document.querySelectorAll('#excl .chip').forEach(b => b.onclick = () => { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); if (on) S.exclude.add(b.dataset.id); else S.exclude.delete(b.dataset.id); recompute(); });
-    $('slopep').oninput = e => { setSlope(e.target.value); S.touched.slope = true; recompute(); };
+    $('slopep').oninput = e => { setSlope(e.target.value); S.touched.slope = true; recompute(); suggest(); };
     ['soil', 'till'].forEach(id => { $(id).onchange = e => { S[id] = e.target.value; S.touched[id] = true; suggest(); recompute(); }; });
-    $('sug').addEventListener('click', e => { const b = e.target.closest('[data-use]'); if (!b) return; if (b.dataset.use === 'soil') { S.soil = S.soilSug.cls; $('soil').value = S.soil; } else { setSlope(Math.round(S.terrain.typical * 2) / 2); } S.touched[b.dataset.use] = true; suggest(); recompute(); });
+    $('setup').addEventListener('click', e => { if (!e.target.closest('#sugsoil, #sugslope')) return; const b = e.target.closest('[data-use]'); if (!b) return; if (b.dataset.use === 'soil') { S.soil = S.soilSug.cls; $('soil').value = S.soil; } else { setSlope(Math.round(S.terrain.typical * 2) / 2); } S.touched[b.dataset.use] = true; suggest(); recompute(); });
     $('croptab').innerHTML = '<table><thead><tr><th>Crop</th><th>Family</th><th>Peak water use (Kc)</th><th>Heat limit</th><th>Warmth to mature</th><th>Nitrogen credit</th><th>Residue</th><th>Drought tolerance</th></tr></thead><tbody>' + Object.keys(C).filter(k => k !== 'fallow').map(k => { const c = C[k]; return '<tr><td>' + c.name + '</td><td>' + c.fam + '</td><td class="num">' + c.kc[1] + '</td><td class="num">' + (c.heatT ? c.heatT + ' °C' : '') + '</td><td class="num">' + (c.gdd ? c.gdd + ' °C days' + (c.base !== undefined ? ' above ' + c.base + ' °C' : ' above 0 °C from 1 Jan') : '') + '</td><td class="num">' + c.nfix + ' kg N/ha</td><td class="num">' + c.res + ' of 5</td><td class="num">' + c.dt + ' of 5</td></tr>'; }).join('') + '</tbody></table>';
+    const stockUI = () => { $('stockbox').hidden = !S.stockOn; $('stockmsg').innerHTML = herd(); };
+    const mUI = () => { const m = margin(); $('mout').innerHTML = 'Margin about <b>€' + r0(m).toLocaleString('en') + ' per ha</b>' + (S.area ? ', <b>€' + r0(m * S.area).toLocaleString('en') + '</b> a year on ' + S.area + ' ha. A ' + S.maxDrop + '% drop is about €' + r0(m * S.area * S.maxDrop / 100).toLocaleString('en') + ' a year.' : '.') + ' Rough defaults are for wheat; enter your own.'; $('maxdropv').textContent = S.maxDrop + '% a year' + (m && S.area ? ' (≈ €' + r0(m * S.area * S.maxDrop / 100).toLocaleString('en') + ')' : ''); };
+    window.syncExtra = () => { $('area').value = S.area; $('stock').checked = S.stockOn; $('stype').value = S.stockType; $('sn').value = S.stockN; $('maxdrop').value = S.maxDrop; $('my').value = S.mY; $('mp').value = S.mP; $('mc').value = S.mC; stockUI(); mUI(); };
+    let xt = null; const later = () => { clearTimeout(xt); xt = setTimeout(recompute, 400); };
+    $('area').oninput = e => { S.area = Math.max(0, +e.target.value || 0); stockUI(); mUI(); later(); };
+    $('stype').onchange = e => { S.stockType = e.target.value; stockUI(); later(); };
+    $('sn').oninput = e => { S.stockN = Math.max(0, +e.target.value || 0); stockUI(); later(); };
+    $('maxdrop').oninput = e => { S.maxDrop = +e.target.value; mUI(); later(); };
+    ['my', 'mp', 'mc'].forEach(id => $(id).oninput = e => { S[{ my: 'mY', mp: 'mP', mc: 'mC' }[id]] = +e.target.value || 0; mUI(); later(); });
+    window.syncExtra();
     $('irrig').onchange = e => { S.irrigated = e.target.checked; recompute(); };
-    $('stock').onchange = e => { S.livestock = e.target.checked; recompute(); };
+    $('stock').onchange = e => { S.stockOn = e.target.checked; stockUI(); recompute(); };
     $('srain').oninput = e => { S.scen.rain = +e.target.value; $('srainv').textContent = (S.scen.rain > 0 ? '+' : '') + S.scen.rain + '%'; recompute(); };
     $('stemp').oninput = e => { S.scen.temp = +e.target.value; $('stempv').textContent = '+' + S.scen.temp + '°'; recompute(); };
     $('addyr').onclick = () => { if (S.rot.length < 6) { S.rot.push({ c: 'soy', cv: null }); renderRot(); recompute(); } };
@@ -771,7 +802,7 @@
     document.addEventListener('click', e => { const q = e.target.closest('[data-term]'); if (q) { e.stopPropagation(); explainTerm(q.dataset.term); } }, true);
     $('modal').addEventListener('click', e => { if (e.target.id === 'modal' || e.target.closest('[data-close]')) closeModal(); const o = e.target.closest('#mbox [data-sel]'); if (o) { S.sel = +o.dataset.sel; S.animOpt = true; closeModal(); render(); $('scroll').scrollTop = 0; } });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-    $('soil').addEventListener('change', soilTxt); soilTxt();
+    $('soil').addEventListener('change', () => { soilTxt(); suggest(); }); soilTxt();
     $('wizback').onclick = () => { if (S.wiz > 0) wizard(S.wiz - 1); };
     $('wiznext').onclick = () => { if (WIZ[S.wiz][0] === 'field') { const la = parseFloat($('lat').value), lo = parseFloat($('lon').value); if (!(isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180)) { $('lat').focus(); $('lat').classList.add('bad'); return; } $('lat').classList.remove('bad'); if (Math.abs(la - S.lat) > 1e-4 || Math.abs(lo - S.lon) > 1e-4) setPlace(la, lo, null, true); }
      if (S.wiz < WIZ.length - 1) wizard(S.wiz + 1); else if (S.exp == null) askExp(wizEnd); else wizEnd(); };

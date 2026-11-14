@@ -263,7 +263,8 @@
     seedCost: { q: 'Paying for cover crop seed', lo: 'Can’t afford it', hi: 'Fine' },
     incomeDip: { q: 'Earning less for a year or two', lo: 'Can’t afford it', hi: 'Fine if it pays off later' },
     moreWork: { q: 'More field work', lo: 'Already stretched', hi: 'Have the time' },
-    experimental: { q: 'Trying something new and less tested', lo: 'Only proven methods', hi: 'Happy to experiment' }
+    experimental: { q: 'Trying something new and less tested', lo: 'Only proven methods', hi: 'Happy to experiment' },
+    market: { q: 'Selling a large amount of a niche crop', lo: 'No market for it', hi: 'Have a contract' }
   };
   function adjust(s, need, acc) {
     let pen = 0; const blocked = [];

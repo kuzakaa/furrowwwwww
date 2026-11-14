@@ -354,7 +354,7 @@ body.wiz .setup{width:min(600px,calc(100vw - 24px))}
 body.wiz.wacc .setup,body.wiz.wpri .setup{width:min(900px,calc(100vw - 24px))}
 body.wiz.wacc #acc,body.wiz.wpri #weights,body.wiz.wpri #weights2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
 @media (max-width:760px){body.wiz.wacc #acc,body.wiz.wpri #weights,body.wiz.wpri #weights2{display:block}}
-button.why{background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:2px 10px;font-size:13.5px;cursor:pointer;margin:2px 0}
+button.why{background:rgba(168,224,138,.08);border:1px solid rgba(168,224,138,.4);color:var(--ink);border-radius:999px;padding:6px 14px;font-size:16px;font-weight:600;cursor:pointer;margin:4px 0}
 .explain{display:none;background:rgba(220,245,225,.08);border-radius:12px;padding:10px 14px;margin:4px 0 10px}
 .explain.on{display:block;animation:paneIn .3s ease both}
 .explain p{margin:4px 0}
@@ -548,3 +548,14 @@ body.wiz.wfree #free{height:64px;min-height:0}
 .tgrid .ask{margin-top:10px;border-top:0;padding-top:0}
 .tgrid .bigbtn{margin-top:16px}
 @media (max-width:820px){.tgrid{grid-template-columns:1fr;gap:6px}.tgrid .ask{border-top:1px solid var(--line);padding-top:10px}}
+
+.sug{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:rgba(124,198,232,.1);border:1px solid rgba(124,198,232,.35);border-radius:12px;padding:8px 12px;margin:6px 0 4px;font-size:15px}
+.usebtn{padding:6px 14px!important;font-size:14.5px}
+.inuse{color:var(--em);font-weight:600;font-size:14px}
+
+.explain a,.box p.small a{color:var(--em);font-weight:600}
+.money{margin:-4px 0 14px;padding:10px 14px;border-radius:12px;font-size:16.5px;background:rgba(220,245,225,.07)}
+.money.up b{color:var(--em)}.money.dn b{color:var(--red)}
+.calc{margin-top:8px}.calc>summary{cursor:pointer;color:var(--em);font-weight:600;font-size:15px}
+.calc .row{margin-top:8px}
+#stockbox{background:rgba(220,245,225,.06);border-radius:12px;padding:8px 12px;margin:6px 0}
