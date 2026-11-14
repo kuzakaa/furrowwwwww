@@ -682,3 +682,5 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 .sug.live{background:rgba(163,230,53,.08);border-color:rgba(163,230,53,.35)}
 
 .checkq{display:flex;align-items:center;gap:8px}.checkq .check{margin:0}
+
+.mrow.even{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mrow.even .btn{width:100%;margin:0}

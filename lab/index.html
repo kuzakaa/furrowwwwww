@@ -694,6 +694,8 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 
 .checkq{display:flex;align-items:center;gap:8px}.checkq .check{margin:0}
 
+.mrow.even{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mrow.even .btn{width:100%;margin:0}
+
 </style>
 </head>
 <body class="intro" data-view="results" data-tab="result">
@@ -1873,7 +1875,7 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
     keys.forEach(k => { $('a_' + k).oninput = e => { S.acc[k] = +e.target.value; $('av_' + k).textContent = e.target.value + ' of 5'; clearTimeout(drawAcc.t); drawAcc.t = setTimeout(recompute, 300); }; });
   }
   function askExp(done) {
-    $('mbox').innerHTML = '<h2>Include experimental strategies?</h2><p>Some practices are still in trials, disputed in the literature, or untested in your region, for example two crops in one year or a legume sown into standing wheat. Evidence is weaker; they are marked separately.</p><div class="mrow"><button class="btn bigbtn" id="expy">Include them</button><button class="btn ghost bigbtn" id="expn">Established only</button></div>';
+    $('mbox').innerHTML = '<h2>Show some newer ideas too?</h2><p>Besides proven rotations, we can add a few newer practices that farmers are starting to try, like two harvests in one year or sowing clover into growing wheat.</p><p>They can work well, but there is less experience with them so far, so we mark them with a small label.</p><div class="mrow even"><button class="btn bigbtn" id="expy">Yes, show them</button><button class="btn bigbtn" id="expn">Proven ones only</button></div>';
     $('modal').classList.add('on');
     $('expy').onclick = () => { S.exp = true; $('modal').classList.remove('on'); recompute(); done(); };
     $('expn').onclick = () => { S.exp = false; $('modal').classList.remove('on'); recompute(); done(); };
