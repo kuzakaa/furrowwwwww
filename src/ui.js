@@ -198,19 +198,41 @@
   }
 
   const KEY = 'furrow:choices1';
+  const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights });
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights, done: !S.intro && S.wiz == null })); } catch (e) {}
+    try { localStorage.setItem(KEY, JSON.stringify(Object.assign(choices(), { done: !S.intro && S.wiz == null }))); } catch (e) {}
+  }
+  function shareLink() {
+    return location.origin + location.pathname + '#r=' + btoa(unescape(encodeURIComponent(JSON.stringify(choices())))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function fromLink() {
+    const m = /^#r=([A-Za-z0-9_-]+)$/.exec(location.hash); if (!m) return null;
+    try { const v = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))))); v.done = true; history.replaceState(null, '', location.pathname + location.search); return v; } catch (e) { return null; }
   }
   function restore() {
-    let v; try { v = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; }
-    if (!v || !v.done || !isFinite(v.lat) || !isFinite(v.lon) || !Array.isArray(v.rot) || !v.rot.length || v.rot.some(r => !C[r.c])) return null;
+    let v = fromLink(); if (!v) { try { v = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
+    if (!v || !v.done || !isFinite(v.lat) || !isFinite(v.lon) || Math.abs(v.lat) > 70 || Math.abs(v.lon) > 180 || !Array.isArray(v.rot) || !v.rot.length || v.rot.length > 6 || v.rot.some(r => !r || !C[r.c])) return null;
     S.rot = v.rot.map(r => ({ c: r.c, cv: CV[r.cv] ? r.cv : null }));
     if (E.SOILS[v.soil]) S.soil = v.soil; if (E.SLOPES[v.slope]) S.slope = v.slope; if (E.TILLAGE[v.till]) S.till = v.till;
-    S.irrigated = !!v.irrigated; S.livestock = !!v.livestock; S.exclude = new Set((v.exclude || []).filter(k => C[k] || CV[k]));
-    DIMS.forEach(d => { const w = v.weights && v.weights[d[0]]; if (w >= 0 && w <= 5) S.weights[d[0]] = w; $('w_' + d[0]).value = S.weights[d[0]]; $('wv_' + d[0]).textContent = S.weights[d[0]]; });
+    S.irrigated = !!v.irrigated; S.livestock = !!v.livestock; S.exclude = new Set((Array.isArray(v.exclude) ? v.exclude : []).filter(k => C[k] || CV[k]));
+    DIMS.forEach(d => { const w = v.weights && v.weights[d[0]]; if (w >= 0 && w <= 5) S.weights[d[0]] = Math.round(w); $('w_' + d[0]).value = S.weights[d[0]]; $('wv_' + d[0]).textContent = S.weights[d[0]]; });
     $('soil').value = S.soil; $('slope').value = S.slope; $('till').value = S.till; $('irrig').checked = S.irrigated; $('stock').checked = S.livestock;
     document.querySelectorAll('#excl .chip').forEach(b => b.setAttribute('aria-pressed', S.exclude.has(b.dataset.id) ? 'true' : 'false'));
     renderRot(); return v;
+  }
+  function sheet(A) {
+    const cl = A.cl, all = [A.current].concat(A.alts), best = A.alts[0], list = all.concat(A.others).slice().sort((p, q) => q.match - p.match);
+    const yes = b => b ? 'yes' : 'no', ex = Array.from(S.exclude).map(k => (C[k] || CV[k]).short).join(', ');
+    let h = '<h1>Furrow: rotation summary</h1><p class="meta">' + esc(S.name) + ', ' + Math.abs(S.lat).toFixed(2) + '°' + (S.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(S.lon).toFixed(2) + '°' + (S.lon < 0 ? 'W' : 'E') + '. Made on ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + ' at kuzakaa.github.io/furrow</p>';
+    h += '<h2>What you told us</h2><table><tbody><tr><th>Rotation now</th><td>' + esc(E.rotLabel(S.rot)) + '</td></tr><tr><th>Soil</th><td>' + E.SOILS[S.soil].name + ', slope: ' + E.SLOPES[S.slope].name.toLowerCase() + ', ' + E.TILLAGE[S.till].name.toLowerCase() + '</td></tr><tr><th>Irrigation / livestock</th><td>' + yes(S.irrigated) + ' / ' + yes(S.livestock) + '</td></tr><tr><th>What matters (0 to 5)</th><td>' + DIMS.map(d => d[1] + ' ' + S.weights[d[0]]).join(', ') + '</td></tr>' + (ex ? '<tr><th>Ruled out</th><td>' + esc(ex) + '</td></tr>' : '') + '</tbody></table>';
+    h += '<h2>How the rotations rank</h2><table><thead><tr><th>Option</th><th>Rotation</th><th>Match</th>' + DIMS.map(d => '<th>' + d[1] + '</th>').join('') + '<th>Beats yours in</th></tr></thead><tbody>' + list.map(s => '<tr><td>' + esc(s.name) + '</td><td>' + esc(E.rotLabel(s.rot)) + '</td><td><b>' + r0(s.match) + '</b></td>' + DIMS.map(d => '<td>' + s.sc[d[0]] + '</td>').join('') + '<td>' + (s.boot ? Math.round(s.boot.win * 100) + '% of reshuffles' : '') + '</td></tr>').join('') + '</tbody></table>';
+    if (best) {
+      const x = explain(best, A);
+      h += '<h2>Best match: ' + esc(best.name) + '</h2><p>' + x.why + '</p><h3>What the data says (yours now → this option)</h3><ul>' + x.ev.map(e => '<li>' + e + '</li>').join('') + '</ul><h3>Double-check this locally first</h3><ul>' + x.rev.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul><h3>What we can’t know from here</h3><ul>' + x.gaps.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul>';
+    }
+    h += '<h2>Weather here, ' + cl.years[0].label + ' to ' + cl.years[cl.n - 1].label + '</h2><table><thead><tr><th>Measure</th><th>Average</th><th>8 years out of 10</th><th>Trend per decade</th></tr></thead><tbody>' + cl.indicators.map(i => '<tr><td>' + i.name + '</td><td>' + i.mean.toFixed(i.digits) + ' ' + i.unit + '</td><td>' + i.lo.toFixed(i.digits) + ' to ' + i.hi.toFixed(i.digits) + '</td><td>' + (i.trend.perDecade > 0 ? '+' : '') + i.trend.perDecade.toFixed(i.digits ? 1 : 0) + ', ' + TREND[i.trend.label] + '</td></tr>').join('') + (cl.noFrost ? '' : '<tr><td>Typical frost dates</td><td colspan="3">last in spring ' + cl.fmtDay(cl.lastFrost) + ', first in autumn ' + cl.fmtDay(cl.firstFrost) + '</td></tr>') + '</tbody></table>';
+    h += '<h2>Read this before acting</h2><p>Furrow replays each rotation through ' + cl.n + ' years of NASA POWER weather for this spot. That weather describes an area about 50 km wide, not one field. Soil health and easy-to-sell are rough scores, crop numbers are generic, and nobody has checked this model against field trials. Use it to start a conversation with an agronomist or adviser, and try any change on a strip first. NASA does not endorse this tool.</p>';
+    $('sheet').innerHTML = h;
   }
 
   const TABS = [['result', 'Result'], ['climate', 'Weather'], ['calendar', 'Calendar'], ['options', 'Options'], ['years', 'Bad years'], ['method', 'How it works']];
@@ -245,6 +267,7 @@
       R += '<p class="conf"><b>' + w + ' out of 100.</b> We reshuffled the ' + cl.n + ' years ' + bt.runs + ' times, and this rotation still beat yours in ' + w + '% of them' + (bt.win >= 0.9 ? ', so it’s not just down to a couple of weird years.' : bt.win >= 0.7 ? '. So it’s probably better, but not for sure.' : '. So honestly the two are about the same.') + ' The gap goes from ' + (bt.lo > 0 ? '+' : '') + bt.lo.toFixed(1) + ' to ' + (bt.hi > 0 ? '+' : '') + bt.hi.toFixed(1) + ' points in 8 out of 10 runs.</p>';
       R += '<p class="why">' + explain(best, A).why + '</p><button class="link" data-go="options">See all the rotations side by side</button>';
     } else R += '<p class="why">Un-cross a few crops under “Crops you can’t grow or sell” and we’ll have something to compare.</p>';
+    R += '<div class="acts"><button class="btn ghost" data-act="print">Print or save as PDF</button><button class="btn ghost" data-act="share">Copy a link to this result</button><span id="shared" class="small muted"></span></div>';
     R += '<p class="fine">How to read this: every score goes from 0 to 100 and comes from replaying the rotation through ' + cl.n + ' years of NASA weather for this spot. The match score is the average, weighted by what you said matters. A few points’ difference doesn’t mean much. NASA’s weather grid is about 50 km wide (the dashed box on the map), so this is your area’s weather, not exactly your field’s. Soil health and easy-to-sell are rough guesses, not measurements.</p>';
     let Cm = '<h2>The last ' + cl.n + ' years here</h2><p class="sub">Daily NASA POWER data, ' + cl.years[0].label + ' to ' + cl.years[cl.n - 1].label + '. One point per year, and the dashed line is the trend. A coloured dot means it’s changing. Tap a line to see any year.</p>';
     for (const i of cl.indicators) {
@@ -290,6 +313,7 @@
       Yh += '<p class="fine">“Early” is ' + yt.firstLabel + ' to ' + cl.years[yt.half - 1].label + '; “recent” is ' + yt.midLabel + ' to ' + yt.lastLabel + '. ' + (yt.fallback ? 'The clustering model split these years very unevenly (one group had fewer than three years), so the groups shown use a simpler rule: the driest, middle and wettest thirds by rain minus demand. The two methods agreed on ' + yt.agree + ' of the ' + cl.n + ' years.' : 'A simpler rule (the driest, middle and wettest thirds by rain minus demand) puts ' + yt.agree + ' of the ' + cl.n + ' years in the same group as the clustering model, so ' + (yt.agree >= cl.n * 0.75 ? 'the grouping is not an artefact of one method' : 'the two methods disagree on a fair number of years and the groups are fuzzy') + '.') + ' With only ' + cl.n + ' seasons each group is small. So take it as a pattern to talk over with someone local, not a forecast.</p>';
     } else Yh = '<p class="sub">Not enough seasons to group.</p>';
     if (!S.keepAnim) $('scroll').classList.remove('anim'); S.keepAnim = false;
+    sheet(A);
     $('out').innerHTML = pane('result', R) + pane('climate', Cm) + pane('calendar', K) + pane('options', O) + pane('years', Yh);
     story();
   }
@@ -545,7 +569,11 @@
     window.addEventListener('scroll', () => tip.classList.remove('on'), true);
     $('out').addEventListener('click', e => {
       const o = e.target.closest('[data-sel]'); if (o) { S.sel = +o.dataset.sel; S.animOpt = true; S.keepAnim = $('scroll').classList.contains('anim'); render(); return; }
-      const g = e.target.closest('[data-go]'); if (g) setTab(g.dataset.go);
+      const g = e.target.closest('[data-go]'); if (g) { setTab(g.dataset.go); return; }
+      const act = e.target.closest('[data-act]'); if (!act) return;
+      if (act.dataset.act === 'print') { window.print(); return; }
+      const link = shareLink(), box = $('shared'), done = () => { box.textContent = 'Link copied. Anyone who opens it sees this exact result.'; }, manual = () => { box.innerHTML = 'Copy this: <input readonly value="' + esc(link) + '" style="width:220px">'; const i = box.querySelector('input'); i.focus(); i.select(); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, manual); else manual();
     });
     $('weights').innerHTML = DIMS.map(d => '<div class="slider"><label for="w_' + d[0] + '">' + d[1] + '</label><input id="w_' + d[0] + '" type="range" min="0" max="5" step="1" value="3"><span class="num" id="wv_' + d[0] + '">3</span></div>').join('');
     DIMS.forEach(d => { $('w_' + d[0]).oninput = e => { S.weights[d[0]] = +e.target.value; $('wv_' + d[0]).textContent = e.target.value; recompute(); }; });

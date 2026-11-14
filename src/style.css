@@ -325,3 +325,22 @@ svg rect:has(> title):hover,svg circle:has(> title):hover{filter:brightness(1.25
 .yb:hover i{filter:brightness(1.2)}
 .kp:hover p,.lnk:hover{color:#fff}
 .lnk{cursor:pointer;text-decoration:underline;text-decoration-color:rgba(240,236,220,.25);text-underline-offset:3px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0 0}
+#sheet{display:none}
+@media print{
+  html,body{height:auto;overflow:visible;background:#fff;color:#111;font-size:11pt}
+  body > *:not(#sheet){display:none!important}
+  #sheet{display:block;padding:0;max-width:none}
+  #sheet h1{font-size:20pt;color:#111;margin:0 0 4pt}
+  #sheet h2{font-size:13pt;color:#111;margin:14pt 0 5pt;border-bottom:1pt solid #999;padding-bottom:2pt}
+  #sheet h3{font-size:11pt;color:#111;margin:9pt 0 3pt}
+  #sheet p,#sheet li,#sheet td,#sheet th{color:#111}
+  #sheet .meta{color:#444}
+  #sheet b{color:#000}
+  #sheet table{font-size:9.5pt;margin-bottom:4pt}
+  #sheet th,#sheet td{border-bottom:.5pt solid #bbb;padding:3pt 6pt 3pt 0;color:#111}
+  #sheet th{font-size:9pt;color:#333}
+  #sheet ul{gap:2pt}
+  #sheet h2,#sheet h3{break-after:avoid}
+  #sheet table,#sheet ul{break-inside:avoid}
+}
