@@ -99,11 +99,11 @@
     })();
   }
   function suggest() {
-    const sp = S.terrain ? Math.round(S.terrain.typical * 2) / 2 : null;
+    const sp = S.terrain ? Math.round(S.terrain.typical * 10) / 10 : null;
     if (S.soilSug && !S.demo && !S.touched.soil) { S.soil = S.soilSug.cls; $('soil').value = S.soil; soilTxt(); }
     if (S.terrain && !S.demo && !S.touched.slope) setSlope(sp);
     $('sugsoil').innerHTML = S.soilSug ? '<div class="sug"><span>Soil map (SoilGrids): <b>' + E.SOILS[S.soilSug.cls].name + '</b>, ' + r0(S.soilSug.sand) + '% sand, ' + r0(S.soilSug.clay) + '% clay</span>' + (S.soil !== S.soilSug.cls ? '<button class="btn usebtn" data-use="soil">Use this</button>' : '<span class="inuse">In use</span>') + '</div>' : '';
-    $('sugslope').innerHTML = S.terrain ? '<div class="sug"><span>Elevation data: typical slope <b>' + S.terrain.typical.toFixed(1) + '%</b>, steepest ' + S.terrain.steepest.toFixed(1) + '%</span>' + (Math.abs(S.slopePct - sp) > 0.01 ? '<button class="btn usebtn" data-use="slope">Use this</button>' : '<span class="inuse">In use</span>') + '</div>' : '';
+    $('sugslope').innerHTML = S.terrain ? '<div class="sug"><span>Elevation data: typical slope <b>' + S.terrain.typical.toFixed(1) + '%</b>, steepest ' + S.terrain.steepest.toFixed(1) + '%</span>' + (Math.abs(S.slopePct - Math.round(S.terrain.typical * 10) / 10) > 0.01 ? '<button class="btn usebtn" data-use="slope">Use this</button>' : '<span class="inuse">In use</span>') + '</div>' : '';
     if ((S.soilSug || S.terrain) && !S.demo) recompute();
   }
   let req = 0;
@@ -222,7 +222,7 @@
     return 'Your animals eat about <b>' + r0(need) + ' t</b> of hay a year. Two years of alfalfa in your rotation on ' + (S.area || 0) + ' ha would give about <b>' + r0(supply) + ' t</b> a year, so about <b>' + Math.round(use * 100) + '%</b> would be used' + (S.livestock ? '. Alfalfa counts as feed for your own animals.' : '. That is too little to count alfalfa as feed; it would need a hay buyer.');
   }
   function margin() { return Math.max(0, (S.mY || 0) * (S.mP || 0) - (S.mC || 0)); }
-  function setSlope(p) { S.slopePct = Math.max(0, Math.min(20, +p || 0)); S.slope = 'custom'; E.SLOPES.custom = { name: S.slopePct + '%', f: Math.max(0.3, Math.min(3, S.slopePct / 4)) }; if ($('slopep')) { $('slopep').value = S.slopePct; $('slopev').textContent = S.slopePct + '%'; } }
+  function setSlope(p) { S.slopePct = Math.round(Math.max(0, Math.min(20, +p || 0)) * 10) / 10; S.slope = 'custom'; E.SLOPES.custom = { name: S.slopePct + '%', f: Math.max(0.3, Math.min(3, S.slopePct / 4)) }; if ($('slopep')) { $('slopep').value = S.slopePct; if (document.activeElement !== $('slopev')) $('slopev').value = S.slopePct; } }
   const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights, area: S.area, fw: S.fw, fl: S.fl, stockOn: S.stockOn, stockType: S.stockType, stockN: S.stockN, maxDrop: S.maxDrop, mY: S.mY, mP: S.mP, mC: S.mC, slopePct: S.slopePct, later: S.later, years: S.years, w2: S.w2, acc: S.acc, text: S.text, exp: S.exp });
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(Object.assign(choices(), { done: !S.intro && S.wiz == null }))); } catch (e) {}
@@ -904,8 +904,9 @@
     $('excl').innerHTML = ex.map(x => '<button class="chip" data-id="' + x[0] + '" aria-pressed="false">' + x[1] + '</button>').join('');
     document.querySelectorAll('#excl .chip').forEach(b => b.onclick = () => { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); if (on) S.exclude.add(b.dataset.id); else S.exclude.delete(b.dataset.id); recompute(); });
     $('slopep').oninput = e => { setSlope(e.target.value); S.touched.slope = true; recompute(); suggest(); };
+    $('slopev').oninput = e => { if (e.target.value === '') return; setSlope(e.target.value); S.touched.slope = true; clearTimeout(window._st); window._st = setTimeout(() => { recompute(); suggest(); }, 300); };
     ['soil', 'till'].forEach(id => { $(id).onchange = e => { S[id] = e.target.value; S.touched[id] = true; suggest(); recompute(); }; });
-    $('setup').addEventListener('click', e => { if (!e.target.closest('#sugsoil, #sugslope')) return; const b = e.target.closest('[data-use]'); if (!b) return; if (b.dataset.use === 'soil') { S.soil = S.soilSug.cls; $('soil').value = S.soil; } else { setSlope(Math.round(S.terrain.typical * 2) / 2); } S.touched[b.dataset.use] = true; suggest(); recompute(); });
+    $('setup').addEventListener('click', e => { if (!e.target.closest('#sugsoil, #sugslope')) return; const b = e.target.closest('[data-use]'); if (!b) return; if (b.dataset.use === 'soil') { S.soil = S.soilSug.cls; $('soil').value = S.soil; } else { setSlope(Math.round(S.terrain.typical * 10) / 10); } S.touched[b.dataset.use] = true; suggest(); recompute(); });
     $('croptab').innerHTML = '<table><thead><tr><th>Crop</th><th>Family</th><th>Peak water use (Kc)</th><th>Heat limit</th><th>Warmth to mature</th><th>Nitrogen credit</th><th>Residue</th><th>Drought tolerance</th></tr></thead><tbody>' + Object.keys(C).filter(k => k !== 'fallow').map(k => { const c = C[k]; return '<tr><td>' + c.name + '</td><td>' + c.fam + '</td><td class="num">' + c.kc[1] + '</td><td class="num">' + (c.heatT ? c.heatT + ' °C' : '') + '</td><td class="num">' + (c.gdd ? c.gdd + ' °C days' + (c.base !== undefined ? ' above ' + c.base + ' °C' : ' above 0 °C from 1 Jan') : '') + '</td><td class="num">' + c.nfix + ' kg N/ha</td><td class="num">' + c.res + ' of 5</td><td class="num">' + c.dt + ' of 5</td></tr>'; }).join('') + '</tbody></table>';
     const stockUI = () => { $('stockbox').hidden = !S.stockOn; $('stockmsg').innerHTML = herd(); };
     const mUI = () => { const m = margin(); $('mout').innerHTML = 'Margin about <b>€' + r0(m).toLocaleString('en') + ' per ha</b>' + (S.area ? ', <b>€' + r0(m * S.area).toLocaleString('en') + '</b> a year on ' + S.area + ' ha. A ' + S.maxDrop + '% drop is about €' + r0(m * S.area * S.maxDrop / 100).toLocaleString('en') + ' a year.' : '.') + ' Rough defaults are for wheat; enter your own.'; $('maxdropv').textContent = S.maxDrop + '% a year' + (m && S.area ? ' (≈ €' + r0(m * S.area * S.maxDrop / 100).toLocaleString('en') + ')' : ''); };
