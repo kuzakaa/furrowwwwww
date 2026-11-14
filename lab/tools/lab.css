@@ -238,3 +238,13 @@ tr:hover td:first-child{background:#18442f}
 .cell{min-width:46px!important;padding:4px 8px!important;border-radius:8px!important;font-weight:600}
 .card.scroll{padding:6px 0}
 .card.scroll table{margin:0}
+
+#cres table tr>td:first-child,#orc tr>td:first-child,#orc tr>th:first-child{position:static;background:none;min-width:0;font-weight:500;color:#dbeadb}
+#cres td{font-size:1rem;padding:9px 12px}
+#cres td.n{text-align:right;font-weight:700;color:#fff}
+#cres tr:last-child td{font-size:1.15rem;color:#c6f5a3}
+#cres tr:last-child td b{color:#c6f5a3}
+#crops td:nth-last-child(-n+2){min-width:170px;font-size:.88rem;line-height:1.35}
+#crops tr>td:first-child{min-width:140px}
+#veg td:last-child{min-width:260px;font-size:.9rem;line-height:1.4}
+#veg tr>td:first-child{min-width:180px}
