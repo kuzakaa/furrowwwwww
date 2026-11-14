@@ -408,7 +408,7 @@
   }
   function terrainHTML(T) {
     const c = 46, col = v => v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#3E8E5A'; let g = '';
-    T.slopes.forEach((v, i) => { const x = (i % T.n) * c, y = Math.floor(i / T.n) * c; g += '<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (c - 2) + '" height="' + (c - 2) + '" rx="3" fill="' + col(v) + '"' + (T.low[i] ? ' stroke="#7CC6E8" stroke-width="3"' : '') + '><title>' + r0(T.z[i]) + ' m, slope ' + v.toFixed(1) + '%' + (T.low[i] ? ', low spot' : '') + '</title></rect><text x="' + (x + c / 2) + '" y="' + (y + c / 2 + 4) + '" text-anchor="middle" font-size="11" fill="#10231A">' + r0(T.z[i]) + '</text>'; });
+    T.slopes.forEach((v, i) => { const x = (i % T.n) * c, y = Math.floor(i / T.n) * c; if (T.mask && !(T.mask[i] > 0)) return; g += '<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (c - 2) + '" height="' + (c - 2) + '" rx="3" fill="' + col(v) + '"' + (T.low[i] ? ' stroke="#7CC6E8" stroke-width="3"' : '') + '><title>' + r0(T.z[i]) + ' m, slope ' + v.toFixed(1) + '%' + (T.low[i] ? ', low spot' : '') + '</title></rect><text x="' + (x + c / 2) + '" y="' + (y + c / 2 + 4) + '" text-anchor="middle" font-size="11" fill="#10231A">' + r0(T.z[i]) + '</text>'; });
     return '<h2>The ground in your field</h2><div class="terr"><svg viewBox="0 0 ' + c * T.n + ' ' + c * T.n + '" role="img" aria-label="Elevation and slope on a 5 by 5 grid over the field">' + g + '</svg><div><p>Across a ' + (T.step * T.n / 1000).toFixed(2).replace(/0$/, '') + ' km square the ground runs from <b>' + r0(T.min) + ' m</b> to <b>' + r0(T.max) + ' m</b>. Typical slope is <b>' + T.typical.toFixed(1) + '%</b>, the steepest part <b>' + T.steepest.toFixed(1) + '%</b>.</p><p>' + (T.steepCells ? '<b>' + T.steepCells + ' of ' + (T.cells || T.slopes.length) + '</b> squares slope more than 6%. Heavy rain on bare soil does the most damage there, so those are the places where cover matters most.' : 'No square slopes more than 6%, so runoff speed is not the main erosion driver here.') + '</p><p>' + (T.lowCells ? '<b>' + T.lowCells + '</b> low ' + (T.lowCells === 1 ? 'spot is' : 'spots are') + ' outlined in blue. Cold air settles in hollows, so frost can come later in spring and earlier in autumn there than the district dates suggest.' : 'No marked hollows where cold air would pool.') + '</p><div class="legend"><span><i style="background:#3E8E5A"></i>under 2%</span><span><i style="background:#F2A541"></i>2 to 6%</span><span><i style="background:#F2907E"></i>over 6%</span><span><i style="background:none;box-shadow:inset 0 0 0 2px #7CC6E8"></i>low spot</span></div></div></div><p class="fine">Numbers are metres above sea level. Source: Copernicus 90 m elevation model (ESA), read through Open-Meteo. Too coarse for a field survey; use it to know where to look.</p>';
   }
   function spark(i, cl) {
@@ -725,6 +725,22 @@
   function fBounds() { return [[S.lat - S.fS / M, S.lon - S.fW / (M * cosl())], [S.lat + S.fN / M, S.lon + S.fE / (M * cosl())]]; }
   function inPoly(la, lo) { const P = S.poly; if (!P || P.length < 3) return true; let inside = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const yi = P[i][0], xi = P[i][1], yj = P[j][0], xj = P[j][1]; if ((yi > la) !== (yj > la) && lo < (xj - xi) * (la - yi) / (yj - yi) + xi) inside = !inside; } return inside; }
   function polyArea(P) { const c = Math.cos(P[0][0] * Math.PI / 180); let a = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) a += (P[j][1] * M * c) * (P[i][0] * M) - (P[i][1] * M * c) * (P[j][0] * M); return Math.abs(a / 2); }
+  function clipRect(P, s0, w0, n0, e0) {
+    let out = P.map(p => [p[0], p[1]]);
+    const edges = [[p => p[1] >= w0, (a, b) => { const t = (w0 - a[1]) / (b[1] - a[1]); return [a[0] + t * (b[0] - a[0]), w0]; }], [p => p[1] <= e0, (a, b) => { const t = (e0 - a[1]) / (b[1] - a[1]); return [a[0] + t * (b[0] - a[0]), e0]; }], [p => p[0] >= s0, (a, b) => { const t = (s0 - a[0]) / (b[0] - a[0]); return [s0, a[1] + t * (b[1] - a[1])]; }], [p => p[0] <= n0, (a, b) => { const t = (n0 - a[0]) / (b[0] - a[0]); return [n0, a[1] + t * (b[1] - a[1])]; }]];
+    for (const [inside, cut] of edges) { const inp = out; out = []; if (!inp.length) break; for (let i = 0; i < inp.length; i++) { const a = inp[(i + inp.length - 1) % inp.length], b = inp[i]; if (inside(b)) { if (!inside(a)) out.push(cut(a, b)); out.push(b); } else if (inside(a)) out.push(cut(a, b)); } }
+    return out;
+  }
+  function cellGeo(N) {
+    const b = fBounds(), h = (b[1][0] - b[0][0]) / N, w = (b[1][1] - b[0][1]) / N, out = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const n0 = b[1][0] - r * h, s0 = n0 - h, w0 = b[0][1] + c * w, e0 = w0 + w, rect = [[s0, w0], [n0, w0], [n0, e0], [s0, e0]];
+      if (!S.poly || S.poly.length < 3) { out.push({ shape: rect, wt: 1 }); continue; }
+      const cl = clipRect(S.poly, s0, w0, n0, e0), wt = cl.length >= 3 ? Math.min(1, polyArea(cl) / polyArea(rect)) : 0;
+      out.push({ shape: cl, wt: wt > 0.005 ? wt : 0 });
+    }
+    return out;
+  }
   function cellCenters(N) { const b = fBounds(), h = (b[1][0] - b[0][0]) / N, w = (b[1][1] - b[0][1]) / N, out = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) out.push([b[1][0] - (r + 0.5) * h, b[0][1] + (c + 0.5) * w]); return out; }
   function terrainR(z, N, sx, sy, mask) {
     const at = (r, c) => z[r * N + c], slopes = [];
@@ -733,14 +749,16 @@
       const dx = (at(r, c1) - at(r, c0)) / ((c1 - c0) * sx), dy = (at(r1, c) - at(r0, c)) / ((r1 - r0) * sy);
       slopes.push(100 * Math.sqrt(dx * dx + dy * dy));
     }
-    const idx = slopes.map((v, i) => i).filter(i => mask[i]), zs = idx.map(i => z[i]), sl = idx.map(i => slopes[i]);
-    const mu = E.mean(zs), srt = zs.slice().sort((a, b) => a - b), cut = srt[Math.floor(0.15 * (srt.length - 1))], low = z.map((v, i) => mask[i] && v <= cut && v <= mu - 2);
-    const ss = sl.slice().sort((a, b) => a - b), q75 = ss[Math.floor(0.75 * (ss.length - 1))];
-    return { n: N, sx, sy, step: (sx + sy) / 2, z, slopes, low, mask, min: Math.min.apply(null, zs), max: Math.max.apply(null, zs), typical: E.median(sl), steepest: Math.max.apply(null, sl), steepCells: sl.filter(v => v > 6).length, lowCells: low.filter(Boolean).length, cells: idx.length, cls: q75 > 6 ? 'steep' : q75 >= 2 ? 'gentle' : 'flat' };
+    const idx = slopes.map((v, i) => i).filter(i => mask[i] > 0), zs = idx.map(i => z[i]), sl = idx.map(i => slopes[i]), wsum = idx.reduce((a, i) => a + mask[i], 0);
+    const wmed = arr => { const o = arr.map((v, k) => [v, mask[idx[k]]]).sort((a, b) => a[0] - b[0]); let acc = 0; for (const [v, wt] of o) { acc += wt; if (acc >= wsum / 2) return v; } return o.length ? o[o.length - 1][0] : 0; };
+    const wq = (arr, q) => { const o = arr.map((v, k) => [v, mask[idx[k]]]).sort((a, b) => a[0] - b[0]); let acc = 0; for (const [v, wt] of o) { acc += wt; if (acc >= wsum * q) return v; } return o.length ? o[o.length - 1][0] : 0; };
+    const mu = idx.reduce((a, i) => a + z[i] * mask[i], 0) / wsum, cut = wq(zs, 0.15), low = z.map((v, i) => mask[i] > 0 && v <= cut && v <= mu - 2);
+    const q75 = wq(sl, 0.75), sh = v => Math.round(v * 10) / 10;
+    return { n: N, sx, sy, step: (sx + sy) / 2, z, slopes, low, mask, min: Math.min.apply(null, zs), max: Math.max.apply(null, zs), typical: wmed(sl), steepest: Math.max.apply(null, sl), steepCells: idx.filter(i => slopes[i] > 6).length, lowCells: low.filter(Boolean).length, cells: idx.length, steepShare: idx.filter(i => slopes[i] > 6).reduce((a, i) => a + mask[i], 0) / wsum, area: wsum, cls: q75 > 6 ? 'steep' : q75 >= 2 ? 'gentle' : 'flat' };
   }
   function loadTerrain() {
     fieldInit();
-    const id = ++treq, lat = S.lat, lon = S.lon, N = S.poly ? 7 : 5, sx = (S.fE + S.fW) / N, sy = (S.fN + S.fS) / N, cc = cellCenters(N), mask = cc.map(p => inPoly(p[0], p[1]));
+    const id = ++treq, lat = S.lat, lon = S.lon, N = S.poly ? 7 : 5, sx = (S.fE + S.fW) / N, sy = (S.fN + S.fS) / N, cc = cellCenters(N), mask = cellGeo(N).map(g => g.wt);
     if (!mask.some(Boolean)) return;
     const k = 'furrowz2:' + cc.map(p => p[0].toFixed(5) + ',' + p[1].toFixed(5)).join(';');
     (async () => {
@@ -830,8 +848,8 @@
   }
   function drawZones() {
     if (!map) return; zones.forEach(z => map.removeLayer(z)); zones = []; const T = S.terrain; if (!T || S.intro) return; fieldInit();
-    const b = fBounds(), N = T.n, h = (b[1][0] - b[0][0]) / N, w = (b[1][1] - b[0][1]) / N;
-    T.slopes.forEach((v, i) => { const r = Math.floor(i / N), c = i % N, top = b[1][0] - r * h, left = b[0][1] + c * w; if (!inPoly(top - h / 2, left + w / 2)) return; const z = window.L.rectangle([[top - h, left], [top, left + w]], { stroke: true, color: T.low[i] ? '#7CC6E8' : 'rgba(255,255,255,.85)', weight: T.low[i] ? 3 : 1.2, fillColor: v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#5FBF73', fillOpacity: 0.42, interactive: true }).addTo(map); z.bindTooltip(v.toFixed(1) + '% slope' + (T.low[i] ? ', low spot' : ''), { direction: 'top' }); zones.push(z); });
+    const N = T.n, geo = cellGeo(N);
+    T.slopes.forEach((v, i) => { const g = geo[i]; if (!g || !g.wt) return; const z = window.L.polygon(g.shape, { stroke: true, color: T.low[i] ? '#7CC6E8' : 'rgba(255,255,255,.85)', weight: T.low[i] ? 3 : 1.2, fillColor: v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#5FBF73', fillOpacity: 0.42, interactive: true }).addTo(map); z.bindTooltip(v.toFixed(1) + '% slope' + (T.low[i] ? ', low spot' : '') + (g.wt < 0.99 ? ', ' + Math.round(g.wt * 100) + '% of this square is in your field' : ''), { direction: 'top' }); zones.push(z); });
     if (frect) frect.bringToFront(); if (fpoly) fpoly.bringToFront();
   }
   function setPlaying(on) { playing = on; $('play').textContent = on ? 'Pause tour' : 'Play tour'; $('play').setAttribute('aria-pressed', on ? 'true' : 'false'); }
