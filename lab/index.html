@@ -1925,7 +1925,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     $('askf').onsubmit = ev => { ev.preventDefault(); const q = $('askq').value.trim(); if (q) showAnswer(q); };
     $('mbox').querySelectorAll('[data-ask]').forEach(b => b.onclick = () => showAnswer(b.dataset.ask));
   }
-  function soilTxt() { if ($('soiltxt')) $('soiltxt').textContent = SOILTXT[S.soil] || ''; }
+  function soilTxt() { if ($('soiltxt')) $('soiltxt').textContent = SOILTXT[S.soil] ? 'In your case: ' + SOILTXT[S.soil].charAt(0).toLowerCase() + SOILTXT[S.soil].slice(1) : ''; }
   function showUnd() {
     const r = window.Lab ? Lab.parseConstraints(S.text) : [];
     $('und').innerHTML = r.length ? '<b>Applied:</b><ul>' + r.map(x => '<li><b>' + esc(x.tag) + '.</b> ' + esc(x.why) + '</li>').join('') + '</ul>' : (S.text.trim() ? '<span class="muted">Nothing recognised yet. The text is kept with your choices.</span>' : '');
@@ -2238,7 +2238,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
         : soaked ? 'the soil is very wet. Heavy machinery now will pack it down and smear it, which hurts roots for years. Wait a few dry days before field work, and keep the ground covered so rain doesn\'t wash soil away.'
         : tm < 5 ? 'the soil has enough water, but it is too cold for most crops to grow. Winter crops already in the ground are fine; spring sowing has to wait for warmer days.'
         : 'water and warmth are in a normal range. Sowing and field work can go ahead as planned.';
-      box.innerHTML = '<div class="sug live"><span><b>Your field over the last 30 days</b> (Meteomatics): ' + r0(rain) + ' mm of rain, ' + r0(et) + ' mm of water lost from soil and plants, average ' + (sum(t) / t.length).toFixed(1) + ' °C' + (wet ? ', topsoil now <b>' + wet + '</b>' : '') + '. ' + (bal >= 0 ? 'Rain covered what the field used, with ' + r0(bal) + ' mm to spare.' : 'The field used ' + r0(-bal) + ' mm more than it got, so the soil is drying out.') + '<br><b>What this means now:</b> ' + advice + '</span></div>';
+      box.innerHTML = '<div class="sug live"><span><b>Your field over the last 30 days</b>: ' + r0(rain) + ' mm of rain, ' + r0(et) + ' mm of water lost from soil and plants, average ' + (sum(t) / t.length).toFixed(1) + ' °C' + (wet ? ', topsoil now <b>' + wet + '</b>' : '') + '. ' + (bal >= 0 ? 'Rain covered what the field used, with ' + r0(bal) + ' mm to spare.' : 'The field used ' + r0(-bal) + ' mm more than it got, so the soil is drying out.') + '<br><b>What this means now:</b> ' + advice + '</span></div>';
       extraSat(lat, lon);
     }).catch(() => { if (lat === S.lat && lon === S.lon) box.innerHTML = ''; });
   }
@@ -2249,12 +2249,12 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     if (h.copernicus) fetch(PROXY + '/sentinel' + q + '&from=' + d(90) + '&to=' + d(1)).then(r => r.json()).then(j => {
       const s = (j.series || []).filter(x => x[1] > -1); if (!s.length) return;
       const last = s[s.length - 1], v = last[1], word = v < 0.2 ? 'mostly bare soil' : v < 0.4 ? 'sparse plants' : v < 0.6 ? 'moderate green cover' : 'dense green cover';
-      add('<b>Satellite view of the field</b> (Copernicus Sentinel-2, 10 m pixels, cloudy shots removed): on ' + last[0] + ' the greenness index was <b>' + v.toFixed(2) + '</b>, which means ' + word + '. ' + (v < 0.2 ? 'Bare soil over winter loses topsoil to rain and wind; a cover crop would hold it.' : 'Living plants are protecting the soil right now.'));
+      add('<b>How green your field is</b>: on ' + last[0] + ' the greenness index was <b>' + v.toFixed(2) + '</b>, which means ' + word + '. ' + (v < 0.2 ? 'Bare soil over winter loses topsoil to rain and wind; a cover crop would hold it.' : 'Living plants are protecting the soil right now.'));
     }).catch(() => {});
     if (h.earthdata) fetch(PROXY + '/grace' + q + '&from=' + d(30) + '&to=' + d(1)).then(r => r.json()).then(j => {
       if (j.groundwater == null) return;
       const ord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'), pc = Math.max(1, Math.round(j.groundwater)), word = pc < 10 ? 'very low, a drought level' : pc < 30 ? 'below normal' : pc <= 70 ? 'normal' : 'above normal';
-      add('<b>Groundwater from space</b> (NASA GRACE-FO satellites, week of ' + j.date + '): groundwater here is at the <b>' + ord(pc) + ' percentile</b> compared with the same week in 1948-2012, which is <b>' + word + '</b>.' + (j.rootzone != null ? ' Root-zone soil water: ' + ord(Math.max(1, Math.round(j.rootzone))) + ' percentile.' : '') + (pc < 30 ? ' Deep reserves are low, so a dry spring would hit harder; drought-tolerant crops and keeping residue on the ground lower the risk.' : ' Deep reserves can carry crops through a short dry spell.'));
+      add('<b>Water deep underground</b>: in the week of ' + j.date + ' groundwater here is at the <b>' + ord(pc) + ' percentile</b> compared with the same week in 1948-2012, which is <b>' + word + '</b>.' + (j.rootzone != null ? ' Root-zone soil water: ' + ord(Math.max(1, Math.round(j.rootzone))) + ' percentile.' : '') + (pc < 30 ? ' Deep reserves are low, so a dry spring would hit harder; drought-tolerant crops and keeping residue on the ground lower the risk.' : ' Deep reserves can carry crops through a short dry spell.'));
     }).catch(() => {});
     if (h.earthdata) (async () => {
       const key = 'furrow:esi:' + lat + ',' + lon; let mem = null; try { mem = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
@@ -2275,7 +2275,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
       } catch (e) {}
     })();
     if (h.earthdata) {
-      const el = add('<b>NASA SMAP soil moisture</b>: asking NASA for the last 60 days at this point. NASA queues these requests, so it can take 5 to 30 minutes; you can keep working.');
+      const el = add('<b>Soil moisture</b>: still loading, this one takes a few minutes.');
       try {
         const key = 'furrow:smap:' + lat + ',' + lon; let mem = null; try { mem = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
         let t = mem && Date.now() - mem.at < 864e5 ? mem.task : null;
