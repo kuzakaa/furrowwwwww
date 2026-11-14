@@ -819,6 +819,15 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .leaflet-control-attribution.attrfix{position:fixed!important;margin:0!important;right:auto!important;bottom:auto!important;z-index:20;white-space:nowrap}
 .mvpop .leaflet-popup-content{margin:14px 16px;font-size:16px}
 .mvrow{display:flex;gap:10px;margin-top:12px}.mvrow .btn{height:42px;padding:0 16px;font-size:15px}
+.vs{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important;align-items:stretch}
+.vs>div{display:flex!important;flex-direction:column;gap:8px;padding:12px 14px!important;border-radius:14px!important;border:1px solid var(--line)!important;background:rgba(255,255,255,.04)!important;box-shadow:none!important;min-height:0!important}
+.vs>.win{border-color:#8FD694!important;background:rgba(143,214,148,.08)!important}
+.vs .tag{all:unset;font-size:13.5px;font-weight:600;color:var(--muted)}
+.vs .win .tag{color:#8FD694}
+.vs .row2{display:flex;align-items:center;gap:12px}
+.vs .n{font-size:30px!important;line-height:1!important;font-weight:800;color:#F5FAF2!important;margin:0!important;white-space:nowrap}
+.vs .n small{font-size:13px;font-weight:600;color:var(--muted);margin-left:2px}
+.vs .l{font-size:14.5px!important;line-height:1.35;font-weight:600;margin:0!important}
 
 </style>
 </head>
@@ -1695,7 +1704,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     R += '<div class="place">' + esc(S.name) + ', ' + Math.abs(S.lat).toFixed(2) + '°' + (S.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(S.lon).toFixed(2) + '°' + (S.lon < 0 ? 'W' : 'E') + '. ' + E.SOILS[S.soil].name + ', ' + E.TILLAGE[S.till].name.toLowerCase() + '.</div>';
     R += '<h1>' + (!best ? 'We couldn’t build any other rotations from your choices' : better ? 'Best match for you: ' + esc(best.name.charAt(0).toLowerCase() + best.name.slice(1)) : 'Your rotation is already about as good as anything we tried') + '</h1>';
     if (best) {
-      R += '<div class="vs"><div class="win"><span class="tag">' + (best.match + 0.5 < A.current.match ? 'Closest alternative' : 'Best match') + '</span><span class="n">' + r0(best.match) + '</span><span class="l">' + esc(E.rotLabel(best.rot)) + '</span></div><div class="nowc"><span class="tag">What you grow now</span><span class="n">' + r0(A.current.match) + '</span><span class="l">' + esc(E.rotLabel(A.current.rot)) + '</span></div></div><p class="small muted">Scores out of 100, weighted by your priorities' + (A.acc && Object.keys(A.acc).length ? ' and adjusted for what you can take on' : '') + '.</p>';
+      R += '<div class="vs"><div class="win"><span class="tag">' + (best.match + 0.5 < A.current.match ? 'Closest alternative' : 'Best match') + '</span><span class="row2"><span class="n">' + r0(best.match) + '<small>/100</small></span><span class="l">' + esc(E.rotLabel(best.rot)) + '</span></span></div><div class="nowc"><span class="tag">What you grow now</span><span class="row2"><span class="n">' + r0(A.current.match) + '<small>/100</small></span><span class="l">' + esc(E.rotLabel(A.current.rot)) + '</span></span></div></div><p class="small muted">Scores out of 100, weighted by your priorities' + (A.acc && Object.keys(A.acc).length ? ' and adjusted for what you can take on' : '') + '.</p>';
       if (A.cons && A.cons.length) R += '<div class="note"><h4>Applied from your notes</h4><ul>' + A.cons.map(c => '<li><b>' + esc(c.tag) + '.</b> ' + esc(c.why) + '</li>').join('') + '</ul></div>';
       if (A.plan) R += '<div class="plan"><div><span class="tag">Years 1 to ' + A.plan.after + '</span><b>' + esc(A.plan.first.name) + '</b><small>' + esc(E.rotLabel(A.plan.first.rot)) + '</small></div><div><span class="tag">From year ' + (A.plan.after + 1) + '</span><b>' + esc(A.plan.then.name) + '</b><small>' + esc(E.rotLabel(A.plan.then.rot)) + '</small></div></div>' + (A.plan.first === A.plan.then ? '<p class="small muted">The same option fits both phases.</p>' : '');
       const cm = A.current.m, bm2 = best.m, hot = cl.yearTypes && cl.yearTypes.types.find(t => t.name.indexOf('Hot') === 0);
