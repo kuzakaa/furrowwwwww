@@ -684,3 +684,8 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 .checkq{display:flex;align-items:center;gap:8px}.checkq .check{margin:0}
 
 .mrow.even{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mrow.even .btn{width:100%;margin:0}
+.mbox{padding:30px 32px;box-sizing:border-box}
+.mbox h2{margin:0 0 14px;line-height:1.2}
+.mbox > p{margin:0 0 12px;line-height:1.55;text-wrap:pretty}
+.mbox .mrow.even{margin-top:24px;gap:14px}
+.mbox .mrow.even .btn{min-height:54px;padding:0 16px;font-size:17px}
