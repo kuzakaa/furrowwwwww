@@ -729,7 +729,36 @@
         : tm < 5 ? 'the soil has enough water, but it is too cold for most crops to grow. Winter crops already in the ground are fine; spring sowing has to wait for warmer days.'
         : 'water and warmth are in a normal range. Sowing and field work can go ahead as planned.';
       box.innerHTML = '<div class="sug live"><span><b>Your field over the last 30 days</b> (Meteomatics): ' + r0(rain) + ' mm of rain, ' + r0(et) + ' mm of water lost from soil and plants, average ' + (sum(t) / t.length).toFixed(1) + ' °C' + (wet ? ', topsoil now <b>' + wet + '</b>' : '') + '. ' + (bal >= 0 ? 'Rain covered what the field used, with ' + r0(bal) + ' mm to spare.' : 'The field used ' + r0(-bal) + ' mm more than it got, so the soil is drying out.') + '<br><b>What this means now:</b> ' + advice + '</span></div>';
+      extraSat(lat, lon);
     }).catch(() => { if (lat === S.lat && lon === S.lon) box.innerHTML = ''; });
+  }
+  async function extraSat(lat, lon) {
+    const same = () => lat === S.lat && lon === S.lon, d = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10), q = '?lat=' + lat + '&lon=' + lon;
+    let h; try { h = await (await fetch(PROXY + '/health')).json(); } catch (e) { return; }
+    const add = html => { if (!same()) return; const el = document.createElement('div'); el.className = 'sug live'; el.innerHTML = '<span>' + html + '</span>'; $('livewx').appendChild(el); return el; };
+    if (h.copernicus) fetch(PROXY + '/sentinel' + q + '&from=' + d(90) + '&to=' + d(1)).then(r => r.json()).then(j => {
+      const s = (j.series || []).filter(x => x[1] > -1); if (!s.length) return;
+      const last = s[s.length - 1], v = last[1], word = v < 0.2 ? 'mostly bare soil' : v < 0.4 ? 'sparse plants' : v < 0.6 ? 'moderate green cover' : 'dense green cover';
+      add('<b>Satellite view of the field</b> (Copernicus Sentinel-2, 10 m pixels, cloudy shots removed): on ' + last[0] + ' the greenness index was <b>' + v.toFixed(2) + '</b>, which means ' + word + '. ' + (v < 0.2 ? 'Bare soil over winter loses topsoil to rain and wind; a cover crop would hold it.' : 'Living plants are protecting the soil right now.'));
+    }).catch(() => {});
+    if (h.earthdata) {
+      const el = add('<b>NASA SMAP soil moisture</b>: asking NASA for the last 60 days at this point. This takes a few minutes…');
+      try {
+        const t = (await (await fetch(PROXY + '/ae/start/smap' + q + '&from=' + d(60) + '&to=' + d(3))).json()).task; if (!t) throw 0;
+        for (let i = 0; i < 30 && same(); i++) {
+          await new Promise(r => setTimeout(r, 20000));
+          const st = (await (await fetch(PROXY + '/ae/status/' + t)).json()).status;
+          if (st === 'done') {
+            const s = ((await (await fetch(PROXY + '/ae/result/' + t)).json()).series || []); if (!s.length) throw 0;
+            const v = s.map(x => x[1]), avg = v.reduce((a, b) => a + b, 0) / v.length, now = v[v.length - 1];
+            el.innerHTML = '<span><b>NASA SMAP root-zone soil moisture</b> (0-100 cm, 9 km grid): now <b>' + Math.round(now * 100) + '%</b> water by volume, ' + Math.round(avg * 100) + '% on average over 60 days. ' + (now < avg - 0.02 ? 'The deeper soil is drying.' : now > avg + 0.02 ? 'The deeper soil is getting wetter.' : 'The deeper soil is steady.') + ' This is the water roots can still reach after the surface dries.</span>';
+            return;
+          }
+          if (st === 'error') throw 0;
+        }
+        throw 0;
+      } catch (e) { if (el) el.remove(); }
+    }
   }
   function setPlace(lat, lon, demo, keep) {
     lon = ((lon + 180) % 360 + 360) % 360 - 180; lat = Math.max(-60, Math.min(70, lat));
