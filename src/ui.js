@@ -23,7 +23,7 @@
     if (!r.ok) throw new Error('NASA POWER answered with status ' + r.status + '.');
     const raw = E.parsePower(await r.json());
     if (raw.n < 365 * 10) throw new Error('NASA POWER returned too little data for this point.');
-    try { localStorage.setItem(key, JSON.stringify(raw)); } catch (e) {}
+    cset(key, raw);
     return raw;
   }
   async function getJSON(url, ms) {
@@ -31,7 +31,13 @@
     try { const r = await fetch(url, { signal: c.signal, headers: { Accept: 'application/json' } }); if (!r.ok) throw new Error('status ' + r.status); return await r.json(); } finally { clearTimeout(t); }
   }
   const cget = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
-  const cset = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const cset = (k, v) => {
+    const val = JSON.stringify(v), big = /^furrow[x]?1:/.test(k);
+    if (big) { const pre = k.slice(0, k.indexOf(':') + 1), old = Object.keys(localStorage).filter(q => q.indexOf(pre) === 0 && q !== k); if (old.length >= 4) old.forEach(q => localStorage.removeItem(q)); }
+    try { localStorage.setItem(k, val); } catch (e) {
+      try { Object.keys(localStorage).filter(q => /^furrow[x]?1:/.test(q) && q !== k).forEach(q => localStorage.removeItem(q)); localStorage.setItem(k, val); } catch (e2) {}
+    }
+  };
   function extras(id) {
     const lat = S.lat, lon = S.lon, k = lat.toFixed(2) + ',' + lon.toFixed(2);
     (async () => {
@@ -70,7 +76,8 @@
       try {
         let g = cget('furrows1:' + k);
         if (!g) {
-          const j = await getJSON('https://rest.isric.org/soilgrids/v2.0/properties/query?lon=' + lon + '&lat=' + lat + '&property=clay&property=sand&depth=0-5cm&depth=5-15cm&depth=15-30cm&value=mean', 12000);
+          const url = 'https://rest.isric.org/soilgrids/v2.0/properties/query?lon=' + lon + '&lat=' + lat + '&property=clay&property=sand&depth=0-5cm&depth=5-15cm&depth=15-30cm&value=mean';
+          let j; try { j = await getJSON(url, 25000); } catch (e) { j = await getJSON(url, 30000); }
           const val = name => { const L = j.properties.layers.find(x => x.name === name), f = (L.unit_measure && L.unit_measure.d_factor) || 10, v = L.depths.map(d => d.values.mean).filter(x => x !== null && isFinite(x)); return v.length ? E.mean(v) / f : NaN; };
           g = { sand: val('sand'), clay: val('clay') }; if (!(g.sand >= 0 && g.clay >= 0 && g.sand + g.clay <= 100.5) || g.sand + g.clay === 0) return; cset('furrows1:' + k, g);
         }
@@ -274,13 +281,13 @@
 
     const yt = cl.yearTypes; let Yh = '';
     if (yt) {
-      Yh = '<h2>How each rotation copes in different kinds of year</h2><p class="sub">A clustering model (k-means) sorted the ' + cl.n + ' growing seasons into three kinds by warm-season rain, evaporative demand and hot days. Bars show the share of crop water demand that went unmet. Shorter is better.</p>';
+      Yh = '<h2>How each rotation copes in different kinds of year</h2><p class="sub">The ' + cl.n + ' growing seasons are sorted into three kinds by warm-season rain, evaporative demand and hot days' + (yt.fallback ? '' : ', using a clustering model (k-means)') + '. Bars show the share of crop water demand that went unmet. Shorter is better.</p>';
       for (const t of yt.types) {
         Yh += '<div class="ytype"><div class="hd"><h3>' + t.name + '</h3><span class="small muted">' + t.early + ' of ' + yt.half + ' early years, ' + t.late + ' of ' + (cl.n - yt.half) + ' recent</span></div><div class="yrs">' + r0(t.rain) + ' mm rain, ' + r0(t.et0) + ' mm demand, ' + r0(t.hot) + ' days over 32 °C. ' + t.labels.join(', ') + '</div>';
         for (const q of all) { const v = E.mean(t.idx.map(i => q.m.relByYear[i])); Yh += '<div class="yb"><span>' + esc(q.name) + '</span><span><i style="width:' + Math.min(100, Math.max(1, v * 200)) + '%"></i></span><span class="num">' + pc(v) + '</span></div>'; }
         Yh += '</div>';
       }
-      Yh += '<p class="fine">“Early” is ' + yt.firstLabel + ' to ' + cl.years[yt.half - 1].label + '; “recent” is ' + yt.midLabel + ' to ' + yt.lastLabel + '. A simpler rule (the driest, middle and wettest thirds by rain minus demand) puts ' + yt.agree + ' of the ' + cl.n + ' years in the same group as the clustering model, so ' + (yt.agree >= cl.n * 0.75 ? 'the grouping is not an artefact of one method' : 'the two methods disagree on a fair number of years and the groups are fuzzy') + '. With only ' + cl.n + ' seasons each group is small. Read this as a pattern to discuss with a local adviser, not a forecast.</p>';
+      Yh += '<p class="fine">“Early” is ' + yt.firstLabel + ' to ' + cl.years[yt.half - 1].label + '; “recent” is ' + yt.midLabel + ' to ' + yt.lastLabel + '. ' + (yt.fallback ? 'The clustering model split these years very unevenly (one group had fewer than three years), so the groups shown use a simpler rule: the driest, middle and wettest thirds by rain minus demand. The two methods agreed on ' + yt.agree + ' of the ' + cl.n + ' years.' : 'A simpler rule (the driest, middle and wettest thirds by rain minus demand) puts ' + yt.agree + ' of the ' + cl.n + ' years in the same group as the clustering model, so ' + (yt.agree >= cl.n * 0.75 ? 'the grouping is not an artefact of one method' : 'the two methods disagree on a fair number of years and the groups are fuzzy') + '.') + ' With only ' + cl.n + ' seasons each group is small. Read this as a pattern to discuss with a local adviser, not a forecast.</p>';
     } else Yh = '<p class="sub">Not enough seasons to group.</p>';
     if (!S.keepAnim) $('scroll').classList.remove('anim'); S.keepAnim = false;
     $('out').innerHTML = pane('result', R) + pane('climate', Cm) + pane('calendar', K) + pane('options', O) + pane('years', Yh);
@@ -431,15 +438,15 @@
   function intro() {
     const el = $('intro'), off = () => { document.body.classList.remove('intro'); S.intro = false; introPick = null; };
     if (!el) { off(); return; }
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.remove(); off(); return; }
+    const calm = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     S.intro = true; let phase = 1, tick, y = 2001, pins = [];
     const fmt = c => Math.abs(c.lat).toFixed(2) + '°' + (c.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(c.lng).toFixed(2) + '°' + (c.lng < 0 ? 'W' : 'E');
     if (map) {
-      map.setView([DEMOS[0].lat, DEMOS[0].lon], 5.5, { animate: false });
+      map.setView([DEMOS[0].lat, DEMOS[0].lon], calm ? 9.5 : 5.5, { animate: false });
       const ll = $('introll'), upd = () => { ll.textContent = fmt(map.getCenter()); }; upd(); map.on('move', upd);
     }
     const bar = $('introbar'), yr = $('introyr'), big = $('introbig');
-    setTimeout(() => {
+    if (!calm) setTimeout(() => {
       bar.style.transition = 'transform 2.6s linear'; bar.style.transform = 'scaleX(1)';
       tick = setInterval(() => { yr.textContent = y; big.textContent = y; if (++y > 2025) clearInterval(tick); }, 104);
       if (map && phase === 1) map.flyTo([DEMOS[0].lat, DEMOS[0].lon], 9.5, { duration: 3.4, easeLinearity: 0.1 });
@@ -457,8 +464,8 @@
       if (phase === 3) return; phase = 3; clearInterval(tick); el.classList.add('choose', 'go');
       setPlace(lat, lon, demo);
       const far = map && map.distance(map.getCenter(), [S.lat, S.lon]) > 60000;
-      if (map) { map.stop(); map.flyTo([S.lat, S.lon], 12, { duration: far ? 3 : 1.5, easeLinearity: 0.15 }); }
-      setTimeout(end, map ? (far ? 2750 : 1300) : 150);
+      if (map) { map.stop(); if (calm) map.setView([S.lat, S.lon], 12, { animate: false }); else map.flyTo([S.lat, S.lon], 12, { duration: far ? 3 : 1.5, easeLinearity: 0.15 }); }
+      setTimeout(end, map && !calm ? (far ? 2750 : 1300) : 150);
     };
     const choose = () => {
       if (phase !== 1) return; phase = 2; el.classList.add('choose'); introPick = pick;
@@ -466,7 +473,8 @@
     };
     $('introchips').addEventListener('click', e => { const b = e.target.closest('[data-demo]'); if (b) { e.stopPropagation(); const d = DEMOS.find(x => x.id === b.dataset.demo); pick(d.lat, d.lon, d); } });
     $('introgo').onclick = e => { e.stopPropagation(); if (map) { const c = map.getCenter(); const d = DEMOS.find(x => Math.abs(x.lat - c.lat) < 0.02 && Math.abs(x.lon - c.lng) < 0.02); pick(c.lat, c.lng, d || null); } else pick(DEMOS[0].lat, DEMOS[0].lon, DEMOS[0]); };
-    setTimeout(choose, 4200); el.addEventListener('click', e => { if (phase === 1) choose(); });
+    if (calm) choose(); else setTimeout(choose, 4200);
+    el.addEventListener('click', e => { if (phase === 1) choose(); });
   }
   let map, marker, cell, overlay, co = [], step = 0, playing = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const GIBS = { ndvi: ['MODIS_Terra_NDVI_8Day', 'GoogleMapsCompatible_Level9', 'png', 9], smap: ['SMAP_L4_Analyzed_Root_Zone_Soil_Moisture', 'GoogleMapsCompatible_Level6', 'png', 6], imerg: ['IMERG_Precipitation_Rate', 'GoogleMapsCompatible_Level6', 'png', 6] };

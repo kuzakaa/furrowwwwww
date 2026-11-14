@@ -166,6 +166,14 @@
       asg = Z.map(z => { let b = 0, bd = 1e9; cen.forEach((c, k) => { const dd = c.reduce((s, v, j) => s + (v - z[j]) ** 2, 0); if (dd < bd) { bd = dd; b = k; } }); return b; });
       cen = cen.map((c, k) => { const mem = Z.filter((_, i) => asg[i] === k); return mem.length ? [0, 1, 2].map(j => mean(mem.map(m => m[j]))) : c; });
     }
+    const rule = new Array(n); order.forEach((i, pos) => { rule[i] = pos < n / 3 ? 0 : pos < 2 * n / 3 ? 1 : 2; });
+    const sizes = [0, 1, 2].map(k => asg.filter(v => v === k).length), fallback = Math.min.apply(null, sizes) < 3;
+    let agree0 = null;
+    if (fallback) {
+      const rk = [0, 1, 2].sort((a, b) => (cen[a][0] - cen[a][1]) - (cen[b][0] - cen[b][1])), lab0 = asg.map(a => rk.indexOf(a));
+      agree0 = lab0.filter((l, i) => l === rule[i]).length; asg = rule.slice();
+      cen = [0, 1, 2].map(k => { const mem = Z.filter((_, i) => asg[i] === k); return [0, 1, 2].map(j => mean(mem.map(m => m[j]))); });
+    }
     const rank = [0, 1, 2].sort((a, b) => (cen[a][0] - cen[a][1]) - (cen[b][0] - cen[b][1]));
     const names = ['Hot, dry years', 'Typical years', 'Cool, wet years'], half = Math.floor(n / 2);
     const types = rank.map((k, r) => {
@@ -173,9 +181,8 @@
       return { name: names[r], idx, count: idx.length, early: idx.filter(i => i < half).length, late: idx.filter(i => i >= half).length, rain: mean(idx.map(i => years[i].wRain)), et0: mean(idx.map(i => years[i].wEt0)), hot: mean(idx.map(i => years[i].hot32)), labels: idx.map(i => years[i].label) };
     }).filter(t => t.count > 0);
     const lab = new Array(n); rank.forEach((k, r) => asg.forEach((a, i) => { if (a === k) lab[i] = r; }));
-    const rule = new Array(n); order.forEach((i, pos) => { rule[i] = pos < n / 3 ? 0 : pos < 2 * n / 3 ? 1 : 2; });
-    const agree = lab.filter((l, i) => l === rule[i]).length;
-    return { types, half, agree, firstLabel: years[0].label, midLabel: years[half].label, lastLabel: years[n - 1].label };
+    const agree = fallback ? agree0 : lab.filter((l, i) => l === rule[i]).length;
+    return { types, half, agree, fallback, firstLabel: years[0].label, midLabel: years[half].label, lastLabel: years[n - 1].label };
   }
 
   function gddDay(tx, tn, base) { const hi = clip(tx, base, 30), lo = clip(tn, base, 30); return (hi + lo) / 2 - base; }

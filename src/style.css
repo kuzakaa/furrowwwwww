@@ -23,8 +23,9 @@ button,select,input{font:inherit;color:inherit}
 .setup{position:fixed;top:64px;left:12px;bottom:12px;width:340px;z-index:4;border-radius:18px;overflow:auto;padding:2px 16px}
 .res{position:fixed;top:64px;right:12px;bottom:12px;width:clamp(460px,44vw,740px);z-index:4;border-radius:18px;display:flex;flex-direction:column;overflow:hidden}
 .mapbox{position:fixed;left:364px;bottom:12px;z-index:4;border-radius:14px;padding:8px 10px;display:flex;gap:8px;align-items:flex-end}
-.mapbox .field{min-width:0}
-.mapbox select{width:190px}
+.mapbox .field{min-width:0;flex:none}
+.mapbox select{width:200px}
+.mapbox input[type=date]{width:150px}
 .leaflet-top.leaflet-left{top:64px;left:364px}
 .leaflet-bar a{background:#171816!important;color:#EEF2E6!important;border-color:rgba(240,236,220,.13)!important}
 .leaflet-control-attribution{background:rgba(23,24,22,.75)!important;color:#A8A89C!important}
@@ -305,7 +306,7 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
   body.wiz .setup{top:auto;bottom:12px;left:50%;right:auto;transform:translateX(-50%);max-height:62vh;padding:18px 18px 16px;animation-name:wizUp}
   @keyframes wizUp{from{opacity:0;transform:translate(-50%,18px)}to{opacity:1;transform:translate(-50%,0)}}
 }
-@media (prefers-reduced-motion:reduce){#intro{display:none}.anim .pane,.optd.in,details[open] > *:not(summary),body[data-view=field] .setup{animation:none}.ink{transition:none}html{scroll-behavior:auto}}
+@media (prefers-reduced-motion:reduce){#intro,#intro *,#intro::before,body.wiz .setup,body.wiz .box.cur{animation:none!important;transition:none!important}.anim .pane,.optd.in,details[open] > *:not(summary),body[data-view=field] .setup{animation:none}.ink{transition:none}html{scroll-behavior:auto}}
 .conf{margin:14px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;color:var(--ink);max-width:70ch}
 .conf b{font-family:var(--display);font-size:20px;color:#fff;margin-right:6px}
 .terr{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:18px;align-items:start;margin-top:10px}
