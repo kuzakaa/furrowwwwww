@@ -71,7 +71,7 @@
     const res = {}, all = SCEN.concat(more); res.scen = all;
     all.forEach(sc => {
       const cl = E.buildClimate(raw, inp.lat, sc), cal = E.calendar(cl);
-      if (sc.id === 'base') { res.cl = cl; res.cal = cal; res.list = strategies(inp.rot, cal, inp.till); }
+      if (sc.id === 'base') { res.cl = cl; res.cal = cal; res.list = strategies(inp.rot, cal, inp.till).concat(inp.exp ? experimental(inp.rot, cal, inp.till) : []).filter((s, i, a) => a.findIndex(o => JSON.stringify(o.rot) === JSON.stringify(s.rot) && o.till === s.till) === i).filter(s => !s.rot.some(r => (inp.avoid || []).includes(r.c)) || s.id === 'current'); }
       res.list.forEach(s => {
         const r = E.simulate(s.rot, cl, cal, Object.assign({}, inp, { till: s.till }));
         const score = E.match(r.sc, inp.weights);
@@ -216,6 +216,116 @@
     return { votes, recs };
   }
 
-  const API = { MODELS, projections, IPCC, inputLevel, carbonIPCC, calibrate, errors, calFor, withPatch, ndviYears, corr, oracle, rainChange, pack, unpack, fromIssues, summarise, SCEN, INFO, strategies, run, extra, parseFarm, compareFarm, doyOf, credits };
+
+  const CROPINFO = {
+    wheat: { cost: 3, machinery: 2, market: 5, stable: 4, niche: 1, nNeed: 4, water: 3, root: 3, roles: ['Covers soil over winter'], buyers: 'Mills, feed, export' },
+    corn: { cost: 5, machinery: 4, market: 5, stable: 3, niche: 1, nNeed: 5, water: 5, root: 3, roles: ['Lots of residue'], buyers: 'Feed, ethanol, export' },
+    soy: { cost: 3, machinery: 3, market: 4, stable: 3, niche: 2, nNeed: 1, water: 4, root: 3, roles: ['Fixes nitrogen'], buyers: 'Crushers, feed, export' },
+    sunflower: { cost: 3, machinery: 3, market: 4, stable: 3, niche: 2, nNeed: 3, water: 2, root: 5, roles: ['Deep roots', 'Handles drought'], buyers: 'Oil crushers' },
+    sorghum: { cost: 2, machinery: 3, market: 2, stable: 3, niche: 3, nNeed: 3, water: 1, root: 4, roles: ['Handles drought', 'Deep roots'], buyers: 'Feed, some food and biofuel' },
+    oats: { cost: 2, machinery: 2, market: 3, stable: 3, niche: 3, nNeed: 2, water: 3, root: 2, roles: ['Breaks disease cycles of wheat'], buyers: 'Feed, food mills, horses' },
+    pea: { cost: 2, machinery: 2, market: 3, stable: 3, niche: 3, nNeed: 1, water: 2, root: 2, roles: ['Fixes nitrogen', 'Harvested early'], buyers: 'Feed, protein makers, export' },
+    canola: { cost: 4, machinery: 3, market: 4, stable: 3, niche: 2, nNeed: 4, water: 3, root: 4, roles: ['Deep tap root', 'Breaks grass disease cycles'], buyers: 'Oil crushers, biodiesel' },
+    alfalfa: { cost: 3, machinery: 4, market: 2, stable: 4, niche: 4, nNeed: 1, water: 5, root: 5, roles: ['Fixes nitrogen', 'Very deep roots', 'Covers soil all year'], buyers: 'Livestock farms, hay buyers' },
+    fallow: { cost: 1, machinery: 1, market: 0, stable: 0, niche: 0, nNeed: 0, water: 1, root: 0, roles: ['Stores some water'], buyers: 'Nothing to sell' }
+  };
+
+  const EXPERIMENTAL = {
+    doublecrop: { name: 'Two crops in one year (wheat, then a summer legume)', why: 'Some farms now sow a short summer crop right after the wheat harvest instead of leaving the field empty.', ev: 'Common in the US Midwest and spreading in Ukraine as summers get longer. We model the second crop as a legume cover, so income from it is not counted.', risk: 'Only works if there is enough rain in July and August. Very new in most of Europe.', since: 'Tried for decades in warm regions, new further north' },
+    multimix: { name: 'Mixed cover crops in every gap', why: 'Instead of one cover crop, a mix of several species (legume, grass, brassica) is sown.', ev: 'Researchers mostly agree mixes give more soil life, but they argue about whether it is worth the higher seed cost.', risk: 'Seed is expensive and mixes are harder to kill before the next crop.', since: 'Spreading fast in the last 10 years' },
+    relay: { name: 'Legume sown into the standing wheat', why: 'Clover or pea is sown into the wheat in spring, so it is already growing when the wheat is cut.', ev: 'Trials in Europe and North America show it covers the soil faster than sowing after harvest.', risk: 'Needs a special drill or broadcasting and a wet spring. Few farms in the region have tried it.', since: 'Still in trials in most places' }
+  };
+
+  function experimental(cur, cal, till) {
+    const out = [], has = id => cur.some(r => r.c === id), cp = rot => rot.map(r => ({ c: r.c, cv: r.cv || null }));
+    if (has('wheat')) out.push({ id: 'doublecrop', name: EXPERIMENTAL.doublecrop.name, rot: cp(cur).map(r => r.c === 'wheat' ? { c: 'wheat', cv: 'legmix' } : r), till, exp: true });
+    out.push({ id: 'multimix', name: EXPERIMENTAL.multimix.name, rot: cp(cur).map(r => C[r.c] && C[r.c].kind !== 'perennial' && r.c !== 'fallow' ? { c: r.c, cv: 'legmix' } : r), till, exp: true });
+    if (has('wheat')) out.push({ id: 'relay', name: EXPERIMENTAL.relay.name, rot: cp(cur).map(r => r.c === 'wheat' ? { c: 'wheat', cv: 'legmix' } : r), till: till === 'conv' ? 'reduced' : till, exp: true });
+    return out;
+  }
+
+  function needs(s, cur) {
+    const curC = new Set(cur.map(r => r.c)), newC = s.rot.map(r => r.c).filter(c => !curC.has(c) && c !== 'fallow');
+    const n = {};
+    if (s.till === 'notill') n.equipment = 'a no-till drill';
+    if (s.rot.some(r => r.c === 'alfalfa')) n.equipment = (n.equipment ? n.equipment + ' and ' : '') + 'hay machinery';
+    if (newC.length) { n.newCrop = newC.map(c => C[c].short.toLowerCase()).join(', '); n.newBuyer = n.newCrop; }
+    if (s.rot.some(r => r.cv)) n.seedCost = 'cover crop seed every year';
+    if (s.rot.some(r => r.c === 'alfalfa') || s.rot.length > cur.length) n.incomeDip = 'a year or two with a lower-value crop';
+    if (s.x && s.x.ops > 1.2) n.moreWork = 'about ' + s.x.ops + ' sowings a year instead of 1';
+    if (s.exp) n.experimental = 'a method few farms near you have tried';
+    return n;
+  }
+  const ACCEPT = {
+    equipment: { q: 'Buying or renting new machinery', lo: 'Not possible now', hi: 'No problem' },
+    newCrop: { q: 'Learning to grow a crop you haven’t grown', lo: 'Rather not', hi: 'Happy to' },
+    newBuyer: { q: 'Finding a new buyer for a new crop', lo: 'No buyer nearby', hi: 'Easy for me' },
+    seedCost: { q: 'Paying for cover crop seed', lo: 'Can’t afford it', hi: 'Fine' },
+    incomeDip: { q: 'Earning less for a year or two', lo: 'Can’t afford it', hi: 'Fine if it pays off later' },
+    moreWork: { q: 'More field work', lo: 'Already stretched', hi: 'Have the time' },
+    experimental: { q: 'Trying something new and less tested', lo: 'Only proven methods', hi: 'Happy to experiment' }
+  };
+  function adjust(s, need, acc) {
+    let pen = 0; const blocked = [];
+    for (const k in need) { const a = acc[k] == null ? 3 : acc[k]; if (a === 0) blocked.push(k); pen += (5 - a) * 1.2; }
+    return { pen: Math.round(pen * 10) / 10, blocked, final: Math.round((s.match - pen) * 10) / 10 };
+  }
+
+  const RULES = [
+    { re: /fuel|diesel|petrol|gas(oline)?|бензин|топлив|дизел|пальн/i, tag: 'Short of fuel', act: { prefer: 'notill', ops: true }, why: 'Fewer passes over the field. No-till uses the least fuel.' },
+    { re: /combine|harvester|комбайн/i, tag: 'No reliable combine', act: { prefer: 'forage', avoidNew: true }, why: 'Keep crops you can already harvest; hay crops need no combine.' },
+    { re: /money|cash|credit|loan|budget|afford|денег|деньг|кредит|бюджет|грош/i, tag: 'Tight money', act: { acc: { equipment: 1, seedCost: 2, incomeDip: 0 } }, why: 'We push down options that need buying things or a dip in income.' },
+    { re: /drill|seeder|сеялк|сівалк/i, tag: 'No no-till drill', act: { acc: { equipment: 0 } }, why: 'No-till options need one, so they go down.' },
+    { re: /worker|labou?r|people|staff|time|рабоч|людей|времен|працівн/i, tag: 'Short of hands or time', act: { acc: { moreWork: 1 } }, why: 'Options with more field work go down.' },
+    { re: /water|irrigat|drought|dry|полив|засух|вод/i, tag: 'Water is the worry', act: { w: { water: 5, resilience: 4 } }, why: 'Saving water now counts most.' },
+    { re: /allerg|аллерг|алерг/i, tag: 'Allergy concern', act: { avoid: ['canola', 'sunflower', 'alfalfa'] }, why: 'Crops with lots of pollen or dust are left out. Tell a doctor which plants cause it.' },
+    { re: /buyer|market|sell|export|price|tariff|рынок|продат|покупат|экспорт|тариф|ціна|цен/i, tag: 'Selling is hard', act: { acc: { newBuyer: 1 }, w: { income: 5 } }, why: 'We keep to crops with many buyers.' },
+    { re: /storage|silo|склад|хранен|зберіган/i, tag: 'Little storage', act: { acc: { newCrop: 2 } }, why: 'New crops may need their own storage, so they go down.' },
+    { re: /animal|livestock|cattle|cow|скот|коров|худоб/i, tag: 'Has livestock', act: { livestock: true }, why: 'Hay crops like alfalfa become worth more.' },
+    { re: /no animal|without livestock|нет скот|без скот/i, tag: 'No livestock', act: { avoid: ['alfalfa'] }, why: 'Without animals or a hay buyer alfalfa is hard to sell.' },
+    { re: /rent|lease|аренд|оренд/i, tag: 'Rented land', act: { acc: { incomeDip: 1 } }, why: 'Long-term soil gains may not pay back on rented land.' },
+    { re: /organic|органи/i, tag: 'Organic farm', act: { w: { soil: 5 } }, why: 'Legumes and covers matter more without bought fertiliser.' }
+  ];
+  function parseConstraints(text) {
+    const out = []; if (!text) return out;
+    RULES.forEach(r => { if (r.re.test(text)) out.push(r); });
+    return out;
+  }
+
+  function plan(list, wNow, wLater, nYears) {
+    const by = w => list.slice().sort((a, b) => E.match(b.sc, w) - E.match(a.sc, w))[0];
+    const a = by(wNow), b = by(wLater);
+    return { first: a, then: b, switchAfter: nYears, same: a.id === b.id };
+  }
+
+  function qc(rows) {
+    const keep = [], drop = [];
+    rows.forEach(r => {
+      if (!r.crop) return drop.push(Object.assign({ why: 'unknown crop' }, r));
+      if (r.sowDiff == null) return drop.push(Object.assign({ why: 'no sowing date' }, r));
+      if (Math.abs(r.sowDiff) > 60 || (r.harvDiff != null && Math.abs(r.harvDiff) > 60)) return drop.push(Object.assign({ why: 'more than 2 months off, probably a typo' }, r));
+      keep.push(r);
+    });
+    const by = {}; keep.forEach(r => (by[r.crop] = by[r.crop] || []).push(r));
+    const final = [];
+    for (const c in by) {
+      const v = by[c].map(r => r.sowDiff).sort((a, b) => a - b), med = v[Math.floor(v.length / 2)], mad = v.map(x => Math.abs(x - med)).sort((a, b) => a - b)[Math.floor(v.length / 2)] || 5;
+      by[c].forEach(r => Math.abs(r.sowDiff - med) > 3 * Math.max(mad, 5) && by[c].length >= 3 ? drop.push(Object.assign({ why: 'far from the other records for this crop' }, r)) : final.push(r));
+    }
+    return { keep: final, drop };
+  }
+
+  function confidence(list, inp, n) {
+    let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, B = 300, cur = list.find(s => s.id === 'current');
+    const ip = s => Object.assign({}, inp, { till: s.till }), idxs = Array.from({ length: B }, () => Array.from({ length: n }, () => Math.floor(rnd() * n)));
+    const curS = idxs.map(idx => E.match(E.scoreSet(cur, ip(cur), idx), inp.weights));
+    list.forEach(s => {
+      if (s === cur) { s.conf = null; return; }
+      const d = idxs.map((idx, b) => E.match(E.scoreSet(s, ip(s), idx), inp.weights) - curS[b]);
+      s.conf = { beats: d.filter(x => x > 0).length, runs: B };
+    });
+  }
+
+  const API = { CROPINFO, EXPERIMENTAL, experimental, needs, ACCEPT, adjust, RULES, parseConstraints, plan, qc, confidence, MODELS, projections, IPCC, inputLevel, carbonIPCC, calibrate, errors, calFor, withPatch, ndviYears, corr, oracle, rainChange, pack, unpack, fromIssues, summarise, SCEN, INFO, strategies, run, extra, parseFarm, compareFarm, doyOf, credits };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else G.Lab = API;
 })(typeof window !== 'undefined' ? window : globalThis);

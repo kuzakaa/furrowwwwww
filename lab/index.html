@@ -5,78 +5,47 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Furrow lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#1c1a17;--panel:#26231f;--line:#3a352e;--ink:#ece6dc;--mute:#a59d90;--green:#8fc46a;--warn:#e0a458;--bad:#d9705a}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Rubik,system-ui,sans-serif}
-header{padding:20px 18px 6px;max-width:1100px;margin:auto}
-h1{margin:0;font-size:26px;font-weight:600}
-header p{margin:4px 0 0;color:var(--mute)}
-main{max-width:1100px;margin:auto;padding:8px 18px 60px}
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
-select,input,button,textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-button{cursor:pointer}button.go{background:var(--green);color:#1c1a17;border:0;font-weight:600}
-input[type=number]{width:96px}
-nav{display:flex;gap:6px;overflow-x:auto;margin:14px 0;padding-bottom:4px}
-nav button{white-space:nowrap}nav button.on{background:var(--ink);color:var(--bg)}
-section{display:none}section.on{display:block}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:10px 0}
-.mute{color:var(--mute)}.ok{color:var(--green)}.warn{color:var(--warn)}.bad{color:var(--bad)}
-table{border-collapse:collapse;width:100%;font-size:14px}
-th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-th{color:var(--mute);font-weight:500;white-space:nowrap}
-td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-.scroll{overflow-x:auto}
-.meter{height:6px;background:#38332c;border-radius:4px;width:110px;margin-top:4px}.meter i{display:block;height:100%;border-radius:4px;background:var(--green)}
-details summary{cursor:pointer;font-weight:500}
-dl{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;margin:10px 0 0}dt{color:var(--mute)}dd{margin:0}
-.fb{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.fb button.on{border-color:var(--green);color:var(--green)}
-textarea{width:100%;min-height:110px;font-family:ui-monospace,monospace;font-size:13px}
-.cell{display:inline-block;min-width:40px;text-align:center;border-radius:6px;padding:2px 6px}
-code{background:#38332c;border-radius:5px;padding:1px 5px;font-size:13px}
-.hash{font-family:ui-monospace,monospace;font-size:12px;color:var(--mute);word-break:break-all}
-#status{margin:10px 0}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="lab.css?v=6">
 </head>
 <body>
-<header>
+<div class="top">
+  <button id="toggle" class="big" aria-expanded="true">Hide setup</button>
   <h1>Furrow lab</h1>
-</header>
-<main>
-  <div class="bar">
-    <select id="field"></select>
-    <input id="lat" type="number" step="0.01" placeholder="lat">
-    <input id="lon" type="number" step="0.01" placeholder="lon">
-    <select id="rot"></select>
-    <select id="soil"></select>
-    <select id="till"></select>
-    <button class="go" id="run">Run</button>
+</div>
+<div class="wrap" id="wrap">
+  <aside id="setup"></aside>
+  <div id="out">
+    <div id="status" class="mute"></div>
+    <div id="extras" class="mute"></div>
+    <nav class="tabs" id="tabs">
+      <button data-t="strat" class="on">Your options</button>
+      <button data-t="stress">Future climate</button>
+      <button data-t="veg">Rain and plant stress</button>
+      <button data-t="crops">Crop facts</button>
+      <button data-t="params">All numbers</button>
+      <button data-t="farm">Your records</button>
+      <button data-t="shared">Shared notes</button>
+      <button data-t="care">Land care rewards</button>
+      <button data-t="method">How it works</button>
+      <button data-t="sources">More data</button>
+    </nav>
+    <section id="strat" class="on"></section>
+    <section id="stress"></section>
+    <section id="veg"></section>
+    <section id="crops"></section>
+    <section id="params"></section>
+    <section id="farm"></section>
+    <section id="shared"></section>
+    <section id="care"></section>
+    <section id="method"></section>
+    <section id="sources"></section>
   </div>
-  <div id="status" class="mute">Pick a field and hit Run.</div>
-  <nav id="tabs">
-    <button data-t="strat" class="on">All strategies</button>
-    <button data-t="params">Parameters</button>
-    <button data-t="stress">Climate stress test</button>
-    <button data-t="veg">Rain and plant stress</button>
-    <button data-t="farm">Your data</button>
-    <button data-t="shared">Shared notes</button>
-    <button data-t="care">Land care rewards</button>
-    <button data-t="sources">More data</button>
-  </nav>
-  <div id="extras" class="mute"></div>
-  <section id="strat" class="on"></section>
-  <section id="params"></section>
-  <section id="stress"></section>
-  <section id="veg"></section>
-  <section id="farm"></section>
-  <section id="shared"></section>
-  <section id="care"></section>
-  <section id="sources"></section>
-</main>
-<script src="../src/engine.js?v=5"></script>
-<script src="lab.js?v=5"></script>
-<script src="contract/compiled.js?v=5"></script>
-<script src="ui.js?v=5"></script>
+</div>
+<div class="modal" id="modal"><div class="box" id="mbox"></div></div>
+<script src="../src/engine.js?v=6"></script>
+<script src="lab.js?v=6"></script>
+<script src="contract/compiled.js?v=6"></script>
+<script src="ui.js?v=6"></script>
 </body>
 </html>
