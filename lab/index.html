@@ -571,6 +571,9 @@ body.wiz.wfree #free{height:64px;min-height:0}
 .calc .row{margin-top:8px}
 #stockbox{background:rgba(220,245,225,.06);border-radius:12px;padding:8px 12px;margin:6px 0}
 
+body.wiz.wpri #weights,body.wiz.wpri #weights2,body.wiz.wacc #acc{align-items:start}
+.modal{z-index:60}
+
 </style>
 </head>
 <body class="intro" data-view="results" data-tab="result">
@@ -1462,7 +1465,7 @@ body.wiz.wfree #free{height:64px;min-height:0}
       const ci = A.current.sc.income || 1; x.incPct = (x.sc.income - ci) / ci * 100; x.incEur = x.incPct / 100 * mg * (S.area || 0);
       if (x.incPct < -S.maxDrop && x.id !== 'current') { x.adj.blocked.push('incomeDip'); x.need.incomeDip = 'about ' + Math.round(-x.incPct) + '% less income, more than the ' + S.maxDrop + '% you can accept'; }
       const big = x.rot.map(r => r.c).filter(c => !curC.has(c) && Lab.CROPINFO[c] && Lab.CROPINFO[c].niche >= 3).map(c => { const t = (S.area || 0) / x.rot.length * (YIELD[c] || 3); return t >= 300 ? C[c].short.toLowerCase() + ' (about ' + r0(t) + ' t a year)' : null; }).filter(Boolean);
-      if (big.length) { x.need.market = big.join(', ') + ' is a lot for a thin local market'; x.adj.pen += 3; }
+      if (big.length) { x.need.market = big.join(', ') + ' may be more than local buyers will take'; x.adj.pen += 3; }
       x.adj.final = Math.round((x.rawMatch - x.adj.pen) * 10) / 10; x.match = x.adj.final;
     });
     all.sort((a, b) => (a.adj && a.adj.blocked.length ? 1 : 0) - (b.adj && b.adj.blocked.length ? 1 : 0) || b.match - a.match);
@@ -1915,7 +1918,7 @@ body.wiz.wfree #free{height:64px;min-height:0}
       const link = shareLink(), box = $('shared'), done = () => { box.textContent = 'Link copied. Anyone who opens it sees this exact result.'; }, manual = () => { box.innerHTML = 'Copy this: <input readonly value="' + esc(link) + '" style="width:220px">'; const i = box.querySelector('input'); i.focus(); i.select(); };
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, manual); else manual();
     });
-    const wrow = (pre, d, v) => '<div class="wrow"><div class="wh"><label for="' + pre + d[0] + '">' + d[1] + '</label><span class="lvl" id="' + pre + 'v' + d[0] + '">' + LEVEL[v] + '</span></div><input id="' + pre + d[0] + '" type="range" min="0" max="5" step="1" value="' + v + '"><button class="why" data-x="' + pre + d[0] + '">What does this mean?</button><div class="explain" id="x_' + pre + d[0] + '"><p>' + DIMTIP[d[0]] + '</p></div></div>';
+    const wrow = (pre, d, v) => '<div class="wrow"><div class="wh"><label for="' + pre + d[0] + '">' + d[1] + '</label><span class="lvl" id="' + pre + 'v' + d[0] + '">' + LEVEL[v] + '</span></div><input id="' + pre + d[0] + '" type="range" min="0" max="5" step="1" value="' + v + '"><button class="why" data-term="s_' + d[0] + '">What does this mean?</button></div>';
     $('weights').innerHTML = DIMS.map(d => wrow('w_', d, S.weights[d[0]])).join('');
     $('weights2').innerHTML = DIMS.map(d => wrow('w2_', d, S.w2[d[0]])).join('');
     DIMS.forEach(d => {

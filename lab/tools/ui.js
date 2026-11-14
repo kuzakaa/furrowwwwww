@@ -11,7 +11,7 @@
   ];
   const CROP_ORDER = ['wheat', 'sunflower', 'corn', 'soy', 'canola', 'oats', 'pea', 'sorghum', 'alfalfa', 'fallow'];
   const PRI = [
-    { k: 'income', name: 'Making a profit', ex: 'Based on typical production cost and market depth per crop. Local prices are not included.' },
+    { k: 'income', name: 'Making a profit', ex: 'Based on typical growing cost and how many buyers each crop has. Local prices are not included.' },
     { k: 'water', name: 'Saving water', ex: 'Share of the season with crop water deficit, rain-fed.' },
     { k: 'soil', name: 'Building healthy soil', ex: 'Organic matter inputs, biological nitrogen fixation, tillage intensity and crop-family diversity.' },
     { k: 'erosion', name: 'Keeping soil from washing away', ex: 'Bare-soil days and erosive rainfall on poorly covered soil, adjusted for slope and tillage.' },
@@ -376,9 +376,9 @@
       + '<li><b>Cover crops</b> (rye, legume mixes) grow between main crops so the soil is never bare. Roots hold the soil, feed soil life and add organic matter; the leaves take the hit from heavy rain.</li>'
       + '<li><b>Deep-rooting crops</b> (sunflower, canola, alfalfa) break up compacted layers and pull up water and nutrients from deep down that shallow crops can’t reach.</li>'
       + '<li><b>Drought-tolerant crops</b> (sorghum, sunflower) keep yielding in dry years, so the farm has income when other crops fail.</li></ul></div>';
-    h += '<div class="card scroll"><table><tr><th>Crop</th><th>Cost to grow</th><th>Machinery needed</th><th>Buyers</th><th>Price steadiness</th><th>Limited market</th><th>Needs nitrogen</th><th>Needs water</th><th>Root depth</th><th>Good for</th><th>Who buys it</th></tr>'
+    h += '<div class="card scroll"><table><tr><th>Crop</th><th>Cost to grow</th><th>Machinery needed</th><th>Buyers</th><th>Price steadiness</th><th>Few buyers</th><th>Needs nitrogen</th><th>Needs water</th><th>Root depth</th><th>Good for</th><th>Who buys it</th></tr>'
       + ids.map(c => { const I = L.CROPINFO[c]; return '<tr><td><b>' + C[c].short + '</b></td><td>' + dots(I.cost) + '</td><td>' + dots(I.machinery) + '</td><td>' + dots(I.market) + '</td><td>' + dots(I.stable) + '</td><td>' + dots(I.niche) + '</td><td>' + dots(I.nNeed) + '</td><td>' + dots(I.water) + '</td><td>' + dots(I.root) + '</td><td>' + I.roles.join(', ') + '</td><td>' + I.buyers + '</td></tr>'; }).join('')
-      + '</table></div><p class="mute">Relative scale 1 to 5 across these crops. “Limited market” is high where demand is thin, so expanding area can depress price. General agronomic comparison, not regional prices.</p>';
+      + '</table></div><p class="mute">Relative scale 1 to 5 across these crops. “Few buyers” is high when only a few buyers take the crop, so growing much more of it can push the price down. General agronomic comparison, not regional prices.</p>';
     $('crops').innerHTML = h;
   }
 
