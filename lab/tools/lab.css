@@ -248,3 +248,11 @@ tr:hover td:first-child{background:#18442f}
 #crops tr>td:first-child{min-width:140px}
 #veg td:last-child{min-width:260px;font-size:.9rem;line-height:1.4}
 #veg tr>td:first-child{min-width:180px}
+
+#out{max-width:1320px!important}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.mstep{background:rgba(16,46,31,.92);border:1px solid rgba(180,236,143,.22);border-radius:16px;padding:16px 18px;animation:fade .4s ease both}
+.mstep h3{margin:0 0 8px;font-size:1.05rem;color:#c6f5a3}
+.mstep p,.mstep li{font-size:.92rem;line-height:1.5}
+.mstep:last-child{grid-column:1/-1}
+@media (max-width:800px){.mgrid{grid-template-columns:1fr}}

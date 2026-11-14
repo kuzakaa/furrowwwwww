@@ -570,6 +570,8 @@
       + '<h3>11. Soil carbon</h3><p>We take the carbon in your top 30 cm of soil from SoilGrids, then apply the IPCC’s standard factors (Tier 1) for tillage and for how much plant material goes back into the soil. Covers and alfalfa count as high input, mostly fallow as low. The change is spread over 20 years. It is an estimate, not a measurement.</p>'
       + '<h3>Where people have to check our work</h3><ul><li>Whether a crop actually sells, and at what price, near you.</li><li>Local varieties, which can be sown a week or two earlier or later than our dates.</li><li>Pests, weeds and diseases, which we only cover through the change of crop families.</li><li>Whether there is enough rain after the wheat harvest for a cover crop or second crop to establish.</li><li>Irrigation, fertiliser and the farm’s machinery, which we don’t model.</li><li>Laws, subsidies and contracts.</li></ul><p>When farmers mark an option as working or not and add their dates, the tool uses it to improve (step 10).</p>'
       + '</div>';
+    const box = $('method').querySelector('.method'), parts = box.innerHTML.split('<h3>').filter(Boolean);
+    box.outerHTML = '<div class="mgrid">' + parts.map((p, k) => '<div class="mstep" style="animation-delay:' + (k * 0.04).toFixed(2) + 's"><h3>' + p + '</div>').join('') + '</div>';
   }
   function sources() {
     const on = (x, a, b) => x ? '<span class="ok">' + a + '</span>' : b;
