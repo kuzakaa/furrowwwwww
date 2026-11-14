@@ -10,6 +10,7 @@ const json = (d, s, o, c) => new Response(JSON.stringify(d), { status: s, header
 const num = (v, lo, hi) => { const x = parseFloat(v); return isFinite(x) && x >= lo && x <= hi ? x : null; };
 const day = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : null;
 const pick = (env, a, b) => env[a] || env[b];
+async function runAI(env, x) { let last; for (const m of ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-4-scout-17b-16e-instruct', '@cf/mistralai/mistral-small-3.1-24b-instruct', '@cf/google/gemma-3-12b-it', '@cf/meta/llama-3.1-8b-instruct-fast']) { try { return await env.AI.run(m, x); } catch (e) { last = e; } } throw last; }
 async function meteo(env, lat, lon, from, to) {
 const u = pick(env, 'MM_USER', 'MM-USER'), p = pick(env, 'MM_PASS', 'MM-PASS');
 const r = await fetch(MM + '/' + from + 'T00:00:00Z--' + to + 'T00:00:00Z:P1D/' + PARAMS + '/' + lat + ',' + lon + '/json', { headers: { Authorization: 'Basic ' + btoa(u + ':' + p) } });
@@ -92,7 +93,7 @@ const qq = (q.get('q') || '').slice(0, 600).trim(), ctx = (q.get('ctx') || '').s
 if (!qq) return json({ error: 'q needed' }, 400, o);
 if (!env.AI) return json({ error: 'AI binding missing' }, 503, o, 'no-store');
 const sys = 'You are the helper inside Furrow, a free web tool that helps farmers choose crop rotations using 25 years of NASA weather data for their field. Answer the user\'s question in plain, friendly words a farmer with no science background understands. Answer ANY question, farming or not, briefly and honestly (at most 120 words, no markdown headings). Reply in the same language the user writes in. If you are not sure, say so. Context about what the user is looking at: ' + ctx + ' If the message is insulting, sexual, hateful, harassing, or asks for something harmful or illegal, reply with exactly the single word UPSET and nothing else.';
-const r = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', { messages: [{ role: 'system', content: sys }, { role: 'user', content: qq }], max_tokens: 300 });
+const r = await runAI(env, { messages: [{ role: 'system', content: sys }, { role: 'user', content: qq }], max_tokens: 300 });
 const t = (r && r.response || '').trim();
 return json({ answer: t, upset: /^UPSET\W*$/i.test(t) }, 200, o, 'no-store');
 }
