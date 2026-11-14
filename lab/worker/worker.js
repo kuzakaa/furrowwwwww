@@ -87,7 +87,16 @@ const o = req.headers.get('Origin') || '';
 if (req.method === 'OPTIONS') return new Response(null, { headers: cors(o) });
 const u = new URL(req.url), q = u.searchParams, p = u.pathname.split('/').filter(Boolean);
 try {
-if (p[0] === 'health') return json({ ok: true, meteomatics: !!pick(env, 'MM_USER', 'MM-USER'), earthdata: !!env.EARTHDATA_USER, copernicus: !!env.CDSE_ID }, 200, o, 'no-store');
+if (p[0] === 'ask') {
+const qq = (q.get('q') || '').slice(0, 600).trim(), ctx = (q.get('ctx') || '').slice(0, 1500);
+if (!qq) return json({ error: 'q needed' }, 400, o);
+if (!env.AI) return json({ error: 'AI binding missing' }, 503, o, 'no-store');
+const sys = 'You are the helper inside Furrow, a free web tool that helps farmers choose crop rotations using 25 years of NASA weather data for their field. Answer the user\'s question in plain, friendly words a farmer with no science background understands. Answer ANY question, farming or not, briefly and honestly (at most 120 words, no markdown headings). Reply in the same language the user writes in. If you are not sure, say so. Context about what the user is looking at: ' + ctx + ' If the message is insulting, sexual, hateful, harassing, or asks for something harmful or illegal, reply with exactly the single word UPSET and nothing else.';
+const r = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', { messages: [{ role: 'system', content: sys }, { role: 'user', content: qq }], max_tokens: 300 });
+const t = (r && r.response || '').trim();
+return json({ answer: t, upset: /^UPSET\W*$/i.test(t) }, 200, o, 'no-store');
+}
+if (p[0] === 'health') return json({ ok: true, meteomatics: !!pick(env, 'MM_USER', 'MM-USER'), earthdata: !!env.EARTHDATA_USER, copernicus: !!env.CDSE_ID, ai: !!env.AI }, 200, o, 'no-store');
 if (p[0] === 'ae' && p[1] === 'status' && /^[\w-]+$/.test(p[2] || '')) return json({ status: await aeStatus(env, p[2]) }, 200, o, 'no-store');
 if (p[0] === 'ae' && p[1] === 'result' && /^[\w-]+$/.test(p[2] || '')) return json({ series: await aeResult(env, p[2]) }, 200, o);
 const lat = num(q.get('lat'), -70, 70), lon = num(q.get('lon'), -180, 180), from = day(q.get('from')), to = day(q.get('to'));

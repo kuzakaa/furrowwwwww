@@ -831,6 +831,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .vs .nowc .tag,.vs .win .tag{all:unset;font-size:13.5px;font-weight:600;color:var(--muted);background:none!important;padding:0!important}
 .vs .win .tag{color:#8FD694}
 .co div{position:absolute!important;left:0;bottom:30px;transform:translateX(-50%)}
+.upset{font-size:44px;line-height:1;margin:6px 0}
 
 </style>
 </head>
@@ -1987,12 +1988,23 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     const sg = (SUGG[k] || [5, 17, 18]).map(i => KB[i]);
     return '<div class="ask"><h3>Ask a question</h3><div class="sugg">' + sg.map(e => '<button type="button" data-ask="' + esc(e[1]) + '">' + esc(e[1]) + '</button>').join('') + '</div><form id="askf"><input id="askq" placeholder="Type your question, any language" autocomplete="off"><button class="btn">Ask</button></form><div id="asko"></div></div>';
   }
-  function showAnswer(q) {
+  let askTopic = '';
+  async function showAnswer(q) {
     const e = answer(q), o = $('asko'); if (!o) return;
-    o.innerHTML = '<div class="ans"><div class="q2">' + esc(q) + '</div>' + (e ? esc(e[2]) : 'There is no answer to that in Furrow’s guide yet. The How it works tab explains every number, and a local agronomist or extension adviser can answer questions about your farm.') + '<span class="src">Answer from Furrow’s built-in guide</span></div>'; o.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const box = (body, src) => { o.innerHTML = '<div class="ans"><div class="q2">' + esc(q) + '</div>' + body + '<span class="src">' + src + '</span></div>'; o.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
+    if (e && e[1].toLowerCase() === q.toLowerCase()) return box(esc(e[2]), 'Answer from Furrow’s built-in guide');
+    box('<span class="spin"></span>Thinking…', 'Asking Furrow’s assistant');
+    const ctx = 'Topic open: ' + askTopic + '. Field near ' + S.lat.toFixed(2) + ', ' + S.lon.toFixed(2) + (S.name ? ' (' + S.name + ')' : '') + '. Rotation now: ' + (S.rot || []).map(r => r.c).join(', ') + '. Soil: ' + S.soil + '.';
+    try {
+      const r = await fetch(PROXY + '/ask?q=' + encodeURIComponent(q) + '&ctx=' + encodeURIComponent(ctx), { signal: AbortSignal.timeout(25000) });
+      const j = await r.json(); if (!r.ok || !j.answer) throw new Error(j.error || r.status);
+      if (j.upset) return box('<div class="upset">😔</div>That upset me. Please ask something else and I’ll gladly help.', 'Furrow’s assistant');
+      box(esc(j.answer).replace(/\n+/g, '<br>'), 'AI answer, can be wrong. Check important things with a local adviser.');
+    } catch (err) { box(e ? esc(e[2]) : 'I couldn’t reach the assistant just now. Please try again in a moment.', e ? 'Answer from Furrow’s built-in guide' : 'Furrow’s assistant'); }
   }
+
   function explainTerm(k) {
-    const t = TERMS[k]; if (!t) return;
+    const t = TERMS[k]; if (!t) return; askTopic = t[0];
     $('mbox').innerHTML = '<div class="mhead"><h2>' + t[0] + '</h2><button class="btn ghost xbtn" data-close aria-label="Close">×</button></div><div class="tgrid"><div><div class="animbox">' + ANIM[t[1]] + '</div>' + t[2].map((p, i) => '<p class="step" style="animation-delay:' + (0.25 + i * 0.35) + 's">' + p + '</p>').join('') + '</div><div>' + askBox(k) + '<button class="btn bigbtn" data-close>Got it</button></div></div>';
     $('modal').classList.add('on', 'term');
     $('askf').onsubmit = ev => { ev.preventDefault(); const q = $('askq').value.trim(); if (q) showAnswer(q); };
