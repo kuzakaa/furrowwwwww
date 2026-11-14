@@ -1081,6 +1081,8 @@
       cell.bindTooltip('NASA POWER grid cell, about 50 km', { permanent: true, direction: 'bottom', className: 'cell' });
       marker = window.L.marker([DEMOS[0].lat, DEMOS[0].lon], { interactive: false, keyboard: false, icon: window.L.divIcon({ className: 'pin', iconSize: [0, 0] }) }).addTo(map);
       map.on('dragstart', () => setPlaying(false)); wireDraw();
+      const placeAttr = () => { const a = document.querySelector('.leaflet-control-attribution'), mb = document.querySelector('.mapbox'); if (!a || !mb) return; const vis = el => el && el.offsetParent !== null && getComputedStyle(el).visibility !== 'hidden'; const mr = mb.getBoundingClientRect(); let L = vis(mb) ? mr.right : 0, R = innerWidth; const res = $('scroll') && $('scroll').closest('.glass, aside, section, div'); [res, $('setup')].forEach(el => { if (!vis(el)) return; const b = el.getBoundingClientRect(); if (b.left > innerWidth / 2) R = Math.min(R, b.left); }); a.classList.add('attrfix'); const w = a.offsetWidth; a.style.left = Math.round(L + (R - L - w) / 2) + 'px'; a.style.top = Math.round((vis(mb) ? mr.top + mr.height / 2 : innerHeight - 20) - a.offsetHeight / 2) + 'px'; };
+      placeAttr(); setInterval(placeAttr, 400); addEventListener('resize', placeAttr);
       map.on('click', e => { if (drawing) return; if (S.intro) { if (introPick) introPick(e.latlng.lat, e.latlng.lng, null); return; } setPlace(e.latlng.lat, e.latlng.lng, null); if (S.wiz != null && S.wiz > 0) wizard(0); });
       window.addEventListener('resize', () => map.invalidateSize());
     } else { $('play').hidden = true;
