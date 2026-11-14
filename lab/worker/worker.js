@@ -2,7 +2,7 @@ const ALLOW = ['https://kuzakaa.github.io'];
 const MM = 'https://api.meteomatics.com';
 const PARAMS = 't_2m:C,precip_24h:mm,evapotranspiration_24h:mm,soil_moisture_index_-15cm:idx';
 const AE = 'https://appeears.earthdatacloud.nasa.gov/api';
-const AE_LAYERS = { smap: ['SPL4SMGP.008', 'Geophysical_Data_sm_rootzone'], et: ['MOD16A2GF.061', 'ET_500m'] };
+const AE_LAYERS = { smap: ['SPL4SMGP.008', 'Geophysical_Data_sm_rootzone'], et: ['MOD16A2GF.061', 'ET_500m'], esi: ['ECO_L4T_ESI.002', 'ESI'] };
 const CDSE_TOKEN = 'https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token';
 const CDSE_STATS = 'https://sh.dataspace.copernicus.eu/api/v1/statistics';
 const cors = o => ({ 'Access-Control-Allow-Origin': ALLOW.includes(o) ? o : ALLOW[0], 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Vary': 'Origin' });
@@ -41,7 +41,7 @@ const b = await (await fetch(AE + '/bundle/' + id, { headers: H })).json();
 const f = (b.files || []).find(x => /results\.csv$/i.test(x.file_name));
 if (!f) throw new Error('not ready');
 const csv = await (await fetch(AE + '/bundle/' + id + '/' + f.file_id, { headers: H, redirect: 'follow' })).text();
-const L = csv.trim().split(/\r?\n/), h = L[0].split(','), di = h.indexOf('Date'), vi = h.findIndex(x => /_(sm_rootzone|ET_500m)$/.test(x));
+const L = csv.trim().split(/\r?\n/), h = L[0].split(','), di = h.indexOf('Date'), vi = h.findIndex(x => /_(sm_rootzone|ET_500m|ESI)$/.test(x));
 const out = [];
 for (let i = 1; i < L.length; i++) { const p = L[i].split(','), v = parseFloat(p[vi]); if (p[di] && isFinite(v) && v > -9000 && v < 32000) out.push([p[di].slice(0, 10), v]); }
 return out;
@@ -60,6 +60,28 @@ if (!r.ok) throw new Error('Copernicus ' + r.status + ' ' + (await r.text()).sli
 const j = await r.json();
 return (j.data || []).map(d => { const s = d.outputs && d.outputs.ndvi && d.outputs.ndvi.bands.B0.stats; return s && s.sampleCount > s.noDataCount && isFinite(s.mean) ? [d.interval.from.slice(0, 10), Math.round(s.mean * 1000) / 1000] : null; }).filter(Boolean);
 }
+async function edlToken(env) {
+const H = { Authorization: 'Basic ' + btoa(env.EARTHDATA_USER + ':' + env.EARTHDATA_PASS) };
+let r = await fetch('https://urs.earthdata.nasa.gov/api/users/tokens', { headers: H });
+if (r.ok) { const a = await r.json(); if (a.length) return a[0].access_token; }
+r = await fetch('https://urs.earthdata.nasa.gov/api/users/token', { method: 'POST', headers: H });
+if (!r.ok) throw new Error('Earthdata token ' + r.status);
+return (await r.json()).access_token;
+}
+async function grace(env, lat, lon, raw) {
+const c = await (await fetch('https://cmr.earthdata.nasa.gov/search/granules.json?short_name=GRACEDADM_CLSM025GL_7D&sort_key=-start_date&page_size=1')).json();
+const e = c.feed.entry[0], links = (e.links || []).map(x => x.href);
+const od = links.find(h => /opendap/i.test(h) && /\.nc4$/.test(h)) || links.find(h => /opendap/i.test(h));
+const t = await edlToken(env), H = { Authorization: 'Bearer ' + t };
+if (raw === '1') { const d = od ? await (await fetch(od + '.dds', { headers: H })).text() : ''; return { granule: e.producer_granule_id, od, links: links.slice(0, 6), dds: d.slice(0, 1500) }; }
+if (!od) throw new Error('GRACE-DA OPeNDAP link missing');
+const i = Math.round((lat + 59.875) / 0.25), j = Math.round((lon + 179.875) / 0.25);
+const r = await fetch(od + '.ascii?gws_inst[0:0][' + i + '][' + j + '],rtzsm_inst[0:0][' + i + '][' + j + '],sfsm_inst[0:0][' + i + '][' + j + ']', { headers: H });
+const txt = await r.text(); if (raw === '2') return { status: r.status, txt: txt.slice(0, 1500) };
+if (!r.ok) throw new Error('GRACE-DA ' + r.status);
+const val = k => { const m = txt.match(new RegExp(k + '\\[0\\]\\[0\\],\\s*([-\\d.eE]+)')) || txt.match(new RegExp(k + '[^\\n]*\\n[^,\\n]*,\\s*([-\\d.eE]+)')); return m ? +m[1] : null; };
+return { date: e.time_start.slice(0, 10), groundwater: val('gws_inst'), rootzone: val('rtzsm_inst'), surface: val('sfsm_inst') };
+}
 export default { async fetch(req, env) {
 const o = req.headers.get('Origin') || '';
 if (req.method === 'OPTIONS') return new Response(null, { headers: cors(o) });
@@ -71,6 +93,7 @@ if (p[0] === 'ae' && p[1] === 'result' && /^[\w-]+$/.test(p[2] || '')) return js
 const lat = num(q.get('lat'), -70, 70), lon = num(q.get('lon'), -180, 180), from = day(q.get('from')), to = day(q.get('to'));
 if (lat == null || lon == null || !from || !to) return json({ error: 'lat, lon, from, to needed' }, 400, o);
 if (p[0] === 'weather') return json({ series: await meteo(env, lat, lon, from, to) }, 200, o);
+if (p[0] === 'grace') return json(await grace(env, lat, lon, q.get('raw')), 200, o, q.get('raw') ? 'no-store' : 'public, max-age=86400');
 if (p[0] === 'sentinel') return json({ series: await sentinel(env, lat, lon, from, to) }, 200, o);
 if (p[0] === 'ae' && p[1] === 'start' && AE_LAYERS[p[2]]) return json({ task: await aeStart(env, p[2], lat, lon, from, to) }, 200, o, 'no-store');
 return json({ error: 'unknown route' }, 404, o);

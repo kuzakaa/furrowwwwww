@@ -596,6 +596,7 @@
       run('mm', async () => { const j = await get(PROXY + '/weather' + q + '&from=' + d(3) + '&to=' + d(1) + '&c=' + Date.now()); const n = Object.keys(j.series || {}).length; if (!n) throw new Error('no values'); return n + ' of 4 values returned'; }),
       run('s2', async () => { const j = await get(PROXY + '/sentinel' + q + '&from=' + d(60) + '&to=' + d(1) + '&c=' + Date.now()); const s = j.series || []; if (!s.length) throw new Error('no cloud-free image in 60 days'); return 'last clear image ' + s[s.length - 1][0]; }),
       run('ed', async () => { const r = await fetch(PROXY + '/ae/status/check-' + Date.now(), { cache: 'no-store' }), j = await r.json().catch(() => ({})); if (/login/i.test(j.error || '')) throw new Error(j.error); if (!r.ok && !/status/i.test(j.error || '')) throw new Error(j.error || 'HTTP ' + r.status); return 'NASA login accepted'; }),
+      run('gr', async () => { const j = await get(PROXY + '/grace' + q + '&from=' + d(3) + '&to=' + d(1) + '&c=' + Date.now()); if (j.groundwater == null) throw new Error('no value for this point'); return 'groundwater ' + Math.round(j.groundwater) + 'th percentile, week of ' + j.date; }),
       run('fao', async () => { const r = await fetch('https://fenixservices.fao.org/faostat/api/v1/en/definitions/domain/PP/element?output_type=json', { cache: 'no-store', signal: AbortSignal.timeout(10000) }).catch(e => { throw new Error(e.name === 'TimeoutError' ? 'no answer in 10 s' : 'blocked or down'); }); if (!r.ok) throw new Error('HTTP ' + r.status); return 'reachable'; })
     ]);
     LIVE.at = new Date(); LIVE.busy = false; sources();
@@ -613,8 +614,8 @@
       ['Deep soil moisture from space', 'NASA SMAP L4 via AppEEARS, through our server', lv('ed', 'NASA processes each request in 5-30 minutes, then it shows on the main page')],
       ['Field greenness, 10 m', 'Copernicus Sentinel-2, through our server', lv('s2', 'Used on the main page')],
       ['Crop prices', 'FAOSTAT', lv('fao', 'Not used in the numbers yet')],
-      ['Plant water stress', 'NASA ECOSTRESS', '<span class="mute">Not connected in the code</span>'],
-      ['Groundwater', 'NASA GRACE-FO', '<span class="mute">Not connected in the code</span>']
+      ['Plant water stress, 70 m', 'NASA ECOSTRESS ESI via AppEEARS, through our server', lv('ed', 'Same NASA login as SMAP. Results arrive after NASA processes them, then show on the main page')],
+      ['Groundwater', 'NASA GRACE-FO, via the GRACE data-assimilation drought indicators (GES DISC)', lv('gr', 'Used on the main page')]
     ];
     $('sources').innerHTML = '<div class="card scroll"><div class="bar" style="justify-content:space-between;align-items:center"><span class="mute">' + (LIVE.at ? 'Checked live at ' + LIVE.at.toLocaleTimeString() : LIVE.busy ? 'Checking each source now…' : 'Not checked yet') + '</span><button id="recheck">Check again</button></div><table><tr><th>What</th><th>From</th><th>Status</th></tr>' + rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>').join('') + '</table></div>';
     $('recheck').onclick = liveChecks;

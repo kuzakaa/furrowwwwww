@@ -2000,6 +2000,29 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
       const last = s[s.length - 1], v = last[1], word = v < 0.2 ? 'mostly bare soil' : v < 0.4 ? 'sparse plants' : v < 0.6 ? 'moderate green cover' : 'dense green cover';
       add('<b>Satellite view of the field</b> (Copernicus Sentinel-2, 10 m pixels, cloudy shots removed): on ' + last[0] + ' the greenness index was <b>' + v.toFixed(2) + '</b>, which means ' + word + '. ' + (v < 0.2 ? 'Bare soil over winter loses topsoil to rain and wind; a cover crop would hold it.' : 'Living plants are protecting the soil right now.'));
     }).catch(() => {});
+    if (h.earthdata) fetch(PROXY + '/grace' + q + '&from=' + d(30) + '&to=' + d(1)).then(r => r.json()).then(j => {
+      if (j.groundwater == null) return;
+      const pc = Math.round(j.groundwater), word = pc < 10 ? 'very low, a drought level' : pc < 30 ? 'below normal' : pc <= 70 ? 'normal' : 'above normal';
+      add('<b>Groundwater from space</b> (NASA GRACE-FO satellites, week of ' + j.date + '): groundwater here is at the <b>' + pc + 'th percentile</b> of what is normal for this time of year since 1948, which is <b>' + word + '</b>.' + (j.rootzone != null ? ' Root-zone soil water: ' + Math.round(j.rootzone) + 'th percentile.' : '') + (pc < 30 ? ' Deep reserves are low, so a dry spring would hit harder; drought-tolerant crops and keeping residue on the ground lower the risk.' : ' Deep reserves can carry crops through a short dry spell.'));
+    }).catch(() => {});
+    if (h.earthdata) (async () => {
+      const key = 'furrow:esi:' + lat + ',' + lon; let mem = null; try { mem = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
+      let t = mem && Date.now() - mem.at < 864e5 ? mem.task : null;
+      try {
+        if (!t) { t = (await (await fetch(PROXY + '/ae/start/esi' + q + '&from=' + d(365) + '&to=' + d(3))).json()).task; if (!t) return; try { localStorage.setItem(key, JSON.stringify({ task: t, at: Date.now() })); } catch (e) {} }
+        for (let i = 0; i < 120 && same(); i++) {
+          if (i) await new Promise(r => setTimeout(r, 20000));
+          const st = (await (await fetch(PROXY + '/ae/status/' + t)).json()).status;
+          if (st === 'error') return;
+          if (st !== 'done') continue;
+          const s = ((await (await fetch(PROXY + '/ae/result/' + t)).json()).series || []).filter(x => x[1] >= 0 && x[1] <= 1);
+          if (!s.length) { add('<b>Plant water stress</b> (NASA ECOSTRESS): no clear pass over this field in the last year.'); return; }
+          const sum = s.filter(x => { const m = +x[0].slice(5, 7); return m >= 5 && m <= 8; }), use = sum.length ? sum : s, avg = use.reduce((a, b) => a + b[1], 0) / use.length;
+          add('<b>Plant water stress</b> (NASA ECOSTRESS from the space station, 70 m pixels, ' + use.length + ' clear passes' + (sum.length ? ' in May to August' : '') + '): plants used about <b>' + Math.round(avg * 100) + '%</b> of the water they could have. ' + (avg < 0.5 ? 'That is heavy stress: crops here run short of water in summer, so deep-rooted or early crops fit better.' : avg < 0.75 ? 'Some stress in summer: keeping residue and cover helps hold water.' : 'Little stress: water was mostly not the limit.'));
+          return;
+        }
+      } catch (e) {}
+    })();
     if (h.earthdata) {
       const el = add('<b>NASA SMAP soil moisture</b>: asking NASA for the last 60 days at this point. NASA queues these requests, so it can take 5 to 30 minutes; you can keep working.');
       try {
