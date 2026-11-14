@@ -753,3 +753,30 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .co .cox{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:17px;line-height:1;cursor:pointer;pointer-events:auto}
 .co .cox:hover{background:rgba(255,255,255,.3)}
 .co div{pointer-events:none}.co .cox{pointer-events:auto}
+.xanim .a-spin{transform-origin:160px 75px;animation:a-rot 6s linear infinite}
+@keyframes a-rot{to{transform:rotate(360deg)}}
+.xanim .a-spray{animation:a-blink .5s ease-in-out infinite alternate}
+@keyframes a-blink{from{opacity:.3}to{opacity:1}}
+.xanim .a-walk{animation:a-walkx 9s linear infinite}
+@keyframes a-walkx{from{transform:translateX(-40px)}to{transform:translateX(360px)}}
+.xanim .a-dung{opacity:0;animation:a-dung 4s ease-out infinite}
+@keyframes a-dung{0%,40%{opacity:0;transform:translateY(-14px)}50%{opacity:1;transform:none}85%{opacity:1}100%{opacity:0;transform:translateY(10px) scale(.4)}}
+.xanim .a-pop{transform-origin:50% 100%;transform-box:fill-box;animation:a-pop .5s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes a-pop{from{transform:scaleY(0)}}
+.xanim .a-bigdrop{animation:a-bd 2.4s ease-in infinite}
+@keyframes a-bd{0%{transform:none;opacity:1}40%{transform:translateY(68px);opacity:1}42%,100%{transform:translateY(68px);opacity:0}}
+.xanim .a-chip{opacity:0;animation:a-chip 2.4s ease-out infinite}
+@keyframes a-chip{0%,40%{opacity:0;transform:none}45%{opacity:1}85%{opacity:1;transform:translate(var(--dx),var(--dy))}100%{opacity:0;transform:translate(calc(var(--dx)*1.2),0)}}
+.xanim .a-coin{opacity:0;animation:a-coin .4s ease-out both}
+@keyframes a-coin{from{opacity:0;transform:translateY(-30px)}to{opacity:1;transform:none}}
+.xanim .a-out{animation:a-outk 4s ease-in infinite}
+@keyframes a-outk{0%,45%{opacity:1;transform:none}75%,100%{opacity:0;transform:translateX(90px)}}
+.xanim .a-drip path{animation:a-fall 1.5s linear infinite}
+.xanim .a-gauge{transform-origin:50% 100%;transform-box:fill-box;animation:a-gauge 3s ease-out both}
+@keyframes a-gauge{from{transform:scaleY(.35)}}
+.xanim .a-darken{animation:a-dark 5s ease-in-out both;fill:#8a6a43}
+@keyframes a-dark{to{fill:#4a3620}}
+.xanim .a-worm{animation:a-wig 1.4s ease-in-out infinite alternate}
+@keyframes a-wig{to{transform:translateX(14px)}}
+.xanim .a-crumb{opacity:0;animation:a-coin .6s ease-out both}
+.xanim .a-rise{transform-origin:50% 100%;transform-box:fill-box;animation:a-pop .7s cubic-bezier(.2,.9,.3,1.2) both}
