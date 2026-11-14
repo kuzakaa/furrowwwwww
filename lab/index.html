@@ -1546,7 +1546,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
   }
   function margin() { return Math.max(0, (S.mY || 0) * (S.mP || 0) - (S.mC || 0)); }
   function setSlope(p) { S.slopePct = Math.round(Math.max(0, Math.min(20, +p || 0)) * 10) / 10; S.slope = 'custom'; E.SLOPES.custom = { name: S.slopePct + '%', f: Math.max(0.3, Math.min(3, S.slopePct / 4)) }; if ($('slopep')) { $('slopep').value = S.slopePct; if (document.activeElement !== $('slopev')) $('slopev').value = S.slopePct; } }
-  const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights, area: S.area, fw: S.fw, fl: S.fl, fN: S.fN, fS: S.fS, fE: S.fE, fW: S.fW, poly: S.poly, stockOn: S.stockOn, stockType: S.stockType, stockN: S.stockN, maxDrop: S.maxDrop, mY: S.mY, mP: S.mP, mC: S.mC, slopePct: S.slopePct, later: S.later, years: S.years, w2: S.w2, acc: S.acc, text: S.text, exp: S.exp });
+  const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights, area: S.area, fw: S.fw, fl: S.fl, fN: S.fN, fS: S.fS, fE: S.fE, fW: S.fW, poly: S.poly, polyAt: S.polyAt, stockOn: S.stockOn, stockType: S.stockType, stockN: S.stockN, maxDrop: S.maxDrop, mY: S.mY, mP: S.mP, mC: S.mC, slopePct: S.slopePct, later: S.later, years: S.years, w2: S.w2, acc: S.acc, text: S.text, exp: S.exp });
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(Object.assign(choices(), { done: !S.intro && S.wiz == null }))); } catch (e) {}
   }
@@ -1561,7 +1561,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     let v = fromLink(); if (!v) { try { v = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
     if (!v || !v.done || !isFinite(v.lat) || !isFinite(v.lon) || Math.abs(v.lat) > 70 || Math.abs(v.lon) > 180 || !Array.isArray(v.rot) || !v.rot.length || v.rot.length > 6 || v.rot.some(r => !r || !C[r.c])) return null;
     S.rot = v.rot.map(r => ({ c: r.c, cv: CV[r.cv] ? r.cv : null }));
-    if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp', 'area', 'fw', 'fl', 'fN', 'fS', 'fE', 'fW', 'poly', 'stockOn', 'stockType', 'stockN', 'maxDrop', 'mY', 'mP', 'mC'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
+    if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp', 'area', 'fw', 'fl', 'fN', 'fS', 'fE', 'fW', 'poly', 'polyAt', 'stockOn', 'stockType', 'stockN', 'maxDrop', 'mY', 'mP', 'mC'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
     S.irrigated = !!v.irrigated; S.livestock = !!v.livestock; S.exclude = new Set((Array.isArray(v.exclude) ? v.exclude : []).filter(k => C[k] || CV[k]));
     DIMS.forEach(d => { const w = v.weights && v.weights[d[0]]; if (w >= 0 && w <= 5) S.weights[d[0]] = Math.round(w); $('w_' + d[0]).value = S.weights[d[0]]; $('w_v' + d[0]).textContent = LEVEL[S.weights[d[0]]]; });
     $('soil').value = S.soil; $('till').value = S.till; $('irrig').checked = S.irrigated; if (window.syncExtra) window.syncExtra(); $('later').checked = !!S.later; $('laterbox').hidden = !S.later; $('years').value = S.years; $('yearsv').textContent = S.years + ' yrs'; $('free').value = S.text || ''; showUnd(); if (window.syncChips) window.syncChips(); DIMS.forEach(d => { $('w2_' + d[0]).value = S.w2[d[0]]; $('w2_v' + d[0]).textContent = LEVEL[S.w2[d[0]]]; });
@@ -2055,13 +2055,15 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
   const toXY = p => [(p[1] - S.lon) * M * cosl(), (p[0] - S.lat) * M], toLL = (x, y) => [S.lat + y / M, S.lon + x / (M * cosl())];
   function rectPoly(n, s, e, w) { return [toLL(-w, n), toLL(e, n), toLL(e, -s), toLL(-w, -s)]; }
   function fieldInit() {
+    if (S.poly && S.poly.length >= 3 && S.polyAt && (S.polyAt[0] !== S.lat || S.polyAt[1] !== S.lon)) { const dla = S.lat - S.polyAt[0], dlo = S.lon - S.polyAt[1]; S.poly = S.poly.map(p => [p[0] + dla, p[1] + dlo]); }
+    if (S.poly && S.poly.length >= 3 && S.poly.some(p => Math.abs(p[0] - S.lat) > 0.2 || Math.abs(p[1] - S.lon) > 0.3)) S.poly = null;
     if (!S.poly || S.poly.length < 3) {
       if (!(S.fN > 0 && S.fS > 0 && S.fE > 0 && S.fW > 0)) { const w = S.fw >= 20 ? S.fw : Math.sqrt((S.area || 100) * 1e4), l = S.fl >= 20 ? S.fl : w; S.fE = S.fW = w / 2; S.fN = S.fS = l / 2; }
       S.poly = rectPoly(S.fN, S.fS, S.fE, S.fW);
     }
     const xy = S.poly.map(toXY), xs = xy.map(p => p[0]), ys = xy.map(p => p[1]);
     S.fN = Math.max(...ys); S.fS = -Math.min(...ys); S.fE = Math.max(...xs); S.fW = -Math.min(...xs);
-    S.fw = Math.round(S.fE + S.fW); S.fl = Math.round(S.fN + S.fS);
+    S.fw = Math.round(S.fE + S.fW); S.fl = Math.round(S.fN + S.fS); S.polyAt = [S.lat, S.lon];
   }
   function fBounds() { return [[S.lat - S.fS / M, S.lon - S.fW / (M * cosl())], [S.lat + S.fN / M, S.lon + S.fE / (M * cosl())]]; }
   function inPoly(la, lo) { const P = S.poly; if (!P || P.length < 3) return true; let inside = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const yi = P[i][0], xi = P[i][1], yj = P[j][0], xj = P[j][1]; if ((yi > la) !== (yj > la) && lo < (xj - xi) * (la - yi) / (yj - yi) + xi) inside = !inside; } return inside; }
@@ -2183,7 +2185,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     let P = drawing.free ? simplify(drawing.pts, 4) : drawing.pts.slice(); cancelDraw(); if (P.length < 3) return;
     const lats = P.map(p => p[0]), lons = P.map(p => p[1]), cla = (Math.min(...lats) + Math.max(...lats)) / 2, clo = (Math.min(...lons) + Math.max(...lons)) / 2;
     const prev = S.poly; S.poly = P; const outside = !inPoly(S.lat, S.lon), far = map.distance([cla, clo], [S.lat, S.lon]) > 3000;
-    if (far || outside) { keepPoly = true; setPlace(cla, clo, null, true); keepPoly = false; S.poly = P; if (S.wiz != null && S.wiz > 0) wizard(0); }
+    if (far || outside) { keepPoly = true; setPlace(cla, clo, null, true); keepPoly = false; S.poly = P; S.polyAt = null; if (S.wiz != null && S.wiz > 0) wizard(0); }
     syncField();
   }
   function wireDraw() {
@@ -2284,13 +2286,11 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     }
   }
   function setPlace(lat, lon, demo, keep) {
-    const prevLat = S.lat, prevLon = S.lon;
     lon = ((lon + 180) % 360 + 360) % 360 - 180; lat = Math.max(-60, Math.min(70, lat));
     S.lat = Math.round(lat * 100) / 100; S.lon = Math.round(lon * 100) / 100; S.demo = demo ? demo.id : null;
     S.name = demo ? demo.name : 'Your field';
     if (demo && !keep) { S.rot = demo.rot.map(r => ({ c: r.c, cv: r.cv || null })); S.soil = demo.soil; setSlope(demo.slope); S.till = demo.till; $('soil').value = S.soil; $('till').value = S.till; renderRot(); }
     $('lat').value = S.lat; $('lon').value = S.lon; $('demo').value = S.demo || '';
-    if (!keepPoly && S.poly && S.poly.length >= 3 && isFinite(prevLat)) { const dla = S.lat - prevLat, dlo = S.lon - prevLon; S.poly = S.poly.map(p => [p[0] + dla, p[1] + dlo]); }
     S.terrain = null; S.soilSug = null; S.ndvi = null; S.touched = {}; $('sugsoil').innerHTML = ''; $('sugslope').innerHTML = ''; drawZones(); drawField(); liveWx();
     if (map) { marker.setLatLng([S.lat, S.lon]); cell.setBounds(cellBounds()); goStep(0, true); }
     load();
