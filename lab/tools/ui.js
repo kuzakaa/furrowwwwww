@@ -586,23 +586,39 @@
     const box = $('method').querySelector('.method'), parts = box.innerHTML.split('<h3>').filter(Boolean);
     box.outerHTML = '<div class="mgrid">' + parts.map((p, k) => '<div class="mstep" style="animation-delay:' + (k * 0.04).toFixed(2) + 's"><h3>' + p + '</div>').join('') + '</div>';
   }
+  const PROXY = 'https://still-cell-0930.kuzaka.workers.dev', LIVE = {};
+  async function liveChecks() {
+    if (LIVE.busy) return; LIVE.busy = true;
+    const lat = D.soil && D.soil.lat != null ? D.soil.lat : S.lat, lon = D.soil && D.soil.lon != null ? D.soil.lon : S.lon, d = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10), q = '?lat=' + lat + '&lon=' + lon;
+    const run = async (k, fn) => { LIVE[k] = { s: 'wait' }; sources(); const t0 = Date.now(); try { const m = await fn(); LIVE[k] = { s: 'ok', m: m + ' (' + ((Date.now() - t0) / 1000).toFixed(1) + ' s)' }; } catch (e) { LIVE[k] = { s: 'bad', m: String(e && e.message || e) }; } sources(); };
+    const get = async u => { const r = await fetch(u, { cache: 'no-store' }), j = await r.json().catch(() => ({})); if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status); return j; };
+    await Promise.all([
+      run('mm', async () => { const j = await get(PROXY + '/weather' + q + '&from=' + d(3) + '&to=' + d(1) + '&c=' + Date.now()); const n = Object.keys(j.series || {}).length; if (!n) throw new Error('no values'); return n + ' of 4 values returned'; }),
+      run('s2', async () => { const j = await get(PROXY + '/sentinel' + q + '&from=' + d(60) + '&to=' + d(1) + '&c=' + Date.now()); const s = j.series || []; if (!s.length) throw new Error('no cloud-free image in 60 days'); return 'last clear image ' + s[s.length - 1][0]; }),
+      run('ed', async () => { const r = await fetch(PROXY + '/ae/status/check-' + Date.now(), { cache: 'no-store' }), j = await r.json().catch(() => ({})); if (/login/i.test(j.error || '')) throw new Error(j.error); if (!r.ok && !/status/i.test(j.error || '')) throw new Error(j.error || 'HTTP ' + r.status); return 'NASA login accepted'; }),
+      run('fao', async () => { const r = await fetch('https://fenixservices.fao.org/faostat/api/v1/en/definitions/domain/PP/element?output_type=json', { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status); return 'reachable'; })
+    ]);
+    LIVE.at = new Date(); LIVE.busy = false; sources();
+  }
   function sources() {
-    const on = (x, a, b) => x ? '<span class="ok">' + a + '</span>' : b;
+    const on = (x, a, b) => x ? '<span class="ok">' + a + '</span>' : '<span class="bad">' + b + '</span>';
+    const lv = (k, use) => { const c = LIVE[k]; if (!c || c.s === 'wait') return '<span class="mute">Checking…</span>'; return c.s === 'ok' ? '<span class="ok">Working: ' + c.m + '</span><div class="mute">' + use + '</div>' : '<span class="bad">Not working: ' + esc(c.m) + '</span>'; };
     const rows = [
-      ['Weather 2001-2025', 'NASA POWER', on(D.raw, 'In use', 'Loading')],
-      ['Climate 2036-2050', '7 CMIP6 high-res models via Open-Meteo', on(D.proj, 'In use: climate stress test', 'Loading or failed')],
-      ['Greenness 2015-2025', 'MODIS NDVI via ORNL DAAC', on(D.nd, 'In use: plant stress, satellite check', 'Loading or failed')],
-      ['Soil carbon, nitrogen, pH', 'ISRIC SoilGrids', on(D.soil, 'In use: soil info', 'Loading or failed')],
-      ['Farmer records and votes', 'Farmers, through the shared list', on(D.shared.length, 'In use: ' + D.shared.length + ' notes', 'Ready, none loaded')],
-      ['Last 30 days: rain, evaporation, topsoil moisture', 'Meteomatics, through our server', '<span class="ok">In use: field check and advice on the main page</span>'],
-      ['Deep soil moisture from space', 'NASA SMAP L4 via AppEEARS, through our server', '<span class="ok">In use: main page, arrives after NASA processes it (5-30 min)</span>'],
-      ['Field greenness, 10 m', 'Copernicus Sentinel-2, through our server', '<span class="ok">In use: latest cloud-free view on the main page</span>'],
-      ['Plant water stress', 'NASA ECOSTRESS', 'Not connected yet'],
-      ['Groundwater', 'NASA GRACE-FO', 'Not connected yet'],
-      ['Crop prices', 'FAOSTAT', 'FAO server down at the moment'],
-      ['Field sensors', 'Farm stations', 'Would come in through the shared list']
+      ['Weather 2001-2025', 'NASA POWER', on(D.raw, 'Loaded for this field', 'Not loaded')],
+      ['Climate 2036-2050', '7 CMIP6 high-res models via Open-Meteo', on(D.proj, 'Loaded: ' + (D.proj ? D.proj.length - 1 : 0) + ' models', 'Not loaded')],
+      ['Greenness 2015-2025', 'MODIS NDVI via ORNL DAAC', on(D.nd, 'Loaded for this field', 'Not loaded')],
+      ['Soil carbon, nitrogen, pH', 'ISRIC SoilGrids', on(D.soil, 'Loaded: ' + (D.soil ? D.soil.ocs + ' t C/ha' : ''), 'Not loaded')],
+      ['Farmer records and votes', 'Farmers, through the shared list', D.shared.length ? '<span class="ok">' + D.shared.length + ' notes loaded</span>' : '<span class="mute">None loaded yet</span>'],
+      ['Last days: rain, evaporation, topsoil moisture', 'Meteomatics, through our server', lv('mm', 'Used on the main page for the field check and advice')],
+      ['Deep soil moisture from space', 'NASA SMAP L4 via AppEEARS, through our server', lv('ed', 'NASA processes each request in 5-30 minutes, then it shows on the main page')],
+      ['Field greenness, 10 m', 'Copernicus Sentinel-2, through our server', lv('s2', 'Used on the main page')],
+      ['Crop prices', 'FAOSTAT', lv('fao', 'Not used in the numbers yet')],
+      ['Plant water stress', 'NASA ECOSTRESS', '<span class="mute">Not connected in the code</span>'],
+      ['Groundwater', 'NASA GRACE-FO', '<span class="mute">Not connected in the code</span>']
     ];
-    $('sources').innerHTML = '<div class="card scroll"><table><tr><th>What</th><th>From</th><th>Status</th></tr>' + rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>').join('') + '</table></div>';
+    $('sources').innerHTML = '<div class="card scroll"><div class="bar" style="justify-content:space-between;align-items:center"><span class="mute">' + (LIVE.at ? 'Checked live at ' + LIVE.at.toLocaleTimeString() : LIVE.busy ? 'Checking each source now…' : 'Not checked yet') + '</span><button id="recheck">Check again</button></div><table><tr><th>What</th><th>From</th><th>Status</th></tr>' + rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>').join('') + '</table></div>';
+    $('recheck').onclick = liveChecks;
+    if (!LIVE.started) { LIVE.started = true; liveChecks(); }
   }
   function setTab(t) { if (t === 'mapt') setTimeout(bigMap, 30);
     setTab0(t); }
