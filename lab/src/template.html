@@ -103,8 +103,8 @@
     <div class="explain-row"><button class="why" data-x="slope">What does this mean?</button><div class="explain" id="x_slope"><p>Slope scales runoff and erosion. 5% is a 5 m rise over 100 m. Risk rises sharply above about 6%.</p></div></div>
     <div class="field"><label for="till">Tillage</label><select id="till"></select></div>
     <div class="explain-row"><button class="why" data-x="till">What does this mean?</button><div class="explain" id="x_till"><p>Conventional: ploughing or discing, little residue left. Reduced: shallow tillage, part of the residue stays. No-till: direct drilling into stubble. Less tillage leaves more residue, which cuts erosion and evaporation.</p><p class="small"><a href="https://en.wikipedia.org/wiki/No-till_farming" target="_blank" rel="noopener">No-till farming</a></p></div></div>
-    <label class="check"><input type="checkbox" id="irrig"> I can irrigate this field</label>
-    <label class="check"><input type="checkbox" id="stock"> I keep livestock</label>
+    <div class="checkq"><label class="check"><input type="checkbox" id="irrig"> I can irrigate this field</label> <button class="q" data-term="irrig" aria-label="What does this mean?">?</button></div>
+    <div class="checkq"><label class="check"><input type="checkbox" id="stock"> I keep livestock</label> <button class="q" data-term="stock" aria-label="What does this mean?">?</button></div>
     <div id="stockbox" hidden><div class="row"><div class="field"><label for="stype">Animals</label><select id="stype"><option value="beef">Beef cattle</option><option value="dairy">Dairy cows</option><option value="sheep">Sheep or goats</option><option value="horse">Horses</option></select></div><div class="field"><label for="sn">How many</label><input id="sn" type="number" min="0" step="1" value="0"></div></div><p class="small" id="stockmsg"></p></div>
           </details>
   <details class="box" data-wiz="excl"><summary>Crops you can’t grow or sell</summary>
