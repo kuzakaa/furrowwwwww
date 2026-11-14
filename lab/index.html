@@ -700,6 +700,27 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 .mbox > p{margin:0 0 12px;line-height:1.55;text-wrap:pretty}
 .mbox .mrow.even{margin-top:24px;gap:14px}
 .mbox .mrow.even .btn{min-height:54px;padding:0 16px;font-size:17px}
+#intro .find{position:absolute;top:56px;left:50%;transform:translate(-50%,-10px);display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:min(520px,calc(100vw - 24px));padding:10px;border-radius:16px;background:rgba(23,24,22,.84);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);opacity:0;pointer-events:none;transition:opacity .6s ease .25s,transform .6s cubic-bezier(.2,.8,.2,1) .25s}
+#intro.choose .find{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#intro.go .find{opacity:0;pointer-events:none}
+#intro .find input{flex:1;min-width:0;height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:#fff;font:inherit;font-size:16px}
+#intro .find .btn{height:44px;padding:0 18px;margin:0}
+#intro .find #ifmsg{flex-basis:100%;font-size:13.4px;color:var(--muted);padding:0 4px}
+#intro .find #ifmsg:empty{display:none}
+#intro .coords{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin:12px 0 4px}
+#intro .coords input{height:46px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:#fff;font:inherit;font-size:16px;font-variant-numeric:tabular-nums;min-width:0}
+#intro .coords input.bad{border-color:#f87171}
+#intro .pick .coords .btn{margin:0;height:46px;padding:0 18px}
+@media (max-width:520px){#intro .coords{grid-template-columns:1fr 1fr}#intro .pick .coords .btn{grid-column:1/-1}}
+.livebox{margin:0 0 14px;border:1px solid var(--line);border-radius:16px;background:rgba(163,230,53,.05)}
+.livebox > summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:600;font-size:17px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.livebox > summary::-webkit-details-marker{display:none}
+.livebox > summary::before{content:"+";display:inline-block;width:18px;color:#a3e635;font-weight:700;transition:transform .25s ease}
+.livebox[open] > summary::before{transform:rotate(45deg)}
+.livebox > summary span{font-weight:400;font-size:14px;color:var(--muted)}
+.livebox #livewx{padding:0 12px 12px}
+.livebox #livewx:empty::after{content:"Pick a field to load live data.";display:block;color:var(--muted);font-size:14px;padding:0 4px 4px}
+body:not([data-tab="result"]) .livebox{display:none}
 
 </style>
 </head>
@@ -720,10 +741,11 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
     <div class="ends"><span>2001</span><span id="introyr">2001</span><span>2025</span></div>
     <p class="by">Made by Valerii and Veta</p>
   </div>
+  <form class="find" id="ifind" autocomplete="off"><input id="iq" type="search" placeholder="Country, city or village" aria-label="Search a place"><button class="btn" type="submit">Show</button><span id="ifmsg"></span></form>
   <div class="pick">
     <h2>Find your field</h2>
-    <p>Drag the map around, then tap a spot or hit the button.</p>
-    <button class="btn" id="introgo">Start here</button>
+    <p>Drag the map and tap your field, or type its coordinates.</p>
+    <div class="coords"><input id="ilat" type="number" step="0.0001" inputmode="decimal" placeholder="Latitude" aria-label="Latitude"><input id="ilon" type="number" step="0.0001" inputmode="decimal" placeholder="Longitude" aria-label="Longitude"><button class="btn" id="introgo">Start here</button></div>
     <div class="ex"><span>Or just try one of ours</span><div class="chips" id="introchips"></div></div>
   </div>
 </div>
@@ -755,7 +777,7 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
       <button class="btn" id="load">Load</button>
     </div>
     <div class="field"><label for="area">Field size, hectares</label><input id="area" type="number" min="1" step="1" value="100"></div>
-    <div class="row"><button class="btn ghost" id="reset">Start over</button></div>
+    <div class="row"><button class="btn ghost" id="reloc">Change location</button><button class="btn ghost" id="reset">Start over</button></div>
     <p class="small muted">We save your choices on this device, so you won’t lose them if you reload.</p>
   </details>
   <details class="box" open data-wiz="rot"><summary>What you grow now</summary>
@@ -787,7 +809,6 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
       <div class="field"><label for="soil">Soil texture</label><select id="soil"></select></div>
     </div>
     <div id="sugsoil"></div>
-    <div id="livewx"></div>
     <div class="explain-row"><button class="why" data-x="soil">What does this mean?</button><div class="explain" id="x_soil"><p id="soiltxt"></p><p>Texture sets how much water the root zone can store, which drives drought stress in the model.</p><p class="small">Not sure? <a href="https://soilgrids.org" target="_blank" rel="noopener">SoilGrids map</a> · <a href="https://websoilsurvey.nrcs.usda.gov/app/" target="_blank" rel="noopener">Web Soil Survey (US)</a> · <a href="https://en.wikipedia.org/wiki/Soil_texture" target="_blank" rel="noopener">Soil texture by feel</a></p></div></div>
     <div class="slider"><label for="slopep">Slope</label><input id="slopep" type="range" min="0" max="20" step="0.5" value="3"><span class="num" id="slopev">3%</span></div>
     <div id="sugslope"></div>
@@ -813,6 +834,7 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
   <nav class="tabs" id="tabs" aria-label="Results"></nav>
   <div class="scrollarea" id="scroll">
     <div class="banner" id="status"><span class="spin"></span>Grabbing 25 years of NASA weather data…</div>
+    <details class="livebox" id="livebox"><summary>Your field right now <span>live satellite and weather data</span></summary><div id="livewx"></div></details>
     <div id="out"></div>
     <div class="pane" data-pane="method">
       <h2>How Furrow works</h2>
@@ -1900,16 +1922,16 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
     document.querySelectorAll('[data-wiz]').forEach(b => { b.classList.remove('cur'); b.open = b.dataset.wiz === 'rot'; }); document.querySelectorAll('.setup details.box:not([data-wiz])').forEach(b => b.open = false); document.body.classList.remove('wacc', 'wpri', 'wfree');
     setTab('result'); if (map) goStep(0, true); moveInk();
   }
-  let introPick = null;
-  function intro() {
+  let introPick = null, mask = null;
+  function intro(quick) {
     const el = $('intro'), off = () => { document.body.classList.remove('intro'); S.intro = false; introPick = null; };
     if (!el) { off(); return; }
-    const calm = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const calm = quick || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     S.intro = true; let phase = 1, tick, y = 2001, pins = [];
     const fmt = c => Math.abs(c.lat).toFixed(2) + '°' + (c.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(c.lng).toFixed(2) + '°' + (c.lng < 0 ? 'W' : 'E');
     if (map) {
-      map.setView([DEMOS[0].lat, DEMOS[0].lon], calm ? 9.5 : 5.5, { animate: false });
-      const ll = $('introll'), upd = () => { ll.textContent = fmt(map.getCenter()); }; upd(); map.on('move', upd);
+      map.setView(quick ? [S.lat, S.lon] : [DEMOS[0].lat, DEMOS[0].lon], calm ? 9.5 : 5.5, { animate: false });
+      const ll = $('introll'), upd = () => { const c = map.getCenter(); ll.textContent = fmt(c); if (document.activeElement !== $('ilat') && document.activeElement !== $('ilon')) { $('ilat').value = c.lat.toFixed(4); $('ilon').value = c.lng.toFixed(4); } }; upd(); map.on('move', upd);
     }
     const bar = $('introbar'), yr = $('introyr'), big = $('introbig');
     if (!calm) setTimeout(() => {
@@ -1921,7 +1943,7 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
     const end = () => {
       el.classList.add('dark');
       setTimeout(() => {
-        off(); wizard(0);
+        off(); if (mask) { mask.remove(); mask = null; } wizard(0);
         if (map) { map.stop(); pins.forEach(m => map.removeLayer(m)); goStep(0, true); }
         moveInk(); el.classList.add('out'); setTimeout(() => el.remove(), 900);
       }, 540);
@@ -1938,7 +1960,25 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
       if (map) DEMOS.forEach(d => { const m = window.L.marker([d.lat, d.lon], { icon: window.L.divIcon({ className: 'cpin', html: '<i></i><span class="' + d.lab + '">' + d.short + '</span>', iconSize: [0, 0] }) }).addTo(map); m.on('click', () => pick(d.lat, d.lon, d)); pins.push(m); });
     };
     $('introchips').addEventListener('click', e => { const b = e.target.closest('[data-demo]'); if (b) { e.stopPropagation(); const d = DEMOS.find(x => x.id === b.dataset.demo); pick(d.lat, d.lon, d); } });
-    $('introgo').onclick = e => { e.stopPropagation(); if (map) { const c = map.getCenter(); const d = DEMOS.find(x => Math.abs(x.lat - c.lat) < 0.02 && Math.abs(x.lon - c.lng) < 0.02); pick(c.lat, c.lng, d || null); } else pick(DEMOS[0].lat, DEMOS[0].lon, DEMOS[0]); };
+    $('introgo').onclick = e => { e.stopPropagation(); const la = parseFloat($('ilat').value), lo = parseFloat($('ilon').value); if (!(isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180)) { $('ilat').classList.add('bad'); return; } $('ilat').classList.remove('bad'); const d = DEMOS.find(x => Math.abs(x.lat - la) < 0.02 && Math.abs(x.lon - lo) < 0.02); pick(la, lo, d || null); };
+    ['ilat', 'ilon'].forEach(id => { $(id).onkeydown = e => { if (e.key === 'Enter') $('introgo').click(); }; $(id).onchange = () => { const la = parseFloat($('ilat').value), lo = parseFloat($('ilon').value); if (map && isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180) map.setView([la, lo], Math.max(map.getZoom(), 11)); }; });
+    $('ifind').onsubmit = async e => {
+      e.preventDefault(); e.stopPropagation(); const q = $('iq').value.trim(), msg = $('ifmsg'); if (!q || !map) return;
+      msg.textContent = 'Searching…';
+      try {
+        const r = await fetch('https://nominatim.openstreetmap.org/search?format=geojson&polygon_geojson=1&polygon_threshold=0.001&limit=1&q=' + encodeURIComponent(q), { headers: { 'Accept-Language': 'en' } });
+        const f = ((await r.json()).features || [])[0]; if (!f) { msg.textContent = 'Nothing found. Try adding the country.'; return; }
+        msg.textContent = f.properties.display_name.split(',').slice(0, 3).join(',');
+        if (mask) { mask.remove(); mask = null; }
+        const g = f.geometry, ring = c => c.map(p => [p[1], p[0]]), polys = g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
+        if (polys.length) {
+          mask = window.L.polygon([[[-89.9, -540], [-89.9, 540], [89.9, 540], [89.9, -540]]].concat(polys.map(pg => ring(pg[0]))), { stroke: false, fillColor: '#1b1d1a', fillOpacity: 0.72, interactive: false }).addTo(map);
+          mask.outline = window.L.polygon(polys.map(pg => ring(pg[0])), { color: '#a3e635', weight: 2, fill: false, interactive: false }).addTo(map);
+          const rm = mask.remove.bind(mask); mask.remove = () => { mask.outline.remove(); return rm(); };
+          map.flyToBounds(mask.outline.getBounds(), { padding: [40, 40], duration: 1.2 });
+        } else map.flyTo([+f.geometry.coordinates[1], +f.geometry.coordinates[0]], 13, { duration: 1.2 });
+      } catch (err) { msg.textContent = 'Search is not available right now.'; }
+    };
     if (calm) choose(); else setTimeout(choose, 4200);
     el.addEventListener('click', e => { if (phase === 1) choose(); });
   }
@@ -2169,9 +2209,11 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
       window.addEventListener('resize', () => map.invalidateSize());
     } else { $('play').hidden = true;
     }
+    $('reloc').onclick = () => { try { sessionStorage.setItem('furrow:reloc', '1'); } catch (e) {} window.location.reload(); };
     $('reset').onclick = () => { try { localStorage.removeItem(KEY); } catch (e) {} window.location.reload(); };
     const saved = restore();
-    if (saved) { const el = $('intro'); if (el) el.remove(); document.body.classList.remove('intro'); S.intro = false; } else intro();
+    let reloc = false; try { reloc = sessionStorage.getItem('furrow:reloc') === '1'; sessionStorage.removeItem('furrow:reloc'); } catch (e) {}
+    if (saved && !reloc) { const el = $('intro'); if (el) el.remove(); document.body.classList.remove('intro'); S.intro = false; } else intro(reloc && saved);
     setTab('result');
     window.addEventListener('resize', moveInk); setTimeout(moveInk, 400); if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveInk);
     if (saved) setPlace(saved.lat, saved.lon, DEMOS.find(d => d.id === saved.demo) || null, true); else setPlace(DEMOS[0].lat, DEMOS[0].lon, DEMOS[0]);

@@ -29,10 +29,11 @@
     <div class="ends"><span>2001</span><span id="introyr">2001</span><span>2025</span></div>
     <p class="by">Made by Valerii and Veta</p>
   </div>
+  <form class="find" id="ifind" autocomplete="off"><input id="iq" type="search" placeholder="Country, city or village" aria-label="Search a place"><button class="btn" type="submit">Show</button><span id="ifmsg"></span></form>
   <div class="pick">
     <h2>Find your field</h2>
-    <p>Drag the map around, then tap a spot or hit the button.</p>
-    <button class="btn" id="introgo">Start here</button>
+    <p>Drag the map and tap your field, or type its coordinates.</p>
+    <div class="coords"><input id="ilat" type="number" step="0.0001" inputmode="decimal" placeholder="Latitude" aria-label="Latitude"><input id="ilon" type="number" step="0.0001" inputmode="decimal" placeholder="Longitude" aria-label="Longitude"><button class="btn" id="introgo">Start here</button></div>
     <div class="ex"><span>Or just try one of ours</span><div class="chips" id="introchips"></div></div>
   </div>
 </div>
@@ -64,7 +65,7 @@
       <button class="btn" id="load">Load</button>
     </div>
     <div class="field"><label for="area">Field size, hectares</label><input id="area" type="number" min="1" step="1" value="100"></div>
-    <div class="row"><button class="btn ghost" id="reset">Start over</button></div>
+    <div class="row"><button class="btn ghost" id="reloc">Change location</button><button class="btn ghost" id="reset">Start over</button></div>
     <p class="small muted">We save your choices on this device, so you won’t lose them if you reload.</p>
   </details>
   <details class="box" open data-wiz="rot"><summary>What you grow now</summary>
@@ -96,7 +97,6 @@
       <div class="field"><label for="soil">Soil texture</label><select id="soil"></select></div>
     </div>
     <div id="sugsoil"></div>
-    <div id="livewx"></div>
     <div class="explain-row"><button class="why" data-x="soil">What does this mean?</button><div class="explain" id="x_soil"><p id="soiltxt"></p><p>Texture sets how much water the root zone can store, which drives drought stress in the model.</p><p class="small">Not sure? <a href="https://soilgrids.org" target="_blank" rel="noopener">SoilGrids map</a> · <a href="https://websoilsurvey.nrcs.usda.gov/app/" target="_blank" rel="noopener">Web Soil Survey (US)</a> · <a href="https://en.wikipedia.org/wiki/Soil_texture" target="_blank" rel="noopener">Soil texture by feel</a></p></div></div>
     <div class="slider"><label for="slopep">Slope</label><input id="slopep" type="range" min="0" max="20" step="0.5" value="3"><span class="num" id="slopev">3%</span></div>
     <div id="sugslope"></div>
@@ -122,6 +122,7 @@
   <nav class="tabs" id="tabs" aria-label="Results"></nav>
   <div class="scrollarea" id="scroll">
     <div class="banner" id="status"><span class="spin"></span>Grabbing 25 years of NASA weather data…</div>
+    <details class="livebox" id="livebox"><summary>Your field right now <span>live satellite and weather data</span></summary><div id="livewx"></div></details>
     <div id="out"></div>
     <div class="pane" data-pane="method">
       <h2>How Furrow works</h2>

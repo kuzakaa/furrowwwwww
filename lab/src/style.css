@@ -689,3 +689,24 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 .mbox > p{margin:0 0 12px;line-height:1.55;text-wrap:pretty}
 .mbox .mrow.even{margin-top:24px;gap:14px}
 .mbox .mrow.even .btn{min-height:54px;padding:0 16px;font-size:17px}
+#intro .find{position:absolute;top:56px;left:50%;transform:translate(-50%,-10px);display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:min(520px,calc(100vw - 24px));padding:10px;border-radius:16px;background:rgba(23,24,22,.84);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);opacity:0;pointer-events:none;transition:opacity .6s ease .25s,transform .6s cubic-bezier(.2,.8,.2,1) .25s}
+#intro.choose .find{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#intro.go .find{opacity:0;pointer-events:none}
+#intro .find input{flex:1;min-width:0;height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:#fff;font:inherit;font-size:16px}
+#intro .find .btn{height:44px;padding:0 18px;margin:0}
+#intro .find #ifmsg{flex-basis:100%;font-size:13.4px;color:var(--muted);padding:0 4px}
+#intro .find #ifmsg:empty{display:none}
+#intro .coords{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin:12px 0 4px}
+#intro .coords input{height:46px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:#fff;font:inherit;font-size:16px;font-variant-numeric:tabular-nums;min-width:0}
+#intro .coords input.bad{border-color:#f87171}
+#intro .pick .coords .btn{margin:0;height:46px;padding:0 18px}
+@media (max-width:520px){#intro .coords{grid-template-columns:1fr 1fr}#intro .pick .coords .btn{grid-column:1/-1}}
+.livebox{margin:0 0 14px;border:1px solid var(--line);border-radius:16px;background:rgba(163,230,53,.05)}
+.livebox > summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:600;font-size:17px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.livebox > summary::-webkit-details-marker{display:none}
+.livebox > summary::before{content:"+";display:inline-block;width:18px;color:#a3e635;font-weight:700;transition:transform .25s ease}
+.livebox[open] > summary::before{transform:rotate(45deg)}
+.livebox > summary span{font-weight:400;font-size:14px;color:var(--muted)}
+.livebox #livewx{padding:0 12px 12px}
+.livebox #livewx:empty::after{content:"Pick a field to load live data.";display:block;color:var(--muted);font-size:14px;padding:0 4px 4px}
+body:not([data-tab="result"]) .livebox{display:none}

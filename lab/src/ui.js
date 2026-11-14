@@ -632,16 +632,16 @@
     document.querySelectorAll('[data-wiz]').forEach(b => { b.classList.remove('cur'); b.open = b.dataset.wiz === 'rot'; }); document.querySelectorAll('.setup details.box:not([data-wiz])').forEach(b => b.open = false); document.body.classList.remove('wacc', 'wpri', 'wfree');
     setTab('result'); if (map) goStep(0, true); moveInk();
   }
-  let introPick = null;
-  function intro() {
+  let introPick = null, mask = null;
+  function intro(quick) {
     const el = $('intro'), off = () => { document.body.classList.remove('intro'); S.intro = false; introPick = null; };
     if (!el) { off(); return; }
-    const calm = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const calm = quick || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     S.intro = true; let phase = 1, tick, y = 2001, pins = [];
     const fmt = c => Math.abs(c.lat).toFixed(2) + '°' + (c.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(c.lng).toFixed(2) + '°' + (c.lng < 0 ? 'W' : 'E');
     if (map) {
-      map.setView([DEMOS[0].lat, DEMOS[0].lon], calm ? 9.5 : 5.5, { animate: false });
-      const ll = $('introll'), upd = () => { ll.textContent = fmt(map.getCenter()); }; upd(); map.on('move', upd);
+      map.setView(quick ? [S.lat, S.lon] : [DEMOS[0].lat, DEMOS[0].lon], calm ? 9.5 : 5.5, { animate: false });
+      const ll = $('introll'), upd = () => { const c = map.getCenter(); ll.textContent = fmt(c); if (document.activeElement !== $('ilat') && document.activeElement !== $('ilon')) { $('ilat').value = c.lat.toFixed(4); $('ilon').value = c.lng.toFixed(4); } }; upd(); map.on('move', upd);
     }
     const bar = $('introbar'), yr = $('introyr'), big = $('introbig');
     if (!calm) setTimeout(() => {
@@ -653,7 +653,7 @@
     const end = () => {
       el.classList.add('dark');
       setTimeout(() => {
-        off(); wizard(0);
+        off(); if (mask) { mask.remove(); mask = null; } wizard(0);
         if (map) { map.stop(); pins.forEach(m => map.removeLayer(m)); goStep(0, true); }
         moveInk(); el.classList.add('out'); setTimeout(() => el.remove(), 900);
       }, 540);
@@ -670,7 +670,25 @@
       if (map) DEMOS.forEach(d => { const m = window.L.marker([d.lat, d.lon], { icon: window.L.divIcon({ className: 'cpin', html: '<i></i><span class="' + d.lab + '">' + d.short + '</span>', iconSize: [0, 0] }) }).addTo(map); m.on('click', () => pick(d.lat, d.lon, d)); pins.push(m); });
     };
     $('introchips').addEventListener('click', e => { const b = e.target.closest('[data-demo]'); if (b) { e.stopPropagation(); const d = DEMOS.find(x => x.id === b.dataset.demo); pick(d.lat, d.lon, d); } });
-    $('introgo').onclick = e => { e.stopPropagation(); if (map) { const c = map.getCenter(); const d = DEMOS.find(x => Math.abs(x.lat - c.lat) < 0.02 && Math.abs(x.lon - c.lng) < 0.02); pick(c.lat, c.lng, d || null); } else pick(DEMOS[0].lat, DEMOS[0].lon, DEMOS[0]); };
+    $('introgo').onclick = e => { e.stopPropagation(); const la = parseFloat($('ilat').value), lo = parseFloat($('ilon').value); if (!(isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180)) { $('ilat').classList.add('bad'); return; } $('ilat').classList.remove('bad'); const d = DEMOS.find(x => Math.abs(x.lat - la) < 0.02 && Math.abs(x.lon - lo) < 0.02); pick(la, lo, d || null); };
+    ['ilat', 'ilon'].forEach(id => { $(id).onkeydown = e => { if (e.key === 'Enter') $('introgo').click(); }; $(id).onchange = () => { const la = parseFloat($('ilat').value), lo = parseFloat($('ilon').value); if (map && isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180) map.setView([la, lo], Math.max(map.getZoom(), 11)); }; });
+    $('ifind').onsubmit = async e => {
+      e.preventDefault(); e.stopPropagation(); const q = $('iq').value.trim(), msg = $('ifmsg'); if (!q || !map) return;
+      msg.textContent = 'Searching…';
+      try {
+        const r = await fetch('https://nominatim.openstreetmap.org/search?format=geojson&polygon_geojson=1&polygon_threshold=0.001&limit=1&q=' + encodeURIComponent(q), { headers: { 'Accept-Language': 'en' } });
+        const f = ((await r.json()).features || [])[0]; if (!f) { msg.textContent = 'Nothing found. Try adding the country.'; return; }
+        msg.textContent = f.properties.display_name.split(',').slice(0, 3).join(',');
+        if (mask) { mask.remove(); mask = null; }
+        const g = f.geometry, ring = c => c.map(p => [p[1], p[0]]), polys = g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
+        if (polys.length) {
+          mask = window.L.polygon([[[-89.9, -540], [-89.9, 540], [89.9, 540], [89.9, -540]]].concat(polys.map(pg => ring(pg[0]))), { stroke: false, fillColor: '#1b1d1a', fillOpacity: 0.72, interactive: false }).addTo(map);
+          mask.outline = window.L.polygon(polys.map(pg => ring(pg[0])), { color: '#a3e635', weight: 2, fill: false, interactive: false }).addTo(map);
+          const rm = mask.remove.bind(mask); mask.remove = () => { mask.outline.remove(); return rm(); };
+          map.flyToBounds(mask.outline.getBounds(), { padding: [40, 40], duration: 1.2 });
+        } else map.flyTo([+f.geometry.coordinates[1], +f.geometry.coordinates[0]], 13, { duration: 1.2 });
+      } catch (err) { msg.textContent = 'Search is not available right now.'; }
+    };
     if (calm) choose(); else setTimeout(choose, 4200);
     el.addEventListener('click', e => { if (phase === 1) choose(); });
   }
@@ -901,9 +919,11 @@
       window.addEventListener('resize', () => map.invalidateSize());
     } else { $('play').hidden = true;
     }
+    $('reloc').onclick = () => { try { sessionStorage.setItem('furrow:reloc', '1'); } catch (e) {} window.location.reload(); };
     $('reset').onclick = () => { try { localStorage.removeItem(KEY); } catch (e) {} window.location.reload(); };
     const saved = restore();
-    if (saved) { const el = $('intro'); if (el) el.remove(); document.body.classList.remove('intro'); S.intro = false; } else intro();
+    let reloc = false; try { reloc = sessionStorage.getItem('furrow:reloc') === '1'; sessionStorage.removeItem('furrow:reloc'); } catch (e) {}
+    if (saved && !reloc) { const el = $('intro'); if (el) el.remove(); document.body.classList.remove('intro'); S.intro = false; } else intro(reloc && saved);
     setTab('result');
     window.addEventListener('resize', moveInk); setTimeout(moveInk, 400); if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveInk);
     if (saved) setPlace(saved.lat, saved.lon, DEMOS.find(d => d.id === saved.demo) || null, true); else setPlace(DEMOS[0].lat, DEMOS[0].lon, DEMOS[0]);
