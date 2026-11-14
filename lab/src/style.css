@@ -464,3 +464,39 @@ body.wiz [data-wiz=field] > p.small{display:none}
 body.wiz [data-wiz=field] #reset{display:none}
 .res .tabs{flex-wrap:nowrap;gap:5px}
 .res .tabs button{padding:8px 11px;font-size:15px}
+
+.stickbar{position:sticky;bottom:-1px;margin:18px -20px -20px;padding:12px 20px 16px;background:linear-gradient(to top,rgba(12,33,23,1) 70%,rgba(12,33,23,0));z-index:3}
+.stickbar .bigbtn{margin:0;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.modal.wide .mbox{max-width:760px;width:100%;max-height:86vh;overflow:auto}
+.modal.out{animation:fadeOut .22s ease both}
+@keyframes fadeOut{to{opacity:0}}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.mhead h2{margin:0}
+.xbtn{width:42px;height:42px;padding:0!important;font-size:24px;line-height:1;border-radius:50%}
+.mbox .rank{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.mbox .rk{text-align:left}
+.q{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:1px solid rgba(168,224,138,.55);background:rgba(168,224,138,.12);color:var(--em);font-size:13px;font-weight:700;cursor:pointer;padding:0;margin-left:4px;vertical-align:middle;transition:background .2s ease,transform .15s ease}
+.q:hover{background:rgba(168,224,138,.3)}
+.osec>summary .q{margin-left:8px}
+.animbox{background:rgba(0,0,0,.25);border-radius:16px;padding:10px;margin:14px 0}
+.anim{width:100%;height:auto;display:block}
+.anim text{fill:#d3e6d4;font:13px Rubik,sans-serif}
+.anim .drops line{stroke:#7cc6e8;stroke-width:2.5;stroke-linecap:round;animation:drop 1.2s linear infinite}
+@keyframes drop{from{transform:translateY(-10px);opacity:0}15%{opacity:1}to{transform:translateY(95px);opacity:.2}}
+.anim .wash circle{animation:wash 2.4s ease-in infinite}
+@keyframes wash{from{transform:translateX(0);opacity:1}to{transform:translateX(60px) translateY(25px);opacity:0}}
+.anim .sway{transform-origin:bottom;transform-box:fill-box;animation:sway 2.6s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+.anim .level{animation:level 4s ease-in-out infinite alternate;transform-origin:bottom;transform-box:fill-box}
+@keyframes level{from{transform:scaleY(.35)}to{transform:scaleY(1)}}
+.anim .leaf{animation:sway 2s ease-in-out infinite alternate;transform-origin:left;transform-box:fill-box}
+.anim .card{fill:#9fd67a;animation:shuf 2.4s cubic-bezier(.5,0,.3,1) infinite}
+.anim .card.c1{fill:#7cc6e8}.anim .card.c2{fill:#f2b04f}.anim .card.c3{fill:#e8d7b0}.anim .card.c4{fill:#f39a86}
+@keyframes shuf{0%,100%{transform:translateY(0)}30%{transform:translateY(-26px) translateX(14px)}60%{transform:translateY(10px) translateX(-10px)}}
+.anim .root{stroke-dasharray:120;stroke-dashoffset:120;animation:grow2 2.4s ease-out infinite}
+@keyframes grow2{to{stroke-dashoffset:0}}
+.anim .bar{transform-origin:left;transform-box:fill-box;animation:barg 1.6s cubic-bezier(.2,.8,.2,1) both}
+@keyframes barg{from{transform:scaleX(0)}}
+.mbox .step{opacity:0;animation:paneIn .5s cubic-bezier(.2,.8,.2,1) forwards;font-size:17px;line-height:1.55}
+@media (prefers-reduced-motion:reduce){.anim *,.mbox .step{animation:none!important;opacity:1!important;stroke-dashoffset:0!important}}
+.mbox .step{margin:0 0 10px}

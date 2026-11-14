@@ -250,7 +250,7 @@
   }
 
   const TABS = [['result', 'Result'], ['options', 'Options'], ['climate', 'Weather'], ['calendar', 'Calendar'], ['years', 'Bad years'], ['method', 'How it works'], ['tools', 'More tools']];
-  let LAST = null;
+  let LAST = null, RANK = '';
   function recompute() {
     if (!S.raw) return;
     setSlope(S.slopePct);
@@ -337,11 +337,11 @@
     O += '<h3 class="big">' + esc(E.rotLabel(s.rot)) + '</h3><div class="oscore"><b>' + r0(s.match) + '</b><span>/ 100 for your priorities' + (isCur ? '' : ', <em class="' + (delta >= 0 ? 'up' : 'dn') + '">' + (delta >= 0 ? '+' : '') + delta + '</em> vs now') + '</span></div>';
     O += '<p class="lead">' + x.why + '</p>';
     if (!isCur) {
-      const kpi = (lab, a, b, unit, good) => { const better = good ? b > a : b < a, same = a === b; return '<div class="kpi"><span class="kl">' + lab + '</span><span class="kv"><s>' + a + unit + '</s> ' + b + unit + '</span><span class="kd ' + (same ? '' : better ? 'up' : 'dn') + '">' + (same ? 'same' : better ? 'better' : 'worse') + '</span></div>'; };
-      O += '<div class="kpis">' + kpi('Bare soil, days a year', r0(cur.m.bare), r0(s.m.bare), '', false) + kpi('Heavy rain on open soil, mm', r0(cur.m.exposed), r0(s.m.exposed), '', false) + kpi('Water crops missed', Math.round(cur.m.relMean * 100), Math.round(s.m.relMean * 100), '%', false) + kpi('Living roots, days a year', r0(cur.m.living), r0(s.m.living), '', true) + '</div>';
+      const kpi = (lab, a, b, unit, good, term) => { const better = good ? b > a : b < a, same = a === b; return '<div class="kpi"><span class="kl">' + lab + ' <button class="q" data-term="' + term + '" aria-label="Explain">?</button></span><span class="kv"><s>' + a + unit + '</s> ' + b + unit + '</span><span class="kd ' + (same ? '' : better ? 'up' : 'dn') + '">' + (same ? 'same' : better ? 'better' : 'worse') + '</span></div>'; };
+      O += '<div class="kpis">' + kpi('Bare soil, days a year', r0(cur.m.bare), r0(s.m.bare), '', false, 'bare') + kpi('Heavy rain on open soil, mm', r0(cur.m.exposed), r0(s.m.exposed), '', false, 'heavy') + kpi('Water crops missed', Math.round(cur.m.relMean * 100), Math.round(s.m.relMean * 100), '%', false, 'water') + kpi('Living roots, days a year', r0(cur.m.living), r0(s.m.living), '', true, 'roots') + '</div>';
     }
     O += '<div class="bars">';
-    for (const d of DIMS) { const v = s.sc[d[0]], dl = v - cur.sc[d[0]]; O += '<span>' + d[1] + '</span><span class="track"><b style="width:' + v + '%"></b></span><span class="num">' + v + '</span><span class="d ' + (isCur || !dl ? '' : dl > 0 ? 'up' : 'dn') + '">' + (isCur || !dl ? '' : (dl > 0 ? '+' : '') + dl) + '</span>'; }
+    for (const d of DIMS) { const v = s.sc[d[0]], dl = v - cur.sc[d[0]]; O += '<span>' + d[1] + ' <button class="q" data-term="s_' + d[0] + '" aria-label="Explain">?</button></span><span class="track"><b style="width:' + v + '%"></b></span><span class="num">' + v + '</span><span class="d ' + (isCur || !dl ? '' : dl > 0 ? 'up' : 'dn') + '">' + (isCur || !dl ? '' : (dl > 0 ? '+' : '') + dl) + '</span>'; }
     O += '</div>';
     const sec = (title, body, open, cls) => '<details class="osec' + (cls ? ' ' + cls : '') + '"' + (open ? ' open' : '') + '><summary>' + title + '</summary><div class="ob">' + body + '</div></details>';
     const ul = a => '<ul>' + a.map(e => '<li>' + e + '</li>').join('') + '</ul>';
@@ -349,9 +349,9 @@
     if (x.ben.length) O += sec('What you could gain', ul(x.ben.map(esc)), false);
     O += sec('Check locally before acting', ul(x.rev.map(esc)), false, 'warn');
     O += sec('What the data shows', ul(x.ev.map(e => '<span class="lnk" data-go="' + (/^(Bare soil|Heavy rain|Living roots)/.test(e) ? 'calendar' : /^Nitrogen/.test(e) ? 'method' : /^Damaging heat/.test(e) ? 'climate' : 'years') + '">' + e + '</span>')), false);
-    if (s.boot) O += sec('How sure we are', '<p>Beats your current rotation in <b>' + Math.round(s.boot.win * s.boot.runs) + ' of ' + s.boot.runs + '</b> reshuffles of the ' + cl.n + ' years. Each reshuffle rebuilds the record from randomly drawn years, so a high number means the result does not hinge on a few unusual seasons.</p>', false);
+    if (s.boot) O += sec('How sure we are <button class="q" data-term="boot" aria-label="Explain">?</button>', '<p>Beats your current rotation in <b>' + Math.round(s.boot.win * s.boot.runs) + ' of ' + s.boot.runs + '</b> reshuffles of the ' + cl.n + ' years. Each reshuffle rebuilds the record from randomly drawn years, so a high number means the result does not hinge on a few unusual seasons.</p>', false);
     O += sec('What we can’t know from here', ul(x.gaps.map(esc)), false);
-    O += '<button class="btn bigbtn" id="showrank">' + (S.showRank ? 'Hide other options' : 'Compare with ' + (allx.length - 1) + ' other options') + '</button><div class="rank"' + (S.showRank ? '' : ' hidden') + '>' + rk.join('') + '</div>';
+    O += '<div class="stickbar"><button class="btn bigbtn" id="showrank">See all ' + allx.length + ' options</button></div>'; RANK = rk.join('');
     if (false) {
       O += '<details class="more"><summary>Other ones we tried (' + A.others.length + ')</summary><div class="scroll"><table><thead><tr><th>Rotation</th><th>Match</th>' + DIMS.map(d => '<th>' + d[1].split(' ')[0] + '</th>').join('') + '</tr></thead><tbody>';
       for (const o of A.others) O += '<tr><td>' + esc(o.name) + '<div class="muted small">' + esc(E.rotLabel(o.rot)) + '</div></td><td class="num">' + r0(o.match) + '</td>' + DIMS.map(d => '<td class="num">' + o.sc[d[0]] + '</td>').join('') + '</tr>';
@@ -509,6 +509,35 @@
     ['tabs', 'dock'].forEach(n => { const nav = $(n), ink = nav.querySelector('.ink'), b = nav.querySelector('[aria-selected=true]'); if (!ink) return; if (!b || !b.offsetWidth) { ink.style.opacity = 0; return; } ink.style.opacity = 1; ink.style.width = b.offsetWidth + 'px'; ink.style.transform = 'translateX(' + b.offsetLeft + 'px)'; });
   }
   const WIZ = [['field', 'Where is your field?', 'Enter coordinates, tap the map, or pick an example at the top.'], ['rot', 'What do you grow now?', 'One row per year, in rotation order. Add a cover crop if you already use one.'], ['soil', 'Soil and slope', 'Pick the closest texture class. Tap “What does this mean?” on any item for details.'], ['pri', 'What is your priority right now?', 'Set how important each goal is for the coming seasons. You can plan a change of priorities later.'], ['excl', 'Crops you can’t grow or sell', 'Tap a crop to exclude it. Skip if everything is available.'], ['acc', 'What you can take on', 'The best options for your priorities need the following. Rate how feasible each is: 0 = not possible at all, 5 = no problem.']];
+  function closeModal() { const m = $('modal'); if (!m.classList.contains('on')) return; m.classList.add('out'); setTimeout(() => { m.classList.remove('on', 'out', 'wide'); }, 220); }
+  function openRank() {
+    $('mbox').innerHTML = '<div class="mhead"><h2>All options for your field</h2><button class="btn ghost xbtn" data-close aria-label="Close">×</button></div><p class="muted">Sorted by how well they fit your priorities. Tap one to see it in full.</p><div class="rank">' + RANK + '</div>';
+    $('modal').classList.add('on', 'wide');
+  }
+  const ANIM = {
+    rain: '<svg viewBox="0 0 320 150" class="anim"><g class="drops">' + [30, 70, 110, 150, 190, 230, 270].map((x, i) => '<line x1="' + x + '" y1="0" x2="' + (x - 6) + '" y2="14" style="animation-delay:' + (i * 0.17) + 's"/>').join('') + '</g><rect x="0" y="105" width="155" height="45" fill="#8a6a43"/><rect x="165" y="105" width="155" height="45" fill="#8a6a43"/>' + [175, 195, 215, 235, 255, 275, 295].map(x => '<path d="M' + x + ' 105 q4 -24 0 -40 q-4 16 0 40" fill="#9fd67a" class="sway"/>').join('') + '<g class="wash"><circle cx="40" cy="108" r="3" fill="#b88a55"/><circle cx="70" cy="110" r="2.5" fill="#b88a55"/><circle cx="100" cy="108" r="3" fill="#b88a55"/></g><text x="77" y="98" text-anchor="middle">bare soil</text><text x="242" y="56" text-anchor="middle">covered soil</text></svg>',
+    bucket: '<svg viewBox="0 0 320 150" class="anim"><path d="M110 30 L130 140 H190 L210 30 Z" fill="none" stroke="#d3e6d4" stroke-width="3"/><rect class="level" x="114" y="70" width="92" height="68" fill="#7cc6e8" opacity=".75"/><g class="drops">' + [140, 160, 180].map((x, i) => '<line x1="' + x + '" y1="0" x2="' + (x - 4) + '" y2="12" style="animation-delay:' + (i * 0.3) + 's"/>').join('') + '</g><path class="leaf" d="M232 60 q30 -30 50 0 q-25 20 -50 0" fill="#9fd67a"/><text x="60" y="20">rain in</text><text x="232" y="100">crop drinks</text><text x="40" y="140">soil = bucket</text></svg>',
+    shuffle: '<svg viewBox="0 0 320 150" class="anim">' + Array.from({ length: 10 }, (_, i) => '<rect class="card c' + (i % 5) + '" x="' + (20 + i * 29) + '" y="50" width="24" height="34" rx="4" style="animation-delay:' + (i * 0.12) + 's"/>').join('') + '<text x="160" y="125" text-anchor="middle">25 real years, redrawn 300 times</text></svg>',
+    roots: '<svg viewBox="0 0 320 150" class="anim"><rect x="0" y="60" width="320" height="90" fill="#6b5233"/>' + [60, 160, 260].map((x, i) => '<path d="M' + x + ' 60 q4 -30 0 -45 q-4 15 0 45" fill="#9fd67a"/><path class="root" d="M' + x + ' 60 q-10 30 -4 80 M' + x + ' 60 q12 25 6 70" stroke="#e8d7b0" stroke-width="2" fill="none" style="animation-delay:' + (i * 0.3) + 's"/>').join('') + '<text x="12" y="20">living roots hold soil and feed soil life</text></svg>',
+    score: '<svg viewBox="0 0 320 150" class="anim">' + [0, 1, 2, 3, 4].map(i => '<rect x="20" y="' + (14 + i * 26) + '" width="280" height="12" rx="6" fill="rgba(220,245,225,.12)"/><rect class="bar" x="20" y="' + (14 + i * 26) + '" width="' + [180, 240, 150, 210, 120][i] + '" height="12" rx="6" fill="#9fd67a" style="animation-delay:' + (i * 0.15) + 's"/>').join('') + '</svg>'
+  };
+  const TERMS = {
+    bare: ['Bare soil days', 'rain', ['Days in a year when nothing is growing on the field and little straw covers it.', 'Bare soil loses water to evaporation and is washed or blown away in storms. One heavy storm on bare ground can remove topsoil that took decades to form.', 'Cover crops, keeping straw on the surface and less ploughing all cut these days.']],
+    heavy: ['Heavy rain on open soil', 'rain', ['Rain on days with 12.7 mm or more, counted only when the soil was poorly covered.', 'These are the storms that move soil. On covered ground the leaves and straw take the hit and the water soaks in; on bare ground it runs off and takes soil with it.', 'Lower is better.']],
+    water: ['Water crops missed', 'bucket', ['How much of the water the crop needed it could not get from rain and the soil.', 'We track the soil like a bucket every day for 25 years: rain fills it, the crop drinks from it, extra drains away. When the bucket runs low, the crop goes short.', '10% means that over the season the crop got 90% of what it wanted.']],
+    roots: ['Living roots', 'roots', ['Days a year when something is growing in the field.', 'Living roots hold soil together, feed the microbes that build organic matter and take up nutrients that would otherwise wash out.', 'Higher is better.']],
+    boot: ['How sure we are (reshuffles)', 'shuffle', ['25 years is a short record, and one or two strange years could decide the result by luck.', 'So we build 300 new versions of the record by picking years at random from the real ones: some years appear twice, some not at all. Both rotations are scored again on each version.', 'If an option still beats yours in, say, 290 of 300, the result does not depend on a few lucky years. Around 150 of 300 means it is a toss-up.']],
+    s_income: ['Profit after costs', 'score', ['An estimate of what is left after growing costs, compared between options.', 'It uses how much each crop typically costs to grow and how many buyers it has, and drops when the crop runs short of water. It does not use your local prices.']],
+    s_water: ['Saving water', 'bucket', ['How well the rotation copes with the rain your field gets, from 0 to 100.', '100 means the crops never ran short of water in 25 years.']],
+    s_soil: ['Building soil health', 'roots', ['A score from 0 to 100 built from living-root days, nitrogen from legumes, straw left on the field, number of crop families, deep roots and few bare days.', 'Soil that scores high tends to gain organic matter, hold more water and need less fertiliser over time.']],
+    s_erosion: ['Keeping soil in place', 'rain', ['How much of the heavy rain falls on covered ground rather than bare soil, adjusted for slope and tillage.', '100 means no heavy rain ever hits bare soil.']],
+    s_resilience: ['Steady harvest in bad years', 'score', ['How the rotation does in the hottest, driest years of the 25, not just on average.', 'A high score means fewer failed seasons.']]
+  };
+  function explainTerm(k) {
+    const t = TERMS[k]; if (!t) return;
+    $('mbox').innerHTML = '<div class="mhead"><h2>' + t[0] + '</h2><button class="btn ghost xbtn" data-close aria-label="Close">×</button></div><div class="animbox">' + ANIM[t[1]] + '</div>' + t[2].map((p, i) => '<p class="step" style="animation-delay:' + (0.25 + i * 0.35) + 's">' + p + '</p>').join('') + '<div class="mrow"><button class="btn bigbtn" data-close>Got it</button></div>';
+    $('modal').classList.add('on');
+  }
   function soilTxt() { if ($('soiltxt')) $('soiltxt').textContent = SOILTXT[S.soil] || ''; }
   function showUnd() {
     const r = window.Lab ? Lab.parseConstraints(S.text) : [];
@@ -692,7 +721,10 @@
     $('stemp').oninput = e => { S.scen.temp = +e.target.value; $('stempv').textContent = '+' + S.scen.temp + '°'; recompute(); };
     $('addyr').onclick = () => { if (S.rot.length < 6) { S.rot.push({ c: 'soy', cv: null }); renderRot(); recompute(); } };
     $('load').onclick = () => { const la = parseFloat($('lat').value), lo = parseFloat($('lon').value); if (isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180) { setPlace(la, lo, null); setTab('result'); } else status('err', 'Enter a latitude between -60 and 70 and a longitude between -180 and 180.'); };
-    $('out').addEventListener('click', e => { if (e.target.id === 'showrank') { S.showRank = !S.showRank; render(); } });
+    $('out').addEventListener('click', e => { if (e.target.id === 'showrank') openRank(); });
+    document.addEventListener('click', e => { const q = e.target.closest('[data-term]'); if (q) { e.stopPropagation(); explainTerm(q.dataset.term); } }, true);
+    $('modal').addEventListener('click', e => { if (e.target.id === 'modal' || e.target.closest('[data-close]')) closeModal(); const o = e.target.closest('#mbox [data-sel]'); if (o) { S.sel = +o.dataset.sel; S.animOpt = true; closeModal(); render(); $('scroll').scrollTop = 0; } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
     $('soil').addEventListener('change', soilTxt); soilTxt();
     $('wizback').onclick = () => { if (S.wiz > 0) wizard(S.wiz - 1); };
     $('wiznext').onclick = () => { if (WIZ[S.wiz][0] === 'field') { const la = parseFloat($('lat').value), lo = parseFloat($('lon').value); if (!(isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180)) { $('lat').focus(); $('lat').classList.add('bad'); return; } $('lat').classList.remove('bad'); if (Math.abs(la - S.lat) > 1e-4 || Math.abs(lo - S.lon) > 1e-4) setPlace(la, lo, null, true); }
