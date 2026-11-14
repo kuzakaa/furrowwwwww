@@ -1982,7 +1982,12 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
       const bal = rain - et, smi = sm.length ? sm[sm.length - 1] : null;
       const wet = smi == null ? '' : smi < 0.3 ? 'dry' : smi < 0.7 ? 'moderately moist' : smi <= 1.05 ? 'moist' : 'very wet';
       S.live = { rain, et, bal, temp: sum(t) / t.length, smi };
-      box.innerHTML = '<div class="sug live"><span><b>Your field over the last 30 days</b> (Meteomatics): ' + r0(rain) + ' mm of rain, ' + r0(et) + ' mm of water lost from soil and plants, average ' + (sum(t) / t.length).toFixed(1) + ' °C' + (wet ? ', topsoil now <b>' + wet + '</b>' : '') + '. ' + (bal >= 0 ? 'Rain covered what the field used, with ' + r0(bal) + ' mm to spare.' : 'The field used ' + r0(-bal) + ' mm more than it got, so the soil is drying out.') + '</span></div>';
+      const tm = sum(t) / t.length, dry = (smi != null && smi < 0.3) || bal < -30, soaked = (smi != null && smi > 1.05) || bal > 80;
+      const advice = dry ? 'the topsoil is short of water. If you sow now, seeds may not come up evenly. Wait for rain, or start with a crop that copes with a dry start (sorghum, sunflower, barley). Leaving crop residue on top keeps the moisture in.'
+        : soaked ? 'the soil is very wet. Heavy machinery now will pack it down and smear it, which hurts roots for years. Wait a few dry days before field work, and keep the ground covered so rain doesn\'t wash soil away.'
+        : tm < 5 ? 'the soil has enough water, but it is too cold for most crops to grow. Winter crops already in the ground are fine; spring sowing has to wait for warmer days.'
+        : 'water and warmth are in a normal range. Sowing and field work can go ahead as planned.';
+      box.innerHTML = '<div class="sug live"><span><b>Your field over the last 30 days</b> (Meteomatics): ' + r0(rain) + ' mm of rain, ' + r0(et) + ' mm of water lost from soil and plants, average ' + (sum(t) / t.length).toFixed(1) + ' °C' + (wet ? ', topsoil now <b>' + wet + '</b>' : '') + '. ' + (bal >= 0 ? 'Rain covered what the field used, with ' + r0(bal) + ' mm to spare.' : 'The field used ' + r0(-bal) + ' mm more than it got, so the soil is drying out.') + '<br><b>What this means now:</b> ' + advice + '</span></div>';
     }).catch(() => { if (lat === S.lat && lon === S.lon) box.innerHTML = ''; });
   }
   function setPlace(lat, lon, demo, keep) {
