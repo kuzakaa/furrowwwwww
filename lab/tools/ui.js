@@ -591,12 +591,12 @@
     if (LIVE.busy) return; LIVE.busy = true;
     const lat = D.soil && D.soil.lat != null ? D.soil.lat : S.lat, lon = D.soil && D.soil.lon != null ? D.soil.lon : S.lon, d = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10), q = '?lat=' + lat + '&lon=' + lon;
     const run = async (k, fn) => { LIVE[k] = { s: 'wait' }; sources(); const t0 = Date.now(); try { const m = await fn(); LIVE[k] = { s: 'ok', m: m + ' (' + ((Date.now() - t0) / 1000).toFixed(1) + ' s)' }; } catch (e) { LIVE[k] = { s: 'bad', m: String(e && e.message || e) }; } sources(); };
-    const get = async u => { const r = await fetch(u, { cache: 'no-store' }), j = await r.json().catch(() => ({})); if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status); return j; };
+    const get = async u => { const r = await fetch(u, { cache: 'no-store', signal: AbortSignal.timeout(30000) }), j = await r.json().catch(() => ({})); if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status); return j; };
     await Promise.all([
       run('mm', async () => { const j = await get(PROXY + '/weather' + q + '&from=' + d(3) + '&to=' + d(1) + '&c=' + Date.now()); const n = Object.keys(j.series || {}).length; if (!n) throw new Error('no values'); return n + ' of 4 values returned'; }),
       run('s2', async () => { const j = await get(PROXY + '/sentinel' + q + '&from=' + d(60) + '&to=' + d(1) + '&c=' + Date.now()); const s = j.series || []; if (!s.length) throw new Error('no cloud-free image in 60 days'); return 'last clear image ' + s[s.length - 1][0]; }),
       run('ed', async () => { const r = await fetch(PROXY + '/ae/status/check-' + Date.now(), { cache: 'no-store' }), j = await r.json().catch(() => ({})); if (/login/i.test(j.error || '')) throw new Error(j.error); if (!r.ok && !/status/i.test(j.error || '')) throw new Error(j.error || 'HTTP ' + r.status); return 'NASA login accepted'; }),
-      run('fao', async () => { const r = await fetch('https://fenixservices.fao.org/faostat/api/v1/en/definitions/domain/PP/element?output_type=json', { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status); return 'reachable'; })
+      run('fao', async () => { const r = await fetch('https://fenixservices.fao.org/faostat/api/v1/en/definitions/domain/PP/element?output_type=json', { cache: 'no-store', signal: AbortSignal.timeout(10000) }).catch(e => { throw new Error(e.name === 'TimeoutError' ? 'no answer in 10 s' : 'blocked or down'); }); if (!r.ok) throw new Error('HTTP ' + r.status); return 'reachable'; })
     ]);
     LIVE.at = new Date(); LIVE.busy = false; sources();
   }
