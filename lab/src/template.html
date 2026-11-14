@@ -66,7 +66,9 @@
       <button class="btn" id="load">Load</button>
     </div>
     <div class="fsize"><div class="field"><label for="fw">Width, m</label><input id="fw" type="number" min="20" step="10" value="1000"></div><span class="x">×</span><div class="field"><label for="fl">Length, m</label><input id="fl" type="number" min="20" step="10" value="1000"></div><span class="x">=</span><div class="field"><label for="area">Area, ha</label><input id="area" type="number" min="0.1" step="0.1" value="100"></div></div>
-    <p class="small muted fhint">Drag the white handles on the map edges to fit your field, or type the size.</p>
+    <p class="small muted fhint">Drag the white handles on the edges and corners to fit your field, type the size, or draw its exact shape.</p>
+    <div class="row fdrawrow"><button class="btn ghost" id="fdraw" type="button">Draw the shape</button><button class="btn ghost" id="fclear" type="button" hidden>Back to rectangle</button></div>
+    <p class="small fdrawmsg" id="fdrawmsg"></p>
     <div class="row"><button class="btn ghost" id="reloc">Change location</button><button class="btn ghost" id="reset">Start over</button></div>
     <p class="small muted">We save your choices on this device, so you won’t lose them if you reload.</p>
   </details>

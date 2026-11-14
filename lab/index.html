@@ -734,6 +734,11 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
 .fh-n,.fh-s{cursor:ns-resize}.fh-e,.fh-w{cursor:ew-resize}
 .slopein{display:inline-flex;align-items:center;gap:3px}
 .slopein input{width:64px;padding:6px 6px;text-align:right;font:inherit;font-variant-numeric:tabular-nums}
+.fdrawrow{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0}
+.fdrawmsg{color:#a3e635;margin:4px 0 8px}.fdrawmsg:empty{display:none}
+body.drawing #map{cursor:crosshair}
+.fh-ne,.fh-sw{cursor:nesw-resize}.fh-nw,.fh-se{cursor:nwse-resize}
+.fh-ne,.fh-nw,.fh-se,.fh-sw{border-radius:4px}
 
 </style>
 </head>
@@ -791,7 +796,9 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
       <button class="btn" id="load">Load</button>
     </div>
     <div class="fsize"><div class="field"><label for="fw">Width, m</label><input id="fw" type="number" min="20" step="10" value="1000"></div><span class="x">×</span><div class="field"><label for="fl">Length, m</label><input id="fl" type="number" min="20" step="10" value="1000"></div><span class="x">=</span><div class="field"><label for="area">Area, ha</label><input id="area" type="number" min="0.1" step="0.1" value="100"></div></div>
-    <p class="small muted fhint">Drag the white handles on the map edges to fit your field, or type the size.</p>
+    <p class="small muted fhint">Drag the white handles on the edges and corners to fit your field, type the size, or draw its exact shape.</p>
+    <div class="row fdrawrow"><button class="btn ghost" id="fdraw" type="button">Draw the shape</button><button class="btn ghost" id="fclear" type="button" hidden>Back to rectangle</button></div>
+    <p class="small fdrawmsg" id="fdrawmsg"></p>
     <div class="row"><button class="btn ghost" id="reloc">Change location</button><button class="btn ghost" id="reset">Start over</button></div>
     <p class="small muted">We save your choices on this device, so you won’t lose them if you reload.</p>
   </details>
@@ -1378,18 +1385,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
         if (id !== req) return; S.ndvi = nd; render();
       } catch (e) {}
     })();
-    (async () => {
-      try {
-        let z = cget('furrowz1:' + k);
-        if (!z) {
-          const dl = 250 / 111320, dn = 250 / (111320 * Math.cos(lat * Math.PI / 180)), la = [], lo = [];
-          for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) { la.push((lat + (2 - r) * dl).toFixed(5)); lo.push((lon + (c - 2) * dn).toFixed(5)); }
-          const j = await getJSON('https://api.open-meteo.com/v1/elevation?latitude=' + la.join(',') + '&longitude=' + lo.join(','), 9000);
-          z = j.elevation; if (!Array.isArray(z) || z.length !== 25 || z.some(v => !isFinite(v))) return; cset('furrowz1:' + k, z);
-        }
-        if (id !== req) return; S.terrain = E.terrain(z, 250); suggest(); drawZones(); render();
-      } catch (e) {}
-    })();
+    loadTerrain();
     (async () => {
       try {
         let g = cget('furrows1:' + k);
@@ -1528,7 +1524,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
   }
   function margin() { return Math.max(0, (S.mY || 0) * (S.mP || 0) - (S.mC || 0)); }
   function setSlope(p) { S.slopePct = Math.round(Math.max(0, Math.min(20, +p || 0)) * 10) / 10; S.slope = 'custom'; E.SLOPES.custom = { name: S.slopePct + '%', f: Math.max(0.3, Math.min(3, S.slopePct / 4)) }; if ($('slopep')) { $('slopep').value = S.slopePct; if (document.activeElement !== $('slopev')) $('slopev').value = S.slopePct; } }
-  const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights, area: S.area, fw: S.fw, fl: S.fl, stockOn: S.stockOn, stockType: S.stockType, stockN: S.stockN, maxDrop: S.maxDrop, mY: S.mY, mP: S.mP, mC: S.mC, slopePct: S.slopePct, later: S.later, years: S.years, w2: S.w2, acc: S.acc, text: S.text, exp: S.exp });
+  const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights, area: S.area, fw: S.fw, fl: S.fl, fN: S.fN, fS: S.fS, fE: S.fE, fW: S.fW, poly: S.poly, stockOn: S.stockOn, stockType: S.stockType, stockN: S.stockN, maxDrop: S.maxDrop, mY: S.mY, mP: S.mP, mC: S.mC, slopePct: S.slopePct, later: S.later, years: S.years, w2: S.w2, acc: S.acc, text: S.text, exp: S.exp });
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(Object.assign(choices(), { done: !S.intro && S.wiz == null }))); } catch (e) {}
   }
@@ -1543,7 +1539,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
     let v = fromLink(); if (!v) { try { v = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
     if (!v || !v.done || !isFinite(v.lat) || !isFinite(v.lon) || Math.abs(v.lat) > 70 || Math.abs(v.lon) > 180 || !Array.isArray(v.rot) || !v.rot.length || v.rot.length > 6 || v.rot.some(r => !r || !C[r.c])) return null;
     S.rot = v.rot.map(r => ({ c: r.c, cv: CV[r.cv] ? r.cv : null }));
-    if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp', 'area', 'fw', 'fl', 'stockOn', 'stockType', 'stockN', 'maxDrop', 'mY', 'mP', 'mC'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
+    if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp', 'area', 'fw', 'fl', 'fN', 'fS', 'fE', 'fW', 'poly', 'stockOn', 'stockType', 'stockN', 'maxDrop', 'mY', 'mP', 'mC'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
     S.irrigated = !!v.irrigated; S.livestock = !!v.livestock; S.exclude = new Set((Array.isArray(v.exclude) ? v.exclude : []).filter(k => C[k] || CV[k]));
     DIMS.forEach(d => { const w = v.weights && v.weights[d[0]]; if (w >= 0 && w <= 5) S.weights[d[0]] = Math.round(w); $('w_' + d[0]).value = S.weights[d[0]]; $('w_v' + d[0]).textContent = LEVEL[S.weights[d[0]]]; });
     $('soil').value = S.soil; $('till').value = S.till; $('irrig').checked = S.irrigated; if (window.syncExtra) window.syncExtra(); $('later').checked = !!S.later; $('laterbox').hidden = !S.later; $('years').value = S.years; $('yearsv').textContent = S.years + ' yrs'; $('free').value = S.text || ''; showUnd(); if (window.syncChips) window.syncChips(); DIMS.forEach(d => { $('w2_' + d[0]).value = S.w2[d[0]]; $('w2_v' + d[0]).textContent = LEVEL[S.w2[d[0]]]; });
@@ -1725,7 +1721,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
   function terrainHTML(T) {
     const c = 46, col = v => v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#3E8E5A'; let g = '';
     T.slopes.forEach((v, i) => { const x = (i % T.n) * c, y = Math.floor(i / T.n) * c; g += '<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (c - 2) + '" height="' + (c - 2) + '" rx="3" fill="' + col(v) + '"' + (T.low[i] ? ' stroke="#7CC6E8" stroke-width="3"' : '') + '><title>' + r0(T.z[i]) + ' m, slope ' + v.toFixed(1) + '%' + (T.low[i] ? ', low spot' : '') + '</title></rect><text x="' + (x + c / 2) + '" y="' + (y + c / 2 + 4) + '" text-anchor="middle" font-size="11" fill="#10231A">' + r0(T.z[i]) + '</text>'; });
-    return '<h2>The ground around your point</h2><div class="terr"><svg viewBox="0 0 ' + c * T.n + ' ' + c * T.n + '" role="img" aria-label="Elevation and slope on a 5 by 5 grid around the field">' + g + '</svg><div><p>Across a ' + (T.step * T.n / 1000).toFixed(2).replace(/0$/, '') + ' km square the ground runs from <b>' + r0(T.min) + ' m</b> to <b>' + r0(T.max) + ' m</b>. Typical slope is <b>' + T.typical.toFixed(1) + '%</b>, the steepest part <b>' + T.steepest.toFixed(1) + '%</b>.</p><p>' + (T.steepCells ? '<b>' + T.steepCells + ' of ' + T.slopes.length + '</b> squares slope more than 6%. Heavy rain on bare soil does the most damage there, so those are the places where cover matters most.' : 'No square slopes more than 6%, so runoff speed is not the main erosion driver here.') + '</p><p>' + (T.lowCells ? '<b>' + T.lowCells + '</b> low ' + (T.lowCells === 1 ? 'spot is' : 'spots are') + ' outlined in blue. Cold air settles in hollows, so frost can come later in spring and earlier in autumn there than the district dates suggest.' : 'No marked hollows where cold air would pool.') + '</p><div class="legend"><span><i style="background:#3E8E5A"></i>under 2%</span><span><i style="background:#F2A541"></i>2 to 6%</span><span><i style="background:#F2907E"></i>over 6%</span><span><i style="background:none;box-shadow:inset 0 0 0 2px #7CC6E8"></i>low spot</span></div></div></div><p class="fine">Numbers are metres above sea level. Source: Copernicus 90 m elevation model (ESA), read through Open-Meteo. Too coarse for a field survey; use it to know where to look.</p>';
+    return '<h2>The ground in your field</h2><div class="terr"><svg viewBox="0 0 ' + c * T.n + ' ' + c * T.n + '" role="img" aria-label="Elevation and slope on a 5 by 5 grid over the field">' + g + '</svg><div><p>Across a ' + (T.step * T.n / 1000).toFixed(2).replace(/0$/, '') + ' km square the ground runs from <b>' + r0(T.min) + ' m</b> to <b>' + r0(T.max) + ' m</b>. Typical slope is <b>' + T.typical.toFixed(1) + '%</b>, the steepest part <b>' + T.steepest.toFixed(1) + '%</b>.</p><p>' + (T.steepCells ? '<b>' + T.steepCells + ' of ' + (T.cells || T.slopes.length) + '</b> squares slope more than 6%. Heavy rain on bare soil does the most damage there, so those are the places where cover matters most.' : 'No square slopes more than 6%, so runoff speed is not the main erosion driver here.') + '</p><p>' + (T.lowCells ? '<b>' + T.lowCells + '</b> low ' + (T.lowCells === 1 ? 'spot is' : 'spots are') + ' outlined in blue. Cold air settles in hollows, so frost can come later in spring and earlier in autumn there than the district dates suggest.' : 'No marked hollows where cold air would pool.') + '</p><div class="legend"><span><i style="background:#3E8E5A"></i>under 2%</span><span><i style="background:#F2A541"></i>2 to 6%</span><span><i style="background:#F2907E"></i>over 6%</span><span><i style="background:none;box-shadow:inset 0 0 0 2px #7CC6E8"></i>low spot</span></div></div></div><p class="fine">Numbers are metres above sea level. Source: Copernicus 90 m elevation model (ESA), read through Open-Meteo. Too coarse for a field survey; use it to know where to look.</p>';
   }
   function spark(i, cl) {
     const v = i.series, n = v.length, W = 200, H = 44, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), sp = (hi - lo) || 1;
@@ -2032,37 +2028,123 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
     story();
   }
   let zones = [];
-  let frect = null, fh = [];
+  let keepPoly = false, frect = null, fpoly = null, fh = [], treq = 0, tTimer = null, drawing = null;
+  const M = 111320, cosl = () => Math.cos(S.lat * Math.PI / 180);
+  function fieldInit() {
+    if (!(S.fN > 0 && S.fS > 0 && S.fE > 0 && S.fW > 0)) { const w = S.fw >= 20 ? S.fw : Math.sqrt((S.area || 100) * 1e4), l = S.fl >= 20 ? S.fl : w; S.fE = S.fW = w / 2; S.fN = S.fS = l / 2; }
+    S.fw = Math.round(S.fE + S.fW); S.fl = Math.round(S.fN + S.fS);
+  }
+  function fBounds() { return [[S.lat - S.fS / M, S.lon - S.fW / (M * cosl())], [S.lat + S.fN / M, S.lon + S.fE / (M * cosl())]]; }
+  function inPoly(la, lo) { const P = S.poly; if (!P || P.length < 3) return true; let inside = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const yi = P[i][0], xi = P[i][1], yj = P[j][0], xj = P[j][1]; if ((yi > la) !== (yj > la) && lo < (xj - xi) * (la - yi) / (yj - yi) + xi) inside = !inside; } return inside; }
+  function polyArea(P) { const c = Math.cos(P[0][0] * Math.PI / 180); let a = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) a += (P[j][1] * M * c) * (P[i][0] * M) - (P[i][1] * M * c) * (P[j][0] * M); return Math.abs(a / 2); }
+  function cellCenters(N) { const b = fBounds(), h = (b[1][0] - b[0][0]) / N, w = (b[1][1] - b[0][1]) / N, out = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) out.push([b[1][0] - (r + 0.5) * h, b[0][1] + (c + 0.5) * w]); return out; }
+  function terrainR(z, N, sx, sy, mask) {
+    const at = (r, c) => z[r * N + c], slopes = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const c0 = Math.max(0, c - 1), c1 = Math.min(N - 1, c + 1), r0 = Math.max(0, r - 1), r1 = Math.min(N - 1, r + 1);
+      const dx = (at(r, c1) - at(r, c0)) / ((c1 - c0) * sx), dy = (at(r1, c) - at(r0, c)) / ((r1 - r0) * sy);
+      slopes.push(100 * Math.sqrt(dx * dx + dy * dy));
+    }
+    const idx = slopes.map((v, i) => i).filter(i => mask[i]), zs = idx.map(i => z[i]), sl = idx.map(i => slopes[i]);
+    const mu = E.mean(zs), srt = zs.slice().sort((a, b) => a - b), cut = srt[Math.floor(0.15 * (srt.length - 1))], low = z.map((v, i) => mask[i] && v <= cut && v <= mu - 2);
+    const ss = sl.slice().sort((a, b) => a - b), q75 = ss[Math.floor(0.75 * (ss.length - 1))];
+    return { n: N, sx, sy, step: (sx + sy) / 2, z, slopes, low, mask, min: Math.min.apply(null, zs), max: Math.max.apply(null, zs), typical: E.median(sl), steepest: Math.max.apply(null, sl), steepCells: sl.filter(v => v > 6).length, lowCells: low.filter(Boolean).length, cells: idx.length, cls: q75 > 6 ? 'steep' : q75 >= 2 ? 'gentle' : 'flat' };
+  }
+  function loadTerrain() {
+    fieldInit();
+    const id = ++treq, lat = S.lat, lon = S.lon, N = S.poly ? 7 : 5, sx = (S.fE + S.fW) / N, sy = (S.fN + S.fS) / N, cc = cellCenters(N), mask = cc.map(p => inPoly(p[0], p[1]));
+    if (!mask.some(Boolean)) return;
+    const k = 'furrowz2:' + cc.map(p => p[0].toFixed(5) + ',' + p[1].toFixed(5)).join(';');
+    (async () => {
+      try {
+        let z = cget(k);
+        if (!z) {
+          const j = await getJSON('https://api.open-meteo.com/v1/elevation?latitude=' + cc.map(p => p[0].toFixed(5)).join(',') + '&longitude=' + cc.map(p => p[1].toFixed(5)).join(','), 9000);
+          z = j.elevation; if (!Array.isArray(z) || z.length !== N * N || z.some(v => !isFinite(v))) return; cset(k, z);
+        }
+        if (id !== treq || lat !== S.lat || lon !== S.lon) return;
+        S.terrain = terrainR(z, N, sx, sy, mask); suggest(); drawZones(); render();
+      } catch (e) {}
+    })();
+  }
+  const HANDLES = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
+  function clearShapes() { if (frect) { map.removeLayer(frect); frect = null; } if (fpoly) { map.removeLayer(fpoly); fpoly = null; } fh.forEach(h => map.removeLayer(h)); fh = []; }
   function drawField() {
-    if (!map || S.intro) { if (frect) { map.removeLayer(frect); fh.forEach(h => map.removeLayer(h)); frect = null; fh = []; } return; }
-    const dl = S.fl / 2 / 111320, dn = S.fw / 2 / (111320 * Math.cos(S.lat * Math.PI / 180)), b = [[S.lat - dl, S.lon - dn], [S.lat + dl, S.lon + dn]];
+    if (!map) return;
+    if (S.intro) { clearShapes(); return; }
+    fieldInit();
+    if (S.poly && S.poly.length >= 3) {
+      if (frect || fh.length) clearShapes();
+      if (!fpoly) fpoly = window.L.polygon(S.poly, { color: '#F5FAF2', weight: 2.5, fill: false, interactive: false }).addTo(map); else fpoly.setLatLngs(S.poly);
+      return;
+    }
+    if (fpoly) { map.removeLayer(fpoly); fpoly = null; }
+    const b = fBounds(), N = b[1][0], Sx = b[0][0], Ex = b[1][1], Wx = b[0][1], mid = [(N + Sx) / 2, (Ex + Wx) / 2];
     if (!frect) {
-      frect = window.L.rectangle(b, { color: '#F5FAF2', weight: 2.5, fill: true, fillColor: '#a3e635', fillOpacity: 0.08, interactive: false }).addTo(map);
-      ['n', 's', 'e', 'w'].forEach(k => {
-        const h = window.L.marker([0, 0], { draggable: true, keyboard: false, icon: window.L.divIcon({ className: 'fh fh-' + k, iconSize: [18, 18] }) }).addTo(map);
-        h.k = k; h.on('drag', e => { const p = e.target.getLatLng(), m = 111320, cl = Math.cos(S.lat * Math.PI / 180);
-          if (k === 'n' || k === 's') S.fl = Math.max(20, Math.round(Math.abs(p.lat - S.lat) * m * 2 / 10) * 10);
-          else S.fw = Math.max(20, Math.round(Math.abs(p.lng - S.lon) * m * cl * 2 / 10) * 10);
+      frect = window.L.rectangle(b, { color: '#F5FAF2', weight: 2.5, fill: false, interactive: false }).addTo(map);
+      HANDLES.forEach(k => {
+        const h = window.L.marker([0, 0], { draggable: true, keyboard: false, zIndexOffset: 1000, icon: window.L.divIcon({ className: 'fh fh-' + k, iconSize: [18, 18] }) }).addTo(map);
+        h.k = k;
+        h.on('dragstart', () => { setPlaying(false); map.stop(); h.moving = true; });
+        h.on('drag', e => { const p = e.target.getLatLng(), dn = (p.lat - S.lat) * M, de = (p.lng - S.lon) * M * cosl();
+          if (k.includes('n')) S.fN = Math.max(10, dn); if (k.includes('s')) S.fS = Math.max(10, -dn);
+          if (k.includes('e')) S.fE = Math.max(10, de); if (k.includes('w')) S.fW = Math.max(10, -de);
           syncField(true); });
-        h.on('dragend', () => { syncField(); later(); });
+        h.on('dragend', () => { h.moving = false; syncField(); });
         fh.push(h);
       });
     }
     frect.setBounds(b);
-    fh.forEach(h => { const c = h.k === 'n' ? [S.lat + dl, S.lon] : h.k === 's' ? [S.lat - dl, S.lon] : h.k === 'e' ? [S.lat, S.lon + dn] : [S.lat, S.lon - dn]; if (!h.dragging || !h.dragging._draggable || !h.dragging._draggable._moving) h.setLatLng(c); });
+    const pos = { n: [N, mid[1]], s: [Sx, mid[1]], e: [mid[0], Ex], w: [mid[0], Wx], ne: [N, Ex], nw: [N, Wx], se: [Sx, Ex], sw: [Sx, Wx] };
+    fh.forEach(h => { if (!h.moving) h.setLatLng(pos[h.k]); });
   }
   function syncField(dragging) {
-    S.area = Math.round(S.fw * S.fl / 1000) / 10;
+    S.fw = Math.round(S.fE + S.fW); S.fl = Math.round(S.fN + S.fS);
+    S.area = Math.round((S.poly && S.poly.length >= 3 ? polyArea(S.poly) : S.fw * S.fl) / 1000) / 10;
     if (document.activeElement !== $('fw')) $('fw').value = S.fw;
     if (document.activeElement !== $('fl')) $('fl').value = S.fl;
     if (document.activeElement !== $('area')) $('area').value = S.area;
-    drawField();
-    if (!dragging && window.fieldChanged) window.fieldChanged();
+    drawField(); drawZones(); drawUI();
+    clearTimeout(tTimer); tTimer = setTimeout(loadTerrain, dragging ? 350 : 150);
+    if (window.fieldChanged) window.fieldChanged();
+  }
+  function scaleField(kx, ky) { S.poly = null; S.fE *= kx; S.fW *= kx; S.fN *= ky; S.fS *= ky; setPlaying(false); syncField(); }
+  function drawUI() {
+    if (!$('fdraw')) return;
+    $('fdraw').textContent = drawing ? 'Finish shape' : S.poly ? 'Draw again' : 'Draw the shape';
+    $('fclear').hidden = !S.poly || !!drawing;
+    $('fdrawmsg').textContent = drawing ? 'Click the corners of your field on the map. ' + (drawing.pts.length < 3 ? 'At least 3 points.' : 'Click the first point or "Finish shape" to close.') : '';
+    document.body.classList.toggle('drawing', !!drawing);
+  }
+  function startDraw() {
+    if (drawing) return finishDraw();
+    setPlaying(false); if (map) map.stop();
+    drawing = { pts: [], line: window.L.polyline([], { color: '#a3e635', weight: 2.5, dashArray: '6 5', interactive: false }).addTo(map), dots: [] };
+    drawUI();
+  }
+  function addPoint(ll) {
+    const d = drawing;
+    if (d.pts.length >= 3 && map.distance(ll, d.pts[0]) < Math.max(15, 12 * 156543 * cosl() / Math.pow(2, map.getZoom()))) return finishDraw();
+    d.pts.push([ll.lat, ll.lng]); d.line.setLatLngs(d.pts);
+    const dot = window.L.circleMarker(ll, { radius: d.pts.length === 1 ? 7 : 5, color: '#fff', weight: 2, fillColor: '#a3e635', fillOpacity: 1 }).addTo(map);
+    if (d.pts.length === 1) dot.on('click', ev => { window.L.DomEvent.stopPropagation(ev); if (drawing && drawing.pts.length >= 3) finishDraw(); });
+    d.dots.push(dot); drawUI();
+  }
+  function cancelDraw() { if (!drawing) return; map.removeLayer(drawing.line); drawing.dots.forEach(x => map.removeLayer(x)); drawing = null; drawUI(); }
+  function finishDraw() {
+    const P = drawing.pts.slice(); cancelDraw(); if (P.length < 3) return;
+    const lats = P.map(p => p[0]), lons = P.map(p => p[1]), cla = (Math.min(...lats) + Math.max(...lats)) / 2, clo = (Math.min(...lons) + Math.max(...lons)) / 2;
+    const far = map.distance([cla, clo], [S.lat, S.lon]) > 3000;
+    const apply = () => { S.poly = P; const c = cosl(); S.fN = Math.max(10, (Math.max(...lats) - S.lat) * M); S.fS = Math.max(10, (S.lat - Math.min(...lats)) * M); S.fE = Math.max(10, (Math.max(...lons) - S.lon) * M * c); S.fW = Math.max(10, (S.lon - Math.min(...lons)) * M * c); syncField(); };
+    S.poly = P; const outside = !inPoly(S.lat, S.lon);
+    if (far || outside) { keepPoly = true; setPlace(cla, clo, null, true); keepPoly = false; S.poly = P; }
+    apply(); if ((far || outside) && S.wiz != null && S.wiz > 0) wizard(0);
   }
   function drawZones() {
-    if (!map) return; zones.forEach(z => map.removeLayer(z)); zones = []; const T = S.terrain; if (!T) return;
-    const dl = T.step / 111320, dn = T.step / (111320 * Math.cos(S.lat * Math.PI / 180));
-    T.slopes.forEach((v, i) => { const r = Math.floor(i / T.n), c = i % T.n, la = S.lat + (2 - r) * dl, lo = S.lon + (c - 2) * dn; const z = window.L.rectangle([[la - dl / 2, lo - dn / 2], [la + dl / 2, lo + dn / 2]], { stroke: true, color: T.low[i] ? '#7CC6E8' : 'rgba(255,255,255,.85)', weight: T.low[i] ? 3 : 1.2, fillColor: v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#5FBF73', fillOpacity: 0.42, interactive: true }).addTo(map); z.bindTooltip(v.toFixed(1) + '% slope' + (T.low[i] ? ', low spot' : ''), { direction: 'top' }); zones.push(z); });
+    if (!map) return; zones.forEach(z => map.removeLayer(z)); zones = []; const T = S.terrain; if (!T || S.intro) return; fieldInit();
+    const b = fBounds(), N = T.n, h = (b[1][0] - b[0][0]) / N, w = (b[1][1] - b[0][1]) / N;
+    T.slopes.forEach((v, i) => { const r = Math.floor(i / N), c = i % N, top = b[1][0] - r * h, left = b[0][1] + c * w; if (!inPoly(top - h / 2, left + w / 2)) return; const z = window.L.rectangle([[top - h, left], [top, left + w]], { stroke: true, color: T.low[i] ? '#7CC6E8' : 'rgba(255,255,255,.85)', weight: T.low[i] ? 3 : 1.2, fillColor: v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#5FBF73', fillOpacity: 0.42, interactive: true }).addTo(map); z.bindTooltip(v.toFixed(1) + '% slope' + (T.low[i] ? ', low spot' : ''), { direction: 'top' }); zones.push(z); });
+    if (frect) frect.bringToFront(); if (fpoly) fpoly.bringToFront();
   }
   function setPlaying(on) { playing = on; $('play').textContent = on ? 'Pause tour' : 'Play tour'; $('play').setAttribute('aria-pressed', on ? 'true' : 'false'); }
   const PROXY = 'https://still-cell-0930.kuzaka.workers.dev';
@@ -2145,6 +2227,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
     S.name = demo ? demo.name : 'Your field';
     if (demo && !keep) { S.rot = demo.rot.map(r => ({ c: r.c, cv: r.cv || null })); S.soil = demo.soil; setSlope(demo.slope); S.till = demo.till; $('soil').value = S.soil; $('till').value = S.till; renderRot(); }
     $('lat').value = S.lat; $('lon').value = S.lon; $('demo').value = S.demo || '';
+    if (!keepPoly) S.poly = null;
     S.terrain = null; S.soilSug = null; S.ndvi = null; S.touched = {}; $('sugsoil').innerHTML = ''; $('sugslope').innerHTML = ''; drawZones(); drawField(); liveWx();
     if (map) { marker.setLatLng([S.lat, S.lon]); cell.setBounds(cellBounds()); goStep(0, true); }
     load();
@@ -2215,12 +2298,14 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
     $('croptab').innerHTML = '<table><thead><tr><th>Crop</th><th>Family</th><th>Peak water use (Kc)</th><th>Heat limit</th><th>Warmth to mature</th><th>Nitrogen credit</th><th>Residue</th><th>Drought tolerance</th></tr></thead><tbody>' + Object.keys(C).filter(k => k !== 'fallow').map(k => { const c = C[k]; return '<tr><td>' + c.name + '</td><td>' + c.fam + '</td><td class="num">' + c.kc[1] + '</td><td class="num">' + (c.heatT ? c.heatT + ' °C' : '') + '</td><td class="num">' + (c.gdd ? c.gdd + ' °C days' + (c.base !== undefined ? ' above ' + c.base + ' °C' : ' above 0 °C from 1 Jan') : '') + '</td><td class="num">' + c.nfix + ' kg N/ha</td><td class="num">' + c.res + ' of 5</td><td class="num">' + c.dt + ' of 5</td></tr>'; }).join('') + '</tbody></table>';
     const stockUI = () => { $('stockbox').hidden = !S.stockOn; $('stockmsg').innerHTML = herd(); };
     const mUI = () => { const m = margin(); $('mout').innerHTML = 'Margin about <b>€' + r0(m).toLocaleString('en') + ' per ha</b>' + (S.area ? ', <b>€' + r0(m * S.area).toLocaleString('en') + '</b> a year on ' + S.area + ' ha. A ' + S.maxDrop + '% drop is about €' + r0(m * S.area * S.maxDrop / 100).toLocaleString('en') + ' a year.' : '.') + ' Rough defaults are for wheat; enter your own.'; $('maxdropv').textContent = S.maxDrop + '% a year' + (m && S.area ? ' (≈ €' + r0(m * S.area * S.maxDrop / 100).toLocaleString('en') + ')' : ''); };
-    window.syncExtra = () => { if (!(S.fw >= 20 && S.fl >= 20) || Math.abs(S.fw * S.fl / 1e4 - S.area) > 0.5) { S.fw = S.fl = Math.max(20, Math.round(Math.sqrt((S.area || 100) * 1e4))); } $('fw').value = S.fw; $('fl').value = S.fl; $('area').value = S.area; drawField(); $('stock').checked = S.stockOn; $('stype').value = S.stockType; $('sn').value = S.stockN; $('maxdrop').value = S.maxDrop; $('my').value = S.mY; $('mp').value = S.mP; $('mc').value = S.mC; stockUI(); mUI(); };
+    window.syncExtra = () => { fieldInit(); $('fw').value = S.fw; $('fl').value = S.fl; $('area').value = S.area; drawField(); $('stock').checked = S.stockOn; $('stype').value = S.stockType; $('sn').value = S.stockN; $('maxdrop').value = S.maxDrop; $('my').value = S.mY; $('mp').value = S.mP; $('mc').value = S.mC; stockUI(); mUI(); };
     let xt = null; const later = () => { clearTimeout(xt); xt = setTimeout(recompute, 400); };
     window.fieldChanged = () => { stockUI(); mUI(); later(); };
-    $('area').oninput = e => { const a = Math.max(0, +e.target.value || 0); if (a > 0) { const k = Math.sqrt(a * 1e4 / (S.fw * S.fl)); S.fw = Math.max(20, Math.round(S.fw * k)); S.fl = Math.max(20, Math.round(S.fw ? a * 1e4 / S.fw : S.fl)); } S.area = a; $('fw').value = S.fw; $('fl').value = S.fl; drawField(); stockUI(); mUI(); later(); };
-    $('fw').oninput = e => { const v = +e.target.value; if (v >= 20) { S.fw = Math.round(v); syncField(); } };
-    $('fl').oninput = e => { const v = +e.target.value; if (v >= 20) { S.fl = Math.round(v); syncField(); } };
+    $('area').oninput = e => { const a = +e.target.value; if (a > 0) { fieldInit(); const k = Math.sqrt(a * 1e4 / ((S.fE + S.fW) * (S.fN + S.fS))); scaleField(k, k); } };
+    $('fw').oninput = e => { const v = +e.target.value; if (v >= 20) { fieldInit(); scaleField(v / (S.fE + S.fW), 1); } };
+    $('fdraw').onclick = startDraw; $('fclear').onclick = () => { S.poly = null; syncField(); };
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawing) cancelDraw(); });
+    $('fl').oninput = e => { const v = +e.target.value; if (v >= 20) { fieldInit(); scaleField(1, v / (S.fN + S.fS)); } };
     $('stype').onchange = e => { S.stockType = e.target.value; stockUI(); later(); };
     $('sn').oninput = e => { S.stockN = Math.max(0, +e.target.value || 0); stockUI(); later(); };
     $('maxdrop').oninput = e => { S.maxDrop = +e.target.value; mUI(); later(); };
@@ -2253,7 +2338,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
       cell.bindTooltip('NASA POWER grid cell, about 50 km', { permanent: true, direction: 'bottom', className: 'cell' });
       marker = window.L.marker([DEMOS[0].lat, DEMOS[0].lon], { interactive: false, keyboard: false, icon: window.L.divIcon({ className: 'pin', iconSize: [0, 0] }) }).addTo(map);
       map.on('dragstart', () => setPlaying(false));
-      map.on('click', e => { if (S.intro) { if (introPick) introPick(e.latlng.lat, e.latlng.lng, null); return; } setPlace(e.latlng.lat, e.latlng.lng, null); if (S.wiz != null && S.wiz > 0) wizard(0); });
+      map.on('click', e => { if (drawing) { addPoint(e.latlng); return; } if (S.intro) { if (introPick) introPick(e.latlng.lat, e.latlng.lng, null); return; } setPlace(e.latlng.lat, e.latlng.lng, null); if (S.wiz != null && S.wiz > 0) wizard(0); });
       window.addEventListener('resize', () => map.invalidateSize());
     } else { $('play').hidden = true;
     }
