@@ -312,7 +312,7 @@
         kp(r0(cm.bare), r0(bm2.bare), '', 'days of bare soil a year', 'Right now it’s bare ' + bareMonths(A.current, cl), 'calendar') +
         kp(r0(cm.exposed), r0(bm2.exposed), '', 'mm of heavy rain a year hitting poorly covered soil', 'Out of ' + r0(cl.erosTotal) + ' mm that falls on really rainy days (12.7 mm or more)', 'calendar') +
         kp(Math.round(rh(A.current) * 100), Math.round(rh(best) * 100), '%', 'of the water crops wanted but didn’t get ' + (hot ? 'in hot, dry years' : 'on average'), hot ? hot.count + ' of the ' + cl.n + ' years were hot and dry' : 'Averaged over ' + cl.n + ' years', 'years') +
-        '</div><h2 class="second">How the scores change (tap a row to see what it means)</h2>';
+        '</div><h2 class="second">What changes if you switch</h2>';
       R += dumbbell(A.current, best);
       const bt = best.boot, w = Math.round(bt.win * 100);
       R += '<div class="conf"><span class="cn">' + Math.round(bt.win * bt.runs) + '<small>of ' + bt.runs + '</small></span><span class="ct">' + (best.match + 0.5 < A.current.match && bt.win >= 0.7 ? 'Better on weather alone, but your limits put it below your rotation' : bt.win >= 0.9 ? 'Reliably better than what you grow now' : bt.win >= 0.7 ? 'Probably better than what you grow now' : 'About the same as what you grow now') + ' <button class="q" data-term="boot" aria-label="Explain">?</button></span><span class="cs">Wins in ' + Math.round(bt.win * bt.runs) + ' of ' + bt.runs + ' reshuffled versions of the ' + cl.n + ' years' + '</div>';
@@ -395,17 +395,15 @@
     return '<p class="fine"><b style="color:#fff">Satellite check.</b> The top strips are greenness measured by NASA\'s MODIS instrument on a 250 m square at your point. ' + parts.join(' ') + ' A poor match can mean our dates are off for your area, that something else was grown that year, or that the square covers several fields.</p>';
   }
   function dumbbell(cur, best) {
-    const W = 560, L = 190, R = 44, pw = W - L - R, X = v => L + v / 100 * pw; let g = '', y = 26;
-    [0, 25, 50, 75, 100].forEach(v => { g += '<line x1="' + X(v) + '" x2="' + X(v) + '" y1="16" y2="' + (26 + DIMS.length * 44 - 12) + '" stroke="' + COL.line + '"/><text x="' + X(v) + '" y="10" text-anchor="middle" font-size="13.7" fill="' + COL.muted + '">' + v + '</text>'; });
-    for (const d of DIMS) {
-      const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, c = dl > 2 ? '#8FD694' : dl < -2 ? '#F2907E' : '#A8A89C';
-      g += '<text x="0" y="' + (y + 4) + '" font-size="16.9" fill="' + COL.ink + '">' + d[1] + '</text><text x="0" y="' + (y + 20) + '" font-size="13.7" fill="' + COL.muted + '">importance ' + S.weights[d[0]] + '</text>';
-      g += '<line x1="' + X(a) + '" x2="' + X(b) + '" y1="' + y + '" y2="' + y + '" stroke="' + c + '" stroke-width="4" stroke-linecap="round" opacity=".55"/><circle cx="' + X(a) + '" cy="' + y + '" r="5.5" fill="' + COL.panel + '" stroke="#A8A89C" stroke-width="2"><title>Now: ' + a + '</title></circle><circle cx="' + X(b) + '" cy="' + y + '" r="7" fill="' + c + '"><title>Alternative: ' + b + '</title></circle>';
-      g += '<text x="' + (W - 2) + '" y="' + (y + 4.5) + '" text-anchor="end" font-size="16.9" font-weight="700" fill="' + c + '">' + (dl > 0 ? '+' : '') + dl + '</text><rect x="0" y="' + (y - 18) + '" width="' + W + '" height="40" fill="transparent" data-tip="' + esc(d[1] + ': ' + DIMTIP[d[0]].replace(/<[^>]+>/g, ' ') + ' Yours now: ' + a + '. The other option: ' + b + '.') + '"/>';
-      y += 44;
-    }
-    return '<div class="legend" style="margin-bottom:2px"><span><i style="background:none;box-shadow:inset 0 0 0 2px #A8A89C;border-radius:50%"></i>your rotation now</span><span><i style="background:#8FD694;border-radius:50%"></i>the alternative</span></div><svg class="dumb" viewBox="0 0 ' + W + ' ' + (26 + DIMS.length * 44 - 6) + '" role="img" aria-label="Scores for each priority, current rotation against the alternative">' + g + '</svg>';
+    return '<div class="sclist">' + DIMS.map(d => {
+      const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, k = dl > 2 ? 'up' : dl < -2 ? 'down' : 'same';
+      const verdict = k === 'up' ? 'Gets better' : k === 'down' ? 'Gets worse' : 'About the same';
+      return '<button type="button" class="scrow ' + k + '" data-term="s_' + d[0] + '"><span class="sct"><b>' + d[1] + '</b><span class="scv">' + verdict + (k === 'same' ? '' : ' by ' + Math.abs(dl)) + '</span></span>' +
+        '<span class="scbars"><span class="scb"><i class="now" style="width:' + a + '%"></i></span><span class="scn">now ' + a + '</span><span class="scb"><i class="alt" style="width:' + b + '%"></i></span><span class="scn">new ' + b + '</span></span>' +
+        '<span class="scmore">What is this? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span></button>';
+    }).join('') + '</div><p class="scnote">Scores go from 0 (bad) to 100 (very good).</p>';
   }
+
   function terrainHTML(T) {
     const c = T.n > 6 ? 26 : 46, col = v => v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#3E8E5A'; let g = '';
     T.slopes.forEach((v, i) => { const x = (i % T.n) * c, y = Math.floor(i / T.n) * c; if (T.mask && !(T.mask[i] > 0)) return; g += '<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (c - 2) + '" height="' + (c - 2) + '" rx="3" fill="' + col(v) + '"' + (T.low[i] ? ' stroke="#7CC6E8" stroke-width="3"' : '') + '><title>' + r0(T.z[i]) + ' m, slope ' + v.toFixed(1) + '%' + (T.low[i] ? ', low spot' : '') + '</title></rect>' + (T.n > 6 ? '' : '<text x="' + (x + c / 2) + '" y="' + (y + c / 2 + 4) + '" text-anchor="middle" font-size="11" fill="#10231A">' + r0(T.z[i]) + '</text>'); });
