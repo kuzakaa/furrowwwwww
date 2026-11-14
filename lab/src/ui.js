@@ -820,7 +820,7 @@
     const fill = (id, obj) => { $(id).innerHTML = Object.keys(obj).map(k => '<option value="' + k + '">' + obj[k].name + '</option>').join(''); };
     fill('soil', E.SOILS); fill('till', E.TILLAGE); setSlope(S.slopePct);
     $('demo').innerHTML = DEMOS.map(d => '<option value="' + d.id + '">' + d.name + '</option>').join('') + '<option value="">Your own point</option>';
-    $('demo').onchange = e => { const d = DEMOS.find(x => x.id === e.target.value); if (d) setPlace(d.lat, d.lon, d); };
+    $('demo').onchange = e => { const d = DEMOS.find(x => x.id === e.target.value); if (d) { setPlace(d.lat, d.lon, d); if (S.wiz != null && S.wiz > 0) wizard(0); } };
     $('tabs').innerHTML = TABS.map(t => '<button data-tab-btn="' + t[0] + '">' + t[1] + '</button>').join('') + '<span class="ink"></span>';
     $('tabs').querySelectorAll('button').forEach(b => { if (EV.indexOf(b.dataset.tabBtn) >= 0) b.className = 'ev'; });
     $('dock').innerHTML = [['field', 'Field'], ['result', 'Result'], ['options', 'Options'], ['evidence', 'Evidence']].map(t => '<button data-tab-btn="' + t[0] + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[t[0]] + '</svg>' + t[1] + '</button>').join('') + '<span class="ink"></span>';
@@ -894,7 +894,7 @@
     $('srain').oninput = e => { S.scen.rain = +e.target.value; $('srainv').textContent = (S.scen.rain > 0 ? '+' : '') + S.scen.rain + '%'; recompute(); };
     $('stemp').oninput = e => { S.scen.temp = +e.target.value; $('stempv').textContent = '+' + S.scen.temp + '°'; recompute(); };
     $('addyr').onclick = () => { if (S.rot.length < 6) { S.rot.push({ c: 'soy', cv: null }); renderRot(); recompute(); } };
-    $('load').onclick = () => { const la = parseFloat($('lat').value), lo = parseFloat($('lon').value); if (isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180) { setPlace(la, lo, null); setTab('result'); } else status('err', 'Enter a latitude between -60 and 70 and a longitude between -180 and 180.'); };
+    $('load').onclick = () => { const la = parseFloat($('lat').value), lo = parseFloat($('lon').value); if (isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180) { setPlace(la, lo, null); if (S.wiz != null && S.wiz > 0) wizard(0); else setTab('result'); } else status('err', 'Enter a latitude between -60 and 70 and a longitude between -180 and 180.'); };
     $('out').addEventListener('click', e => { if (e.target.id === 'showrank') openRank(); });
     document.addEventListener('click', e => { const q = e.target.closest('[data-term]'); if (q) { e.stopPropagation(); explainTerm(q.dataset.term); } }, true);
     $('modal').addEventListener('click', e => { if (e.target.id === 'modal' || e.target.closest('[data-close]')) closeModal(); const o = e.target.closest('#mbox [data-sel]'); if (o && !o.dataset.done) { o.dataset.done = 1; S.sel = +o.dataset.sel; S.animOpt = true; closeModal(); render(); $('scroll').scrollTop = 0; } });
@@ -909,14 +909,14 @@
     $('play').onclick = () => { setPlaying(!playing); if (playing) goStep(step + 1); };
     setInterval(() => { if (playing && map && LAST && !S.intro && S.wiz == null && !document.hidden) goStep(step + 1); }, 9000);
     if (window.L) {
-      map = window.L.map('map', { attributionControl: false, zoomSnap: 0.25, minZoom: 3, worldCopyJump: true, maxBounds: [[-85, -1000], [85, 1000]], maxBoundsViscosity: 1 }).setView([DEMOS[0].lat, DEMOS[0].lon], 7);
+      map = window.L.map('map', { attributionControl: false, scrollWheelZoom: 'center', doubleClickZoom: 'center', touchZoom: 'center', zoomSnap: 0.25, minZoom: 3, worldCopyJump: true, maxBounds: [[-85, -1000], [85, 1000]], maxBoundsViscosity: 1 }).setView([DEMOS[0].lat, DEMOS[0].lon], 7);
       window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 17, attribution: 'Imagery © Esri, Maxar, Earthstar Geographics' }).addTo(map);
       window.L.control.attribution({ prefix: false }).addTo(map);
       cell = window.L.rectangle([[0, 0], [1, 1]], { color: '#EEF2E6', weight: 1.5, fillOpacity: 0.03, dashArray: '6 5', interactive: false }).addTo(map);
       cell.bindTooltip('NASA POWER grid cell, about 50 km', { permanent: true, direction: 'bottom', className: 'cell' });
       marker = window.L.marker([DEMOS[0].lat, DEMOS[0].lon], { interactive: false, keyboard: false, icon: window.L.divIcon({ className: 'pin', iconSize: [0, 0] }) }).addTo(map);
       map.on('dragstart', () => setPlaying(false));
-      map.on('click', e => { if (S.intro) { if (introPick) introPick(e.latlng.lat, e.latlng.lng, null); return; } setPlace(e.latlng.lat, e.latlng.lng, null); });
+      map.on('click', e => { if (S.intro) { if (introPick) introPick(e.latlng.lat, e.latlng.lng, null); return; } setPlace(e.latlng.lat, e.latlng.lng, null); if (S.wiz != null && S.wiz > 0) wizard(0); });
       window.addEventListener('resize', () => map.invalidateSize());
     } else { $('play').hidden = true;
     }

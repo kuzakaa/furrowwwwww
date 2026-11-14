@@ -711,3 +711,7 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 .livebox #livewx:empty::after{content:"Pick a field to load live data.";display:block;color:var(--muted);font-size:14px;padding:0 4px 4px}
 body:not([data-tab="result"]) .livebox{display:none}
 .relocbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;font-size:15px;margin:0;white-space:nowrap}.relocbtn svg{width:18px;height:18px}
+select{background-color:#123d27!important;color:#F5FAF2;border-color:rgba(163,230,53,.35)!important;accent-color:#a3e635;color-scheme:dark}
+select:hover,select:focus{background-color:#175033!important;border-color:#a3e635!important;outline:none}
+select option{background:#0f2a1c!important;color:#F5FAF2}
+select option:checked,select option:hover{background:#1f6b3f!important;color:#fff}
