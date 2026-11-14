@@ -1971,9 +1971,10 @@ body:not([data-tab="result"]) .livebox{display:none}
         msg.textContent = f.properties.display_name.split(',').slice(0, 3).join(',');
         if (mask) { mask.remove(); mask = null; }
         const g = f.geometry, ring = c => c.map(p => [p[1], p[0]]), polys = g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
+        if (!map.getPane('maskp')) { const mp = map.createPane('maskp'); mp.style.zIndex = 420; mp.style.pointerEvents = 'none'; }
         if (polys.length) {
-          mask = window.L.polygon([[[-89.9, -540], [-89.9, 540], [89.9, 540], [89.9, -540]]].concat(polys.map(pg => ring(pg[0]))), { stroke: false, fillColor: '#1b1d1a', fillOpacity: 0.72, interactive: false }).addTo(map);
-          mask.outline = window.L.polygon(polys.map(pg => ring(pg[0])), { color: '#a3e635', weight: 2, fill: false, interactive: false }).addTo(map);
+          mask = window.L.polygon([[[-89.9, -540], [-89.9, 540], [89.9, 540], [89.9, -540]]].concat(polys.map(pg => ring(pg[0]))), { pane: 'maskp', stroke: false, fillColor: '#2a2c28', fillOpacity: 0.78, interactive: false }).addTo(map);
+          mask.outline = window.L.polygon(polys.map(pg => ring(pg[0])), { pane: 'maskp', color: '#a3e635', weight: 2.5, fill: false, interactive: false }).addTo(map);
           const rm = mask.remove.bind(mask); mask.remove = () => { mask.outline.remove(); return rm(); };
           map.flyToBounds(mask.outline.getBounds(), { padding: [40, 40], duration: 1.2 });
         } else map.flyTo([+f.geometry.coordinates[1], +f.geometry.coordinates[0]], 13, { duration: 1.2 });
