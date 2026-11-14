@@ -920,6 +920,7 @@
       window.addEventListener('resize', () => map.invalidateSize());
     } else { $('play').hidden = true;
     }
+    $('reloc2').onclick = () => $('reloc').click();
     $('reloc').onclick = () => { try { sessionStorage.setItem('furrow:reloc', '1'); } catch (e) {} window.location.reload(); };
     $('reset').onclick = () => { try { localStorage.removeItem(KEY); } catch (e) {} window.location.reload(); };
     const saved = restore();

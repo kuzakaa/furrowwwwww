@@ -710,3 +710,4 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 .livebox #livewx{padding:0 12px 12px}
 .livebox #livewx:empty::after{content:"Pick a field to load live data.";display:block;color:var(--muted);font-size:14px;padding:0 4px 4px}
 body:not([data-tab="result"]) .livebox{display:none}
+.relocbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;font-size:15px;margin:0;white-space:nowrap}.relocbtn svg{width:18px;height:18px}

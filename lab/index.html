@@ -721,6 +721,7 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 .livebox #livewx{padding:0 12px 12px}
 .livebox #livewx:empty::after{content:"Pick a field to load live data.";display:block;color:var(--muted);font-size:14px;padding:0 4px 4px}
 body:not([data-tab="result"]) .livebox{display:none}
+.relocbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;font-size:15px;margin:0;white-space:nowrap}.relocbtn svg{width:18px;height:18px}
 
 </style>
 </head>
@@ -753,6 +754,7 @@ body:not([data-tab="result"]) .livebox{display:none}
 <header class="bar glass">
   <div class="brand"><svg viewBox="0 0 34 22" aria-hidden="true"><path d="M1 5c5-4 9 4 16 0s11 4 16 0M1 11c5-4 9 4 16 0s11 4 16 0M1 17c5-4 9 4 16 0s11 4 16 0" fill="none" stroke="#8FD694" stroke-width="3" stroke-linecap="round"/></svg>Furrow</div>
   <select id="demo" aria-label="Example fields"></select>
+  <button class="btn ghost relocbtn" id="reloc2" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/></svg>Change location</button>
   <div class="src" id="srcline">NASA POWER daily record, 2001 to 2025</div>
 </header>
 <div class="mapbox glass">
@@ -2210,6 +2212,7 @@ body:not([data-tab="result"]) .livebox{display:none}
       window.addEventListener('resize', () => map.invalidateSize());
     } else { $('play').hidden = true;
     }
+    $('reloc2').onclick = () => $('reloc').click();
     $('reloc').onclick = () => { try { sessionStorage.setItem('furrow:reloc', '1'); } catch (e) {} window.location.reload(); };
     $('reset').onclick = () => { try { localStorage.removeItem(KEY); } catch (e) {} window.location.reload(); };
     const saved = restore();
