@@ -780,3 +780,6 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 @keyframes a-wig{to{transform:translateX(14px)}}
 .xanim .a-crumb{opacity:0;animation:a-coin .6s ease-out both}
 .xanim .a-rise{transform-origin:50% 100%;transform-box:fill-box;animation:a-pop .7s cubic-bezier(.2,.9,.3,1.2) both}
+.co .cox{width:32px;height:32px;top:2px;right:2px;font-size:24px;font-weight:700}
+.co div{padding-right:40px!important}
+.co{transition:opacity .7s ease}.co.cofade{opacity:0}

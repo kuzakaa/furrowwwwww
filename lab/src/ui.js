@@ -708,6 +708,7 @@
     const m = window.L.marker([S.lat, S.lon], { interactive: true, keyboard: false, icon: window.L.divIcon({ className: 'co', html: '<i></i><div><button class="cox" type="button" aria-label="Hide this label" title="Hide this label">&times;</button>' + html + '</div>', iconSize: [0, 0] }) }).addTo(map);
     m.on('click', e => { const t = e.originalEvent && e.originalEvent.target; if (t && t.closest && t.closest('.cox')) { coOff = key; co.forEach(x => map.removeLayer(x)); co = []; } });
     co.push(m);
+    setTimeout(() => { const el = m.getElement && m.getElement(); if (el) el.classList.add('cofade'); setTimeout(() => { if (map.hasLayer(m)) map.removeLayer(m); co = co.filter(x => x !== m); }, 700); }, 8000);
   }
 
   function story() {
