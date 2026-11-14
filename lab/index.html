@@ -1980,9 +1980,9 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
       const sum = a => a.reduce((x, y) => x + y, 0), rain = sum(v('precip_24h:mm')), et = sum(v('evapotranspiration_24h:mm')), t = v('t_2m:C'), sm = v('soil_moisture_index_-15cm:idx');
       if (!t.length) throw 0;
       const bal = rain - et, smi = sm.length ? sm[sm.length - 1] : null;
-      const wet = smi == null ? '' : smi < 0.3 ? 'dry' : smi < 0.7 ? 'moderately moist' : smi <= 1.05 ? 'moist' : 'very wet';
       S.live = { rain, et, bal, temp: sum(t) / t.length, smi };
       const tm = sum(t) / t.length, dry = (smi != null && smi < 0.3) || bal < -30, soaked = (smi != null && smi > 1.05) || bal > 80;
+      const wet = dry ? 'dry' : soaked ? 'very wet' : smi == null ? '' : smi < 0.7 ? 'moderately moist' : 'moist';
       const advice = dry ? 'the topsoil is short of water. If you sow now, seeds may not come up evenly. Wait for rain, or start with a crop that copes with a dry start (sorghum, sunflower, barley). Leaving crop residue on top keeps the moisture in.'
         : soaked ? 'the soil is very wet. Heavy machinery now will pack it down and smear it, which hurts roots for years. Wait a few dry days before field work, and keep the ground covered so rain doesn\'t wash soil away.'
         : tm < 5 ? 'the soil has enough water, but it is too cold for most crops to grow. Winter crops already in the ground are fine; spring sowing has to wait for warmer days.'
