@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Furrow Rotation Explorer</title>
+<meta name="theme-color" content="#171816">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+    --panel:rgba(23,24,22,.84); --solid:#171816; --ink:#EEF2E6; --muted:#A8A89C; --line:rgba(240,236,220,.13);
+  --em:#8FD694; --amber:#F2A541; --red:#F2907E; --sky:#7CC6E8;
+  --display:"Fraunces",Georgia,serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:#111210;color:var(--ink);font:14.5px/1.5 "Figtree","Segoe UI",system-ui,sans-serif}
+h1,h2,h3,p{margin:0}
+a{color:var(--ink);text-underline-offset:3px}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--em);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+#map{position:fixed;inset:0;z-index:0;background:#111210}
+.glass{background:var(--panel);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line)}
+.bar{position:fixed;top:0;left:0;right:0;height:52px;z-index:5;display:flex;align-items:center;gap:14px;padding:0 14px;border-width:0 0 1px}
+.brand{font-family:var(--display);font-weight:600;font-size:21px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;color:#fff}
+.brand svg{width:26px;height:17px}
+.bar select{width:auto;max-width:230px}
+.bar .src{margin-left:auto;font-size:12px;color:var(--muted)}
+.setup{position:fixed;top:64px;left:12px;bottom:12px;width:340px;z-index:4;border-radius:18px;overflow:auto;padding:2px 16px}
+.res{position:fixed;top:64px;right:12px;bottom:12px;width:clamp(460px,44vw,740px);z-index:4;border-radius:18px;display:flex;flex-direction:column;overflow:hidden}
+.mapbox{position:fixed;left:364px;bottom:12px;z-index:4;border-radius:14px;padding:8px 10px;display:flex;gap:8px;align-items:flex-end}
+.mapbox .field{min-width:0}
+.mapbox select{width:190px}
+.leaflet-top.leaflet-left{top:64px;left:364px}
+.leaflet-bar a{background:#171816!important;color:#EEF2E6!important;border-color:rgba(240,236,220,.13)!important}
+.leaflet-control-attribution{background:rgba(23,24,22,.75)!important;color:#A8A89C!important}
+.leaflet-control-attribution a{color:#D9D7CB!important}
+.leaflet-bottom.leaflet-right{right:calc(clamp(460px,44vw,740px) + 16px);bottom:8px}
+.leaflet-tooltip.cell{background:rgba(23,24,22,.9);border:1px solid rgba(255,255,255,.18);color:#EEF2E6;font:500 11.5px Figtree,sans-serif;box-shadow:none}
+.leaflet-tooltip.cell::before{display:none}
+.tabs{display:flex;flex:none;border-bottom:1px solid var(--line);overflow-x:auto;position:relative}
+.ink{position:absolute;left:0;bottom:0;height:2px;width:0;background:var(--em);transition:transform .4s cubic-bezier(.3,.9,.3,1),width .4s cubic-bezier(.3,.9,.3,1);pointer-events:none}
+.tabs button,.dock button{flex:1;background:none;border:0;color:var(--muted);font-weight:600;cursor:pointer;white-space:nowrap}
+.tabs button{padding:13px 10px;font-size:13px;border-bottom:2px solid transparent}
+.tabs button[aria-selected=true]{color:#fff}
+.dock{display:none}
+.scrollarea{flex:1;overflow:auto;padding:18px 20px 30px}
+.pane{display:none}
+body[data-tab=result] .pane[data-pane=result],body[data-tab=climate] .pane[data-pane=climate],body[data-tab=calendar] .pane[data-pane=calendar],body[data-tab=options] .pane[data-pane=options],body[data-tab=years] .pane[data-pane=years],body[data-tab=method] .pane[data-pane=method]{display:block}
+#out:empty{display:none}
+.box{border-bottom:1px solid var(--line);padding:4px 0}
+.setup .box:last-child{border-bottom:0}
+.box > summary{cursor:pointer;list-style:none;padding:11px 0;font-weight:700;color:#fff;display:flex;justify-content:space-between;align-items:center}
+.box > summary::-webkit-details-marker{display:none}
+.box > summary::after{content:"+";color:var(--muted);font-weight:400;font-size:18px;line-height:1}
+.box[open] > summary::after{content:"\2212"}
+.box > *:not(summary){margin-bottom:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:3px;flex:1;min-width:96px}
+.field label{font-size:11.5px;color:var(--muted)}
+input[type=number],input[type=date],select{border:1px solid var(--line);border-radius:10px;padding:7px 9px;background:rgba(255,255,255,.07);width:100%;min-width:0}
+select option{background:#171816;color:#EEF2E6}
+.btn{border:0;background:var(--em);color:#10231A;border-radius:999px;padding:8px 14px;cursor:pointer;font-weight:700}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-weight:600}
+.btn:hover{filter:brightness(1.12)}
+.btn:disabled{opacity:.4;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:6px;padding:4px 9px;font-size:12.5px;cursor:pointer;color:var(--ink)}
+.chip[aria-pressed=true]{color:var(--red);border-color:rgba(248,113,113,.5);text-decoration:line-through}
+.rotrow{display:grid;grid-template-columns:42px minmax(0,1fr) minmax(0,1fr) 20px;gap:6px;align-items:center;margin-bottom:6px}
+.rotrow select{font-size:13px;padding:7px 4px}
+.rotrow .yr{font-size:12px;color:var(--muted)}
+.rotrow button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1}
+.slider{display:grid;grid-template-columns:1fr 120px 34px;gap:8px;align-items:center;margin-bottom:4px}
+.slider input{width:100%;accent-color:var(--em)}
+.slider .num{text-align:right;color:var(--muted)}
+.check{display:flex;gap:8px;align-items:center}
+.check input{accent-color:var(--em);width:16px;height:16px}
+.banner{padding:9px 12px;margin-bottom:14px;border:1px solid var(--line);border-radius:10px}
+.banner.err{border-color:rgba(242,144,126,.55);color:#F7C1B6}
+.banner.warn{border-color:rgba(242,165,65,.5);color:#F3D9A4}
+.place{color:var(--muted);font-size:12.5px;margin-bottom:6px}
+h1{font-family:var(--display);font-size:27px;font-weight:600;line-height:1.16;letter-spacing:-.01em;color:#fff;text-wrap:balance}
+h2{font-family:var(--display);font-size:19px;font-weight:600;color:#fff;margin:26px 0 4px}
+.pane > h2:first-child{margin-top:0}
+h3{font-size:14px;font-weight:700;color:#fff}
+.sub{color:var(--muted);margin-bottom:12px;max-width:68ch}
+.vs{display:flex;gap:22px;align-items:flex-start;margin:18px 0 16px}
+.vs > div{flex:1;min-width:0}
+.vs .n{display:block;font-family:var(--display);font-size:62px;font-weight:600;line-height:.9;letter-spacing:-.02em;color:#86867A;font-variant-numeric:tabular-nums}
+.vs .win .n{color:var(--em)}
+.vs .l{display:block;margin-top:8px;font-size:12.5px;color:var(--muted);max-width:22ch}
+.vs .win .l{color:var(--ink);font-weight:600}
+.drow{display:grid;grid-template-columns:1fr auto 48px;gap:12px;padding:9px 0;border-top:1px solid var(--line);align-items:baseline}
+.drow:last-of-type{border-bottom:1px solid var(--line)}
+.drow .mv{color:var(--muted);font-variant-numeric:tabular-nums}
+.drow .dv{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted)}
+.up{color:var(--em)!important}.dn{color:var(--red)!important}
+.fine{color:var(--muted);font-size:12.5px;margin-top:12px;max-width:70ch}
+.why{margin:14px 0;max-width:70ch}
+.link{background:none;border:0;padding:0;color:var(--em);font-weight:600;cursor:pointer}
+.irow{display:grid;grid-template-columns:minmax(0,1fr) 150px 118px;gap:14px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.irow .k{font-weight:600}
+.irow .r{font-size:12px;color:var(--muted)}
+.irow .v{font-family:var(--display);font-size:23px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-align:right;line-height:1.1}
+.irow .v small{font-size:12px;font-weight:400;color:var(--muted);letter-spacing:0}
+.irow .t{font-size:11.5px;text-align:right;color:var(--muted)}
+.irow .t.clear{color:var(--red)}.irow .t.possible{color:var(--amber)}
+.spark{display:block;width:100%;height:40px}
+.sparkax{display:flex;justify-content:space-between;font-size:10.5px;color:#86867A}
+.fig{overflow-x:auto;margin:0 -4px;padding:0 4px}
+.fig svg{display:block;min-width:660px;width:100%;height:auto;font-family:Figtree,sans-serif}
+.legend{display:flex;flex-wrap:wrap;gap:5px 14px;font-size:12px;color:var(--muted);margin-bottom:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+.rank{display:flex;flex-direction:column;gap:16px;margin:6px 0 26px}
+.rk{display:grid;grid-template-columns:20px minmax(0,1fr) auto;grid-template-areas:"dot name score" ". bar bar";column-gap:10px;row-gap:7px;align-items:baseline;text-align:left;background:none;border:0;padding:0;cursor:pointer;color:var(--muted)}
+.rk .dot{grid-area:dot;width:14px;height:14px;border-radius:50%;border:1.5px solid #6A6A60;align-self:center;transition:inherit;position:relative;top:-1px}
+.rk .nm{grid-area:name;min-width:0}
+.rk .nm b{display:block;font-weight:600;color:var(--ink);transition:color .28s ease}
+.rk .nm small{display:block;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk .sc{grid-area:score;font-family:var(--display);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--muted);transition:color .28s ease}
+.rk .br{grid-area:bar;height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden}
+.rk .br i{display:block;height:100%;border-radius:3px;background:#6A6A60;transition:background-color .28s ease}
+.rk:hover .nm b,.rk:hover .sc{color:#fff}
+.rk[aria-pressed=true] .dot{border-color:var(--em);background:radial-gradient(circle,var(--em) 0 4px,transparent 4.5px)}
+.rk[aria-pressed=true] .nm b,.rk[aria-pressed=true] .sc{color:#fff}
+.rk[aria-pressed=true] .br i{background:var(--em)}
+.anim .rk .br i{transform-origin:left;animation:grow .8s cubic-bezier(.2,.8,.2,1) both}
+.bars{display:grid;grid-template-columns:minmax(0,150px) 1fr 28px 44px;gap:7px 8px;align-items:center;font-size:13px;margin:12px 0 4px}
+.bars .track{height:6px;background:rgba(255,255,255,.09);border-radius:3px;overflow:hidden}
+.bars .track b{display:block;height:100%;background:var(--em)}
+.bars .d{font-size:12px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+h4{margin:18px 0 6px;font-size:12.5px;font-weight:600;color:var(--muted)}
+ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+ul b{color:#fff}
+.note{border-top:1px solid var(--line);padding-top:14px;margin-top:18px}
+.note h4{margin-top:0;color:var(--ink);font-size:13.5px}
+.note.warn h4{color:var(--amber)}
+details.more{border-top:1px solid var(--line);margin-top:16px}
+details.more > summary{cursor:pointer;padding:10px 0;font-weight:600;list-style:none;color:var(--ink)}
+details.more > summary::-webkit-details-marker{display:none}
+details.more > summary::before{content:"+ ";color:var(--muted)}
+details.more[open] > summary::before{content:"\2212 "}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:7px 8px 7px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;color:var(--muted);font-weight:600}
+.scroll{overflow-x:auto}
+.ytype{padding:14px 0;border-top:1px solid var(--line)}
+.ytype .hd{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.ytype .yrs{font-size:12px;color:var(--muted);margin:2px 0 8px}
+.yb{display:grid;grid-template-columns:minmax(0,170px) 1fr 40px;gap:8px;align-items:center;font-size:12.5px;padding:2px 0}
+.yb i{display:block;height:6px;border-radius:3px;background:var(--amber);min-width:2px}
+.yb span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+dl{margin:0}
+dl > div{padding:10px 0;border-top:1px solid var(--line)}
+dt{font-weight:600;color:#fff}
+dd{margin:2px 0 0;color:var(--muted)}
+.limits .box{border:0;padding:0;margin-top:14px;display:block}
+.limits .box h3{margin-bottom:6px}
+.limits .box ul{color:var(--muted)}
+footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:14px;margin-top:22px}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--em);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px;margin-right:8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+@media (max-width:900px){
+  html{height:auto;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth}
+  body{height:auto;min-height:100%;overflow:visible}
+  #map{position:absolute;inset:0 0 auto 0;height:36vh}
+  .bar{height:46px;padding:0 10px;gap:10px}
+  .bar .src{display:none}
+  .bar select{max-width:none;flex:1}
+  .setup,.res{position:relative;top:auto;left:auto;right:auto;bottom:auto;width:auto;margin-top:36vh;min-height:64vh;overflow:visible;border-radius:16px 16px 0 0;border-width:1px 0 0;padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+  .scrollarea{overflow:visible}
+  .setup{padding:2px 16px calc(96px + env(safe-area-inset-bottom))}
+  body[data-view=field] .res{display:none}
+  body[data-view=results] .setup{display:none}
+  .res .tabs{display:none}
+  body[data-group=ev] .res .tabs{display:flex;padding:10px 12px;gap:6px;border-bottom:0;position:sticky;top:46px;z-index:3;background:var(--solid);border-radius:16px 16px 0 0}
+  .tabs .ink{display:none}
+  .res .tabs button:not(.ev){display:none}
+  .res .tabs button{flex:none;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13.5px}
+  .res .tabs button[aria-selected=true]{background:var(--em);color:#10231A;border-color:var(--em)}
+  .scrollarea{padding:16px 16px 26px}
+  .dock{display:flex;position:fixed;left:0;right:0;bottom:0;height:calc(66px + env(safe-area-inset-bottom));padding:6px 8px env(safe-area-inset-bottom);z-index:6;border-width:1px 0 0;gap:4px}
+  .dock button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12.5px;border-radius:14px;min-height:52px}
+  .dock button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .dock button{position:relative;z-index:1}
+  .dock button[aria-selected=true]{color:#10231A}
+  .dock .ink{position:absolute;left:0;top:6px;height:52px;border-radius:14px;background:var(--em);z-index:0}
+  .mapbox{position:absolute;left:8px;right:auto;bottom:auto;top:calc(36vh - 60px);padding:6px 8px}
+  .mapbox select{width:150px}
+  .mapbox input[type=date]{width:128px}
+  .mapbox .field label{display:none}
+  .mapbox .dt{display:none}
+  .mapbox .btn{padding:7px 12px}
+  .co div{max-width:256px!important;font-size:11.5px!important;padding:6px 9px!important}
+  .leaflet-top.leaflet-left{top:52px;left:0}
+  .leaflet-bottom.leaflet-right{right:0;bottom:calc(100vh - 36vh);display:none}
+  h1{font-size:21px}
+  .vs .n{font-size:50px}
+  .irow{grid-template-columns:minmax(0,1fr) 112px;gap:6px 10px}
+  .irow .sp{grid-column:1 / -1;order:3}
+  .fig svg{min-width:600px}
+}
+.mapbox .btn{white-space:nowrap}
+@media (min-width:901px){.mapbox{flex-wrap:wrap;max-width:calc(100vw - 364px - clamp(460px,44vw,740px) - 40px)}}
+.ovl{transition:opacity .9s ease}
+.pin{position:relative}
+.pin::before,.pin::after{content:"";position:absolute;left:-8px;top:-8px;width:16px;height:16px;border-radius:50%}
+.pin::before{background:var(--em);border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.5)}
+.pin::after{border:2px solid var(--em);animation:pulse 2.4s ease-out infinite}
+@keyframes pulse{from{transform:scale(1);opacity:.9}to{transform:scale(3.4);opacity:0}}
+.co{position:relative;pointer-events:none}
+.co i{position:absolute;left:-1px;top:-30px;width:2px;height:22px;background:#EEF2E6}
+.co div{position:absolute;left:0;bottom:30px;transform:translateX(-50%);width:max-content;max-width:230px;background:rgba(23,24,22,.92);border:1px solid rgba(240,236,220,.26);border-radius:12px;padding:8px 11px;font:400 12.5px/1.4 Figtree,sans-serif;color:#EEF2E6;box-shadow:0 6px 20px rgba(0,0,0,.35);animation:rise .6s ease both}
+.co b{display:block;color:#fff;font-weight:600}
+@keyframes rise{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translate(-50%,0)}}
+@media (prefers-reduced-motion:reduce){.pin::after,.co div{animation:none}.ovl{transition:none}}
+button,select,input,.opt,.chip,a{transition:background-color .28s ease,color .28s ease,border-color .28s ease,box-shadow .28s ease,transform .16s ease,opacity .28s ease}
+button:active,.opt:active{transform:scale(.97)}
+.btn:hover{transform:translateY(-1px)}
+.opt:hover{background:rgba(143,214,148,.06)}
+.tabs button:hover,.dock button:hover{color:#fff}
+@keyframes paneIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.anim .pane{animation:paneIn .42s cubic-bezier(.2,.8,.2,1) both}
+.anim .bars .track b,.anim .yb i{transform-origin:left;animation:grow .7s cubic-bezier(.2,.8,.2,1) both}
+.optd.in{animation:paneIn .38s cubic-bezier(.2,.8,.2,1) both}
+.optd.in .bars .track b{transform-origin:left;animation:grow .7s cubic-bezier(.2,.8,.2,1) both}
+details[open] > *:not(summary){animation:paneIn .32s ease both}
+body[data-view=field] .setup{animation:paneIn .38s cubic-bezier(.2,.8,.2,1) both}
+.key{background:rgba(255,255,255,.045);border:1px solid rgba(143,214,148,.4);border-radius:16px;padding:14px 16px 6px;margin:4px 0 20px}
+.key h3{font-size:12.5px;font-weight:600;color:var(--em);margin-bottom:4px}
+.kp{display:grid;grid-template-columns:132px minmax(0,1fr);gap:14px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.kp:first-of-type{border-top:0}
+.kp .big{font-family:var(--display);font-size:27px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1}
+.kp .big s{text-decoration:none;color:var(--muted);font-size:17px}
+.kp .big.good em{color:var(--em);font-style:normal}.kp .big.bad em{color:var(--red);font-style:normal}.kp .big em{font-style:normal}
+.kp p{color:var(--ink)}
+.kp p span{display:block;color:var(--muted);font-size:12.5px}
+.irow.hot .k::before,.irow.warm .k::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;background:var(--red)}
+.irow.warm .k::before{background:var(--amber)}
+h2.second{font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);margin:0 0 6px}
+body.intro #map{position:fixed;inset:0;height:auto}
+body.intro .glass,body.intro .leaflet-control-container,body.intro .leaflet-tooltip,body.intro .pin,body.intro .leaflet-overlay-pane{opacity:0!important;pointer-events:none}
+.glass,.leaflet-control-container{transition:opacity .9s ease}
+#intro{position:fixed;inset:0;z-index:50;display:grid;place-items:center;cursor:pointer;overflow:hidden;transition:opacity .85s ease;background:linear-gradient(rgba(12,13,11,.6),rgba(12,13,11,0) 20%,rgba(12,13,11,0) 60%,rgba(12,13,11,.75))}
+#intro::before{content:"";position:absolute;inset:0;background:#0C0D0B;opacity:0;transition:opacity .5s ease;z-index:5}
+#intro.dark::before{opacity:1}
+#intro.out{opacity:0}
+#intro.choose{pointer-events:none;cursor:default}
+#intro .shade{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(12,13,11,.55),rgba(12,13,11,.88) 80%);transition:opacity 1s ease}
+#intro.choose .shade{opacity:0}
+#intro .ghost{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-weight:600;font-size:min(38vw,560px);line-height:1;letter-spacing:-.04em;color:transparent;-webkit-text-stroke:1px rgba(238,242,230,.13);font-variant-numeric:tabular-nums;white-space:nowrap;transition:opacity .6s ease;animation:introIn 1.4s ease .3s backwards}
+#intro .hair{position:absolute;background:rgba(238,242,230,.12);transition:opacity .6s ease}
+#intro .hair.h{left:0;right:0;top:50%;height:1px}#intro .hair.v{top:0;bottom:0;left:50%;width:1px}
+#intro.choose .ghost,#intro.choose .hair,#intro.choose .lock,#intro.choose .sk{opacity:0}
+#intro .ro{position:absolute;font-size:12px;color:#C9C7BA;transition:opacity .5s ease;animation:introIn 1s ease .6s backwards}
+#intro .tl{top:20px;left:22px}#intro .tr{top:20px;right:22px}#intro .bl{bottom:20px;left:22px}#intro .br{bottom:20px;right:22px}
+#intro .lock{position:relative;text-align:center;padding:0 24px;transition:opacity .5s ease}
+#intro .nm{font-family:var(--display);font-weight:500;font-size:clamp(72px,11.5vw,140px);line-height:.95;letter-spacing:-.025em;color:#fff}
+#intro .nm span{display:inline-block;animation:letter .9s cubic-bezier(.2,.7,.2,1) both}
+#intro .nm span:nth-child(2){animation-delay:.07s}#intro .nm span:nth-child(3){animation-delay:.14s}#intro .nm span:nth-child(4){animation-delay:.21s}#intro .nm span:nth-child(5){animation-delay:.28s}#intro .nm span:nth-child(6){animation-delay:.35s}
+@keyframes letter{from{opacity:0;transform:translateY(.25em);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
+#intro .ln{margin:16px auto 0;max-width:30ch;font-size:clamp(15px,1.5vw,18px);line-height:1.45;color:#E6E4D8;text-wrap:balance;animation:introIn 1s ease .55s both}
+#intro .ruler{position:relative;width:min(520px,76vw);height:8px;margin:36px auto 9px;border-right:1px solid rgba(238,242,230,.55);background:linear-gradient(90deg,rgba(238,242,230,.55) 1px,transparent 1px) 0 0/calc(100% / 24) 100%;animation:introIn .8s ease .75s both}
+#intro .ruler i{position:absolute;left:0;right:0;bottom:-3px;height:2px;background:#8FD694;box-shadow:0 0 12px rgba(143,214,148,.8);transform:scaleX(0);transform-origin:left}
+#intro .ends{display:flex;justify-content:space-between;width:min(520px,76vw);margin:0 auto;font-size:12.5px;color:#C9C7BA;font-variant-numeric:tabular-nums;animation:introIn .8s ease .75s both}
+#intro .ends span:nth-child(2){color:#fff;font-weight:600}
+#intro .pick{position:absolute;left:50%;bottom:44px;transform:translate(-50%,14px);width:min(520px,calc(100vw - 24px));text-align:center;opacity:0;pointer-events:none;transition:opacity .7s ease .25s,transform .7s cubic-bezier(.2,.8,.2,1) .25s;background:rgba(23,24,22,.84);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:20px;padding:16px 16px 12px}
+#intro.choose .pick{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#intro.go .pick,#intro.go .ro,#intro.go .ret{opacity:0;pointer-events:none}
+#intro .pick h2{margin:0 0 2px;font-size:23px}
+#intro .pick > p{font-size:13.5px;color:var(--muted)}
+#intro .pick .btn{margin:12px 0 4px;padding:11px 22px;font-size:15px}
+#intro .pick .ex{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+#intro .pick .ex span{display:block;font-size:12px;color:var(--muted);margin-bottom:8px}
+#intro .pick .chips{flex-wrap:nowrap;overflow-x:auto;gap:7px;padding-bottom:4px;justify-content:flex-start;scrollbar-width:none}
+#intro .pick .chips::-webkit-scrollbar{display:none}
+#intro .pick .chip{flex:none;border-radius:999px;padding:7px 13px;font-size:13.5px;background:rgba(255,255,255,.06);white-space:nowrap}
+#intro .pick .chip:hover{background:var(--em);color:#10231A;border-color:var(--em)}
+#intro .ret{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;opacity:0;transform:scale(1.8);transition:opacity .6s ease .3s,transform .8s cubic-bezier(.2,.8,.2,1) .3s;pointer-events:none;background:linear-gradient(#fff,#fff) 0 0/16px 2px,linear-gradient(#fff,#fff) 0 0/2px 16px,linear-gradient(#fff,#fff) 100% 0/16px 2px,linear-gradient(#fff,#fff) 100% 0/2px 16px,linear-gradient(#fff,#fff) 0 100%/16px 2px,linear-gradient(#fff,#fff) 0 100%/2px 16px,linear-gradient(#fff,#fff) 100% 100%/16px 2px,linear-gradient(#fff,#fff) 100% 100%/2px 16px;background-repeat:no-repeat;filter:drop-shadow(0 0 4px rgba(0,0,0,.8))}
+#intro .ret i{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--em);box-shadow:0 0 0 2px #fff}
+#intro.choose .ret{opacity:1;transform:none}
+.cpin{position:relative;cursor:pointer}
+.cpin i{position:absolute;left:-7px;top:-7px;width:14px;height:14px;border-radius:50%;background:#EEF2E6;border:2px solid #171816;box-shadow:0 0 0 2px rgba(143,214,148,.9)}
+.cpin i::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid #8FD694;animation:pulse 2.2s ease-out infinite}
+.cpin span{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;font:600 12px Figtree,sans-serif;color:#fff;background:rgba(23,24,22,.85);border-radius:999px;padding:3px 9px}
+.cpin span.top{bottom:14px}.cpin span.bottom{top:14px}
+@keyframes introIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (max-width:700px){.cpin span{display:none}#intro .tr{display:none}#intro .ghost{font-size:46vw}#intro .pick{bottom:40px}#intro .bl{display:none}}
+#intro .by{margin-top:26px;font-size:14px;color:#E6E4D8;animation:introIn .9s ease 1.3s both}
+.wizhead,.wizfoot{display:none}
+body.wiz #map{position:fixed;inset:0;height:auto}
+body.wiz .res,body.wiz .dock,body.wiz .mapbox,body.wiz .bar,body.wiz .leaflet-control-container,body.wiz .co,body.wiz .leaflet-tooltip{opacity:0!important;pointer-events:none}
+body.wiz .setup{display:block!important;position:fixed;left:auto;top:50%;bottom:auto;right:7vw;transform:translateY(-50%);width:min(460px,calc(100vw - 24px));max-height:calc(100vh - 48px);min-height:0;margin:0;padding:20px 22px 18px;border-radius:22px;border-width:1px;overflow:auto;z-index:20;animation:wizIn .6s cubic-bezier(.2,.8,.2,1) both}
+@keyframes wizIn{from{opacity:0;transform:translateY(calc(-50% + 18px))}to{opacity:1;transform:translateY(-50%)}}
+body.wiz .box{display:none;border:0;padding:0}
+body.wiz .box.cur{display:block;animation:paneIn .4s cubic-bezier(.2,.8,.2,1) both}
+body.wiz .box > summary{display:none}
+body.wiz .wizhead{display:block;margin-bottom:16px}
+body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top:18px}
+.wizfoot .btn{padding:11px 22px;font-size:15px}
+.wizfoot #wiznext{margin-left:auto}
+.wp{height:3px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden}
+.wp i{display:block;height:100%;width:25%;background:var(--em);border-radius:2px;transition:width .5s cubic-bezier(.3,.9,.3,1)}
+.wn{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.wizhead h2{margin:8px 0 4px;font-size:24px;line-height:1.15}
+.wizhead p{color:var(--muted)}
+@media (max-width:900px){
+  body.wiz .setup{top:auto;bottom:12px;left:50%;right:auto;transform:translateX(-50%);max-height:62vh;padding:18px 18px 16px;animation-name:wizUp}
+  @keyframes wizUp{from{opacity:0;transform:translate(-50%,18px)}to{opacity:1;transform:translate(-50%,0)}}
+}
+@media (prefers-reduced-motion:reduce){#intro{display:none}.anim .pane,.optd.in,details[open] > *:not(summary),body[data-view=field] .setup{animation:none}.ink{transition:none}html{scroll-behavior:auto}}
+.conf{margin:14px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;color:var(--ink);max-width:70ch}
+.conf b{font-family:var(--display);font-size:20px;color:#fff;margin-right:6px}
+.terr{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:18px;align-items:start;margin-top:10px}
+.terr svg{width:100%;height:auto;display:block}
+.terr p{margin-bottom:8px;color:#D9D7CB}
+.terr p b{color:#fff}
+#sug p{margin:2px 0;color:var(--muted)}
+#sug b{color:var(--ink)}
+#croptab td,#croptab th{white-space:nowrap;padding-right:14px}
+@media (max-width:900px){.terr{grid-template-columns:1fr}.terr svg{max-width:240px}}
+
+</style>
+</head>
+<body class="intro" data-view="results" data-tab="result">
+<div id="intro">
+  <div class="shade"></div>
+  <div class="ghost" id="introbig" aria-hidden="true">2001</div>
+  <div class="hair h"></div><div class="hair v"></div>
+  <div class="ro tl">NASA POWER weather record, 2001 to 2025</div>
+  <div class="ret"><i></i></div>
+  <div class="ro tr num" id="introll"></div>
+  <div class="ro bl">Satellite imagery: Esri World Imagery</div>
+  <div class="ro br sk">Tap to skip</div>
+  <div class="lock">
+    <div class="nm" aria-label="Furrow"><span>F</span><span>u</span><span>r</span><span>r</span><span>o</span><span>w</span></div>
+    <p class="ln">Crop rotations, tested against 25 years of NASA weather records</p>
+    <div class="ruler"><i id="introbar"></i></div>
+    <div class="ends"><span>2001</span><span id="introyr">2001</span><span>2025</span></div>
+    <p class="by">Made by Valerii and Veta</p>
+  </div>
+  <div class="pick">
+    <h2>Find your field</h2>
+    <p>Drag the map in any direction, then tap a spot or press the button.</p>
+    <button class="btn" id="introgo">Start with this spot</button>
+    <div class="ex"><span>Or jump to an example</span><div class="chips" id="introchips"></div></div>
+  </div>
+</div>
+<div id="map" role="application" aria-label="Satellite map. Click to choose a field."></div>
+<header class="bar glass">
+  <div class="brand"><svg viewBox="0 0 34 22" aria-hidden="true"><path d="M1 5c5-4 9 4 16 0s11 4 16 0M1 11c5-4 9 4 16 0s11 4 16 0M1 17c5-4 9 4 16 0s11 4 16 0" fill="none" stroke="#8FD694" stroke-width="3" stroke-linecap="round"/></svg>Furrow</div>
+  <select id="demo" aria-label="Example fields"></select>
+  <div class="src" id="srcline">NASA POWER daily record, 2001 to 2025</div>
+</header>
+<div class="mapbox glass">
+  <div class="field"><label for="layer">NASA layer</label>
+    <select id="layer">
+      <option value="">Satellite photo</option>
+      <option value="ndvi">Greenness (MODIS NDVI)</option>
+      <option value="smap">Soil moisture (SMAP)</option>
+      <option value="imerg">Rainfall (GPM IMERG)</option>
+    </select></div>
+  <div class="field dt"><label for="ldate">Date</label><input id="ldate" type="date" value="2025-07-12" min="2015-04-01"></div>
+  <button class="btn ghost" id="play" aria-pressed="true">Pause tour</button>
+</div>
+<aside class="setup glass" id="setup">
+  <div class="wizhead"><div class="wp"><i id="wizbar"></i></div><div class="wn"><span id="wizn"></span><span id="wizplace"></span></div><h2 id="wizt"></h2><p id="wizd"></p></div>
+  <details class="box" open><summary>Field</summary>
+    <p class="small muted">Tap the map, pick an example in the top bar, or type coordinates.</p>
+    <div class="row">
+      <div class="field"><label for="lat">Latitude</label><input id="lat" type="number" step="0.01" min="-60" max="70"></div>
+      <div class="field"><label for="lon">Longitude</label><input id="lon" type="number" step="0.01" min="-180" max="180"></div>
+      <button class="btn" id="load">Load</button>
+    </div>
+    <div class="row"><button class="btn ghost" id="reset">Start over from the intro</button></div>
+    <p class="small muted">Your choices are saved on this device, so a reload keeps them.</p>
+  </details>
+  <details class="box" open data-wiz="rot"><summary>What you grow now</summary>
+    <div id="rot"></div>
+    <div class="row"><button class="btn ghost" id="addyr">Add a year</button></div>
+  </details>
+  <details class="box" open data-wiz="pri"><summary>Your priorities</summary>
+    <div id="weights"></div>
+    <p class="small muted">0 means ignore, 5 means most important. The match score is the weighted average of the five scores.</p>
+  </details>
+  <details class="box" data-wiz="soil"><summary>Soil and management</summary>
+    <div class="row">
+      <div class="field"><label for="soil">Soil texture</label><select id="soil"></select></div>
+      <div class="field"><label for="slope">Slope</label><select id="slope"></select></div>
+    </div>
+    <div class="field"><label for="till">Tillage</label><select id="till"></select></div>
+    <label class="check"><input type="checkbox" id="irrig"> I can irrigate this field</label>
+    <label class="check"><input type="checkbox" id="stock"> I have livestock that can use forage</label>
+    <div id="sug"></div>
+    <p class="small muted">Look up your soil at <a href="https://websoilsurvey.nrcs.usda.gov/app/">Web Soil Survey</a> (US) or <a href="https://soilgrids.org">SoilGrids</a>.</p>
+  </details>
+  <details class="box" data-wiz="excl"><summary>Crops you cannot grow or sell</summary>
+    <div class="chips" id="excl"></div>
+  </details>
+  <details class="box"><summary>Sensitivity test</summary>
+    <div class="slider"><label for="srain">Rainfall</label><input id="srain" type="range" min="-30" max="30" step="5" value="0"><span class="num" id="srainv">0%</span></div>
+    <div class="slider"><label for="stemp">Temperature</label><input id="stemp" type="range" min="0" max="3" step="0.5" value="0"><span class="num" id="stempv">+0°</span></div>
+    <p class="small muted">Replays all 25 years wetter, drier or warmer and rescores every rotation. A stress test of the past record, not a climate forecast.</p>
+  </details>
+  <div class="wizfoot"><button class="btn ghost" id="wizback">Back</button><button class="btn" id="wiznext">Next</button></div>
+</aside>
+<section class="res glass">
+  <nav class="tabs" id="tabs" aria-label="Results"></nav>
+  <div class="scrollarea" id="scroll">
+    <div class="banner" id="status"><span class="spin"></span>Fetching 25 years of daily NASA POWER data…</div>
+    <div id="out"></div>
+    <div class="pane" data-pane="method">
+      <h2>What the terms mean</h2>
+      <dl>
+        <div><dt>Evapotranspiration (ET)</dt><dd>Water leaving the field as evaporation from soil plus water plants draw up and release through their leaves. ET0 is the reference amount a well-watered grass surface would use; each crop uses a share of it that changes through its season.</dd></div>
+        <div><dt>Unmet water demand</dt><dd>The share of the water a crop wanted that the soil could not supply. Furrow tracks a daily soil-water account for your field: rain goes in, crop water use and runoff come out.</dd></div>
+        <div><dt>Soil moisture anomaly</dt><dd>How wet or dry the soil was compared with what is normal for that place and month. A dry anomaly in July means drier than a usual July, not drier than a desert.</dd></div>
+        <div><dt>Heavy rain on bare soil</dt><dd>Furrow counts rain on days with 12.7 mm or more, the cut-off the RUSLE erosion method uses to decide which storms matter. True erosivity depends on how hard the rain falls within half an hour, which daily data cannot show, so treat this as a rough exposure measure, not an erosion estimate.</dd></div>
+        <div><dt>Growing degree days</dt><dd>A running total of useful warmth. Each crop needs a certain total to mature, so this tells you whether a crop fits between your last spring frost and first autumn frost.</dd></div>
+        <div><dt>NDVI</dt><dd>A greenness score satellites calculate from red and near-infrared light. Dense healthy crops score high, bare soil scores low. Choose the greenness layer on the map to see it.</dd></div>
+        <div><dt>Cover crop</dt><dd>A crop grown between cash crops to protect and feed the soil, not to sell. Cereal rye survives winter; legumes such as vetch and clover also add nitrogen.</dd></div>
+        <div><dt>Satellite versus ground data</dt><dd>Satellites see every field on Earth regularly but in coarse blocks and only the top few centimetres of soil. A rain gauge or soil probe is exact but covers one spot. The best picture uses both, which is why Furrow asks for your soil and your knowledge.</dd></div>
+      </dl>
+      <h2>How Furrow works, and where it stops</h2>
+      <div class="limits">
+        <div class="box"><h3>What it does</h3><ul>
+          <li>Downloads daily maximum and minimum temperature, precipitation, root-zone soil wetness, sunlight reaching the ground, wind and humidity for your point from NASA POWER, 2001 to 2025. The sunlight values come from NASA's CERES satellite instruments.</li>
+          <li>Works out frost dates, heat, heavy rain, dry spells and evaporative demand (FAO Penman-Monteith), and tests each for a trend (Theil-Sen slope, Mann-Kendall test).</li>
+          <li>Builds crop calendars from your site's own temperatures using growing degree days, so sowing and harvest dates move with your climate.</li>
+          <li>Replays every rotation through all 25 years with a daily soil-water account, then scores water, soil, storm exposure, market fit and resilience.</li>
+          <li>Groups the 25 seasons into kinds of year two ways, with k-means clustering and with a simple thirds rule, and reports how far they agree.</li>
+          <li>Reshuffles the 25 years 300 times (a bootstrap) to see how often each alternative still outscores your current rotation.</li>
+          <li>Reads a 90 m elevation model on a 5 by 5 grid around your point to find steep ground and frost-prone hollows, and reads SoilGrids for a soil texture suggestion.</li>
+        </ul></div>
+        <div class="box"><h3>What it cannot see</h3><ul>
+          <li>NASA POWER describes a grid cell about 50 km across. It gives your district's climate, not the frost pocket at the bottom of your field.</li>
+          <li>Soil texture comes from you or from a 250 m global map. A soil test for organic matter, pH and compaction will always beat a texture class.</li>
+          <li>Market fit uses generic 1 to 5 ratings, not your local prices, contracts or input costs. It is not an income forecast.</li>
+          <li>Soil health is a proxy built from living-root days, legume nitrogen, residue, crop diversity and bare-soil days. Furrow does not measure organic matter or soil life.</li>
+          <li>Storm exposure uses daily rain totals, not measured storm intensity.</li>
+          <li>Crop traits are generic values in the range given by FAO Irrigation and Drainage Paper 56 and extension guides, not your varieties. The table below shows every value used.</li>
+          <li>Trend tags are exploratory: 25 years is a short record.</li>
+          <li>Pests, diseases, weeds, herbicide carry-over, equipment and labour are not modelled.</li>
+          <li>Calendars assume a temperate, frost-defined season. Results in the tropics are rough.</li>
+          <li>The model has not been checked against field trials or by an agronomist.</li>
+        </ul></div>
+        <div class="box"><h3>Who decides</h3><ul>
+          <li>You do. Furrow shows patterns and possibilities; it does not give instructions.</li>
+          <li>Take any option that interests you to an agronomist or extension adviser, and try it on a strip before the whole field.</li>
+          <li>Every rotation lists what needs local review before acting.</li>
+        </ul></div>
+      </div>
+      <details class="more"><summary>Every crop value the model uses</summary><div class="scroll" id="croptab"></div></details>
+      <footer>
+      Data: <a href="https://power.larc.nasa.gov/">NASA POWER</a> daily agroclimatology (T2M_MAX, T2M_MIN, PRECTOTCORR, GWETROOT, ALLSKY_SFC_SW_DWN, WS2M, RH2M). Elevation: Copernicus DEM (ESA) through <a href="https://open-meteo.com/">Open-Meteo</a>. Soil texture: <a href="https://soilgrids.org">SoilGrids</a> (ISRIC). Map layers: <a href="https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api">NASA GIBS</a> (MODIS, SMAP, GPM IMERG). Satellite base map: Esri World Imagery. Crop coefficients follow FAO Irrigation and Drainage Paper 56; reference evapotranspiration uses the FAO Penman-Monteith equation, with Hargreaves as a fallback. Built for the 2026 NASA Space Apps Challenge. NASA does not endorse this tool.
+    </footer>
+    </div>
+  </div>
+</section>
+<nav class="dock glass" id="dock" aria-label="Sections"></nav>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+
+(function (G) {
+  'use strict';
+  const CUM = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const clip = (x, a, b) => Math.max(a === undefined ? 0 : a, Math.min(b === undefined ? 1 : b, x));
+  const mean = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
+  const median = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const quant = (a, q) => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y); const p = (s.length - 1) * q, i = Math.floor(p); return s[i] + (s[Math.min(i + 1, s.length - 1)] - s[i]) * (p - i); };
+
+  const CROPS = {
+    corn: { name: 'Corn (maize)', short: 'Corn', fam: 'Grass', kind: 'summer', base: 10, gdd: 1400, off: 10, dry: 25, kc: [0.3, 1.2, 0.5], heatT: 35, heatW: [0.45, 0.65], nfix: 0, res: 5, deep: 0, dt: 2, margin: 4, market: 5, forage: 0 },
+    soy: { name: 'Soybean', short: 'Soybean', fam: 'Legume', kind: 'summer', base: 10, gdd: 1250, off: 20, dry: 12, kc: [0.4, 1.15, 0.5], heatT: 36, heatW: [0.5, 0.8], nfix: 45, res: 2, deep: 0, dt: 3, margin: 4, market: 5, forage: 0 },
+    sorghum: { name: 'Grain sorghum', short: 'Sorghum', fam: 'Grass', kind: 'summer', base: 10, gdd: 1250, off: 30, dry: 20, kc: [0.3, 1.05, 0.55], heatT: 38, heatW: [0.45, 0.65], nfix: 0, res: 4, deep: 1, dt: 5, margin: 3, market: 3, forage: 1 },
+    sunflower: { name: 'Sunflower', short: 'Sunflower', fam: 'Aster', kind: 'summer', base: 6.7, gdd: 1650, off: 15, dry: 20, kc: [0.35, 1.1, 0.35], heatT: 34, heatW: [0.45, 0.65], nfix: 0, res: 2, deep: 1, dt: 4, margin: 3, market: 3, forage: 0 },
+    oats: { name: 'Spring oats', short: 'Oats', fam: 'Grass', kind: 'summer', base: 0, gdd: 1400, off: -25, dry: 7, kc: [0.3, 1.15, 0.25], heatT: 30, heatW: [0.6, 0.9], nfix: 0, res: 3, deep: 0, dt: 2, margin: 2, market: 3, forage: 1 },
+    pea: { name: 'Field pea', short: 'Field pea', fam: 'Legume', kind: 'summer', base: 4.4, gdd: 1000, off: -20, dry: 7, kc: [0.4, 1.15, 0.3], heatT: 28, heatW: [0.5, 0.8], nfix: 60, res: 2, deep: 0, dt: 3, margin: 3, market: 3, forage: 0 },
+    wheat: { name: 'Winter wheat', short: 'Winter wheat', fam: 'Grass', kind: 'winter', gdd: 1550, lead: 18, kc: [0.45, 1.15, 0.3], heatT: 32, nfix: 0, res: 4, deep: 0, dt: 4, margin: 3, market: 5, forage: 0, kill: -30 },
+    canola: { name: 'Winter canola', short: 'Canola', fam: 'Brassica', kind: 'winter', gdd: 1450, lead: 40, kc: [0.45, 1.1, 0.35], heatT: 30, nfix: 0, res: 2, deep: 1, dt: 3, margin: 3, market: 3, forage: 0, kill: -20 },
+    alfalfa: { name: 'Alfalfa', short: 'Alfalfa', fam: 'Legume', kind: 'perennial', kc: [0.4, 0.95, 0.9], nfix: 60, res: 3, deep: 1, dt: 4, margin: 3, market: 3, forage: 1, kill: -32 },
+    fallow: { name: 'Fallow (no crop)', short: 'Fallow', fam: '-', kind: 'fallow', nfix: 0, res: 0, deep: 0, dt: 3, margin: 0, market: 5, forage: 0 }
+  };
+  const COVERS = {
+    rye: { name: 'Cereal rye cover crop', short: 'rye cover', fam: 'Grass', nfix: 0, cost: 0.35 },
+    legmix: { name: 'Vetch or clover with oats cover mix', short: 'legume cover mix', fam: 'Legume', nfix: 50, cost: 0.5 }
+  };
+  const SOILS = {
+    sand: { name: 'Sand', awc: 70 }, sandy_loam: { name: 'Sandy loam', awc: 120 }, loam: { name: 'Loam', awc: 170 },
+    silt_loam: { name: 'Silt loam', awc: 200 }, clay_loam: { name: 'Clay loam', awc: 160 }, clay: { name: 'Clay', awc: 140 }
+  };
+  const SLOPES = { flat: { name: 'Flat, under 2%', f: 0.5 }, gentle: { name: 'Gentle, 2 to 6%', f: 1 }, steep: { name: 'Steep, over 6%', f: 2 } };
+  const TILLAGE = { conv: { name: 'Conventional tillage', res: 0.25 }, reduced: { name: 'Reduced tillage', res: 0.6 }, notill: { name: 'No-till', res: 1 } };
+
+  function parsePower(json) {
+    const p = json.properties.parameter;
+    const keys = Object.keys(p.T2M_MAX).sort().filter(k => k.slice(4) !== '0229');
+    const n = keys.length - (keys.length % 365);
+    const out = { y0: +keys[0].slice(0, 4), n, tx: new Array(n), tn: new Array(n), pr: new Array(n), gw: new Array(n) };
+    for (let i = 0; i < n; i++) {
+      const k = keys[i];
+      out.tx[i] = p.T2M_MAX[k]; out.tn[i] = p.T2M_MIN[k]; out.pr[i] = p.PRECTOTCORR[k];
+      out.gw[i] = p.GWETROOT ? p.GWETROOT[k] : -999;
+    }
+    return out;
+  }
+
+  function parseExtra(json) {
+    const p = json.properties.parameter;
+    const keys = Object.keys(p.ALLSKY_SFC_SW_DWN).sort().filter(k => k.slice(4) !== '0229');
+    const n = keys.length - (keys.length % 365), g = json.geometry && json.geometry.coordinates, ks = keys.slice(0, n);
+    return { n, elev: g && isFinite(g[2]) && g[2] > -500 ? g[2] : 0, rs: ks.map(k => p.ALLSKY_SFC_SW_DWN[k]), ws: ks.map(k => p.WS2M[k]), rh: ks.map(k => p.RH2M[k]) };
+  }
+  const e0 = t => 0.6108 * Math.exp(17.27 * t / (t + 237.3));
+  function et0PM(tx, tn, rs, u2, ea, raMJ, z) {
+    const tm = (tx + tn) / 2, es = (e0(tx) + e0(tn)) / 2, D = 4098 * e0(tm) / Math.pow(tm + 237.3, 2);
+    const P = 101.3 * Math.pow((293 - 0.0065 * z) / 293, 5.26), g = 0.000665 * P, rso = (0.75 + 2e-5 * z) * raMJ, rr = rso > 0 ? clip(rs / rso, 0.3, 1) : 0.5;
+    const rnl = 4.903e-9 * ((Math.pow(tx + 273.16, 4) + Math.pow(tn + 273.16, 4)) / 2) * (0.34 - 0.14 * Math.sqrt(Math.max(0, ea))) * (1.35 * rr - 0.35), rn = 0.77 * rs - rnl;
+    return Math.max(0, (0.408 * D * rn + g * 900 / (tm + 273) * u2 * Math.max(0, es - ea)) / (D + g * (1 + 0.34 * u2)));
+  }
+  function raMm(latDeg, doy) {
+    const phi = latDeg * Math.PI / 180, dr = 1 + 0.033 * Math.cos(2 * Math.PI * doy / 365);
+    const dl = 0.409 * Math.sin(2 * Math.PI * doy / 365 - 1.39);
+    const ws = Math.acos(clip(-Math.tan(phi) * Math.tan(dl), -1, 1));
+    const ra = (24 * 60 / Math.PI) * 0.0820 * dr * (ws * Math.sin(phi) * Math.sin(dl) + Math.cos(phi) * Math.cos(dl) * Math.sin(ws));
+    return Math.max(0, ra * 0.408);
+  }
+
+  function trend(v) {
+    const n = v.length, sl = []; let s = 0;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { sl.push((v[j] - v[i]) / (j - i)); s += Math.sign(v[j] - v[i]); }
+    const varS = n * (n - 1) * (2 * n + 5) / 18;
+    const z = s > 0 ? (s - 1) / Math.sqrt(varS) : s < 0 ? (s + 1) / Math.sqrt(varS) : 0;
+    const az = Math.abs(z);
+    return { perDecade: median(sl) * 10, z, label: az > 1.96 ? 'clear trend' : az > 1.28 ? 'possible trend' : 'no clear trend' };
+  }
+
+  function buildClimate(raw, lat, scen) {
+    scen = scen || { rain: 0, temp: 0 };
+    const south = lat < 0, off = south ? 182 : 0;
+    const nY = Math.floor((raw.n - off) / 365), years = [];
+    const dT = scen.temp || 0, pf = 1 + (scen.rain || 0) / 100;
+    const bad = v => v === undefined || v === null || v < -900;
+    for (let k = 0; k < nY; k++) {
+      const Y = { label: south ? (raw.y0 + k) + '/' + String(raw.y0 + k + 1).slice(2) : String(raw.y0 + k), tx: new Float32Array(365), tn: new Float32Array(365), pr: new Float32Array(365), gw: new Float32Array(365), et0: new Float32Array(365) };
+      for (let d = 0; d < 365; d++) {
+        const i = k * 365 + off + d;
+        Y.tx[d] = bad(raw.tx[i]) ? NaN : raw.tx[i] + dT; Y.tn[d] = bad(raw.tn[i]) ? NaN : raw.tn[i] + dT;
+        Y.pr[d] = bad(raw.pr[i]) ? NaN : raw.pr[i] * pf; Y.gw[d] = bad(raw.gw[i]) ? NaN : raw.gw[i];
+      }
+      years.push(Y);
+    }
+
+    for (const key of ['tx', 'tn', 'pr', 'gw']) {
+      for (let d = 0; d < 365; d++) {
+        let s = 0, c = 0; for (const Y of years) if (!isNaN(Y[key][d])) { s += Y[key][d]; c++; }
+        const m = c ? s / c : NaN; for (const Y of years) if (isNaN(Y[key][d])) Y[key][d] = m;
+      }
+    }
+    const hasGw = !isNaN(years[0].gw[0]), ex = raw.ex && raw.ex.n >= raw.n ? raw.ex : null; let pmDays = 0, yk = -1;
+    for (const Y of years) {
+      yk++;
+      for (let d = 0; d < 365; d++) {
+        const tm = (Y.tx[d] + Y.tn[d]) / 2, doy = ((d + off) % 365) + 1, ra = raMm(lat, doy), i = yk * 365 + off + d;
+        const rs = ex ? ex.rs[i] : -999, ws = ex ? ex.ws[i] : -999, rh = ex ? ex.rh[i] : -999;
+        if (ex && rs > 0 && ws >= 0 && rh > 0 && rh <= 100) { Y.et0[d] = et0PM(Y.tx[d], Y.tn[d], rs, ws, rh / 100 * (e0(Y.tx[d]) + e0(Y.tn[d])) / 2, ra / 0.408, ex.elev); pmDays++; }
+        else Y.et0[d] = Math.max(0, 0.0023 * (tm + 17.8) * Math.sqrt(Math.max(0, Y.tx[d] - Y.tn[d])) * ra);
+      }
+      let lf = -1, ff = -1, kf = -1, hot35 = 0, hot32 = 0, heavy = 0, rain = 0, et = 0, wr = 0, we = 0, dry = 0, run = 0, tmin = 99;
+      Y.mRain = new Array(12).fill(0); Y.mEt0 = new Array(12).fill(0); Y.mEros = new Array(12).fill(0); Y.mGw = new Array(12).fill(0); Y.mHeavy = new Array(12).fill(0);
+      for (let d = 0, m = 0; d < 365; d++) {
+        while (d >= CUM[m + 1]) m++;
+        const p = Y.pr[d];
+        rain += p; et += Y.et0[d]; Y.mRain[m] += p; Y.mEt0[m] += Y.et0[d]; Y.mGw[m] += Y.gw[d] / (CUM[m + 1] - CUM[m]);
+        if (p >= 12.7) Y.mEros[m] += p; if (p >= 25) { heavy++; Y.mHeavy[m]++; }
+        if (Y.tx[d] >= 35) hot35++; if (Y.tx[d] >= 32) hot32++;
+        if (Y.tn[d] < tmin) tmin = Y.tn[d];
+        if (Y.tn[d] <= 0) { if (d < 181) lf = d; else if (ff < 0) ff = d; }
+        if (Y.tn[d] <= -2 && d >= 181 && kf < 0) kf = d;
+        if (d >= 90 && d <= 272) { wr += p; we += Y.et0[d]; if (p < 1) { run++; if (run > dry) dry = run; } else run = 0; }
+      }
+      Object.assign(Y, { rain, et: et, lastFrost: lf, firstFrost: ff, killFrost: kf < 0 ? 349 : kf, hot35, hot32, heavy, wRain: wr, wEt0: we, drySpell: dry, tmin, frostFree: (lf >= 0 && ff >= 0) ? ff - lf : 365 });
+    }
+
+    const cl = { lat, south, off, years, hasGw, n: years.length, pmShare: pmDays / (years.length * 365), elev: ex ? ex.elev : null };
+    const avg = key => { const a = new Float32Array(365); for (const Y of years) for (let d = 0; d < 365; d++) a[d] += Y[key][d] / years.length; return a; };
+    const smooth = (a, w) => { const o = new Float32Array(365); for (let d = 0; d < 365; d++) { let s = 0; for (let j = -w; j <= w; j++) s += a[(d + j + 365) % 365]; o[d] = s / (2 * w + 1); } return o; };
+    cl.tx = smooth(avg('tx'), 7); cl.tn = smooth(avg('tn'), 7); cl.tm = new Float32Array(365);
+    for (let d = 0; d < 365; d++) cl.tm[d] = (cl.tx[d] + cl.tn[d]) / 2;
+    cl.pr = avg('pr'); cl.et0 = smooth(avg('et0'), 3);
+    const er = new Float32Array(365); for (const Y of years) for (let d = 0; d < 365; d++) if (Y.pr[d] >= 12.7) er[d] += Y.pr[d] / years.length;
+    cl.eros = smooth(er, 15); cl.erosTotal = cl.eros.reduce((s, v) => s + v, 0);
+    for (const k of ['mRain', 'mEt0', 'mEros', 'mGw', 'mHeavy']) cl[k] = Array.from({ length: 12 }, (_, m) => mean(years.map(Y => Y[k][m])));
+    const lfs = years.filter(Y => Y.lastFrost >= 0).map(Y => Y.lastFrost), ffs = years.filter(Y => Y.firstFrost >= 0).map(Y => Y.firstFrost);
+    cl.frostFrac = Math.min(lfs.length, ffs.length) / years.length;
+    cl.noFrost = cl.frostFrac < 0.5;
+    cl.lastFrost = cl.noFrost ? 45 : Math.round(median(lfs));
+    cl.firstFrost = cl.noFrost ? 349 : Math.round(median(ffs));
+    cl.monthName = m => MON[(m + (south ? 6 : 0)) % 12];
+    cl.fmtDay = d => { const a = ((Math.round(d) + off) % 365 + 365) % 365; let m = 0; while (a >= CUM[m + 1]) m++; return MON[m] + ' ' + (a - CUM[m] + 1); };
+
+    if (hasGw) {
+      cl.gwAnom = years.map(Y => Y.mGw.map((v, m) => { const col = years.map(X => X.mGw[m]); const mu = mean(col), sd = Math.sqrt(mean(col.map(x => (x - mu) ** 2))) || 1; return (v - mu) / sd; }));
+    }
+    const ind = (key, name, unit, digits, note) => ({ key, name, unit, digits, note, series: years.map(Y => Y[key]), mean: mean(years.map(Y => Y[key])), lo: quant(years.map(Y => Y[key]), 0.1), hi: quant(years.map(Y => Y[key]), 0.9), trend: trend(years.map(Y => Y[key])) });
+    cl.indicators = [
+      ind('rain', 'Rain and snow per year', 'mm', 0, 'Total precipitation.'),
+      ind('et', 'Evaporative demand per year', 'mm', 0, 'Reference evapotranspiration (ET0): the water a well-watered grass surface would use.'),
+      ind('hot35', 'Days at 35 °C or hotter', 'days', 1, 'Heat that damages most crops at flowering.'),
+      ind('heavy', 'Heavy-rain days (25 mm or more)', 'days', 1, 'Days wet enough to drive runoff. A daily total, not a measured storm intensity.'),
+      ind('drySpell', 'Longest dry spell, warm half of year', 'days', 0, 'Consecutive days with under 1 mm of rain.'),
+      ind('frostFree', 'Frost-free season', 'days', 0, 'Days between the last spring frost and the first autumn frost.')
+    ];
+    cl.yearTypes = yearTypes(years);
+    return cl;
+  }
+
+  function yearTypes(years) {
+    const n = years.length; if (n < 9) return null;
+    const F = years.map(Y => [Y.wRain, Y.wEt0, Y.hot32]);
+    const mu = [0, 1, 2].map(j => mean(F.map(f => f[j]))), sd = [0, 1, 2].map(j => Math.sqrt(mean(F.map(f => (f[j] - mu[j]) ** 2))) || 1);
+    const Z = F.map(f => f.map((v, j) => (v - mu[j]) / sd[j]));
+    const order = years.map((Y, i) => i).sort((a, b) => (Z[a][0] - Z[a][1]) - (Z[b][0] - Z[b][1]));
+    let cen = [1 / 6, 3 / 6, 5 / 6].map(q => Z[order[Math.floor(q * n)]].slice());
+    let asg = new Array(n).fill(0);
+    for (let it = 0; it < 30; it++) {
+      asg = Z.map(z => { let b = 0, bd = 1e9; cen.forEach((c, k) => { const dd = c.reduce((s, v, j) => s + (v - z[j]) ** 2, 0); if (dd < bd) { bd = dd; b = k; } }); return b; });
+      cen = cen.map((c, k) => { const mem = Z.filter((_, i) => asg[i] === k); return mem.length ? [0, 1, 2].map(j => mean(mem.map(m => m[j]))) : c; });
+    }
+    const rank = [0, 1, 2].sort((a, b) => (cen[a][0] - cen[a][1]) - (cen[b][0] - cen[b][1]));
+    const names = ['Hot, dry years', 'Typical years', 'Cool, wet years'], half = Math.floor(n / 2);
+    const types = rank.map((k, r) => {
+      const idx = years.map((_, i) => i).filter(i => asg[i] === k);
+      return { name: names[r], idx, count: idx.length, early: idx.filter(i => i < half).length, late: idx.filter(i => i >= half).length, rain: mean(idx.map(i => years[i].wRain)), et0: mean(idx.map(i => years[i].wEt0)), hot: mean(idx.map(i => years[i].hot32)), labels: idx.map(i => years[i].label) };
+    }).filter(t => t.count > 0);
+    const lab = new Array(n); rank.forEach((k, r) => asg.forEach((a, i) => { if (a === k) lab[i] = r; }));
+    const rule = new Array(n); order.forEach((i, pos) => { rule[i] = pos < n / 3 ? 0 : pos < 2 * n / 3 ? 1 : 2; });
+    const agree = lab.filter((l, i) => l === rule[i]).length;
+    return { types, half, agree, firstLabel: years[0].label, midLabel: years[half].label, lastLabel: years[n - 1].label };
+  }
+
+  function gddDay(tx, tn, base) { const hi = clip(tx, base, 30), lo = clip(tn, base, 30); return (hi + lo) / 2 - base; }
+  function calendar(cl) {
+    const cal = {};
+    for (const id in CROPS) {
+      const c = CROPS[id];
+      if (c.kind === 'summer') {
+        const p = clip(cl.lastFrost + c.off, 45, 170), lim = Math.min(349, cl.firstFrost + 14);
+        let g = 0, h = -1; for (let d = p; d <= lim; d++) { g += gddDay(cl.tx[d], cl.tn[d], c.base); if (g >= c.gdd) { h = d; break; } }
+        cal[id] = { plant: p, mat: h < 0 ? lim : h, harv: Math.min(349, (h < 0 ? lim : h) + c.dry) };
+
+        let ok = 0; for (const Y of cl.years) { let gg = 0; for (let d = p; d <= Y.killFrost; d++) { gg += gddDay(Y.tx[d], Y.tn[d], c.base); if (gg >= c.gdd) { ok++; break; } } }
+        cal[id].reliab = ok / cl.n;
+      } else if (c.kind === 'winter') {
+        const p = clip(cl.firstFrost - c.lead, 243, 318);
+        let g = 0, h = 219; for (let d = 0; d < 220; d++) { g += Math.max(0, cl.tm[d]); if (g >= c.gdd) { h = d; break; } }
+        let s0 = 0; while (s0 < 120 && cl.tm[s0] < 4) s0++;
+        cal[id] = { plant: p, harv: h, spring: s0, reliab: 1 - cl.years.filter(Y => Y.tmin < c.kill).length / cl.n };
+      } else if (c.kind === 'perennial') {
+        cal[id] = { plant: clip(cl.lastFrost - 10, 45, 150), harv: 300, reliab: 1 - cl.years.filter(Y => Y.tmin < c.kill).length / cl.n };
+      }
+    }
+    return cal;
+  }
+
+  function buildTimeline(rot, cl, cal, tillRes) {
+    const N = rot.length, T = N * 365, U = t => ((t % T) + T) % T;
+    const kc = new Float32Array(T).fill(-1), cov = new Float32Array(T), st = new Uint8Array(T), ci = new Int8Array(T).fill(-1), nxt = new Uint8Array(T), heat = new Float32Array(T), thr = new Float32Array(T).fill(0.55);
+    const phases = [], notes = [], allAlf = rot.every(r => r.c === 'alfalfa');
+    rot.forEach((r, i) => {
+      const c = CROPS[r.c]; if (!c || c.kind === 'fallow') return; const k = cal[r.c]; let s, e;
+      if (c.kind === 'summer') { s = i * 365 + k.plant; e = i * 365 + k.harv; }
+      else if (c.kind === 'winter') { s = (i - 1) * 365 + k.plant; e = i * 365 + k.harv; }
+      else { const pA = N > 1 && rot[(i - 1 + N) % N].c === 'alfalfa', nA = N > 1 && rot[(i + 1) % N].c === 'alfalfa'; s = i * 365 + ((pA || allAlf) ? 0 : k.plant); e = i * 365 + ((nA || allAlf) ? 364 : k.harv); }
+      phases.push({ i, id: r.c, c, k, s, e, est: c.kind === 'perennial' && !(N > 1 && rot[(i - 1 + N) % N].c === 'alfalfa') && !allAlf });
+    });
+
+    phases.forEach((ph, j) => {
+      if (phases.length < 2) return; const prev = phases[(j - 1 + phases.length) % phases.length];
+      let pe = prev.e; if (j === 0) pe -= T;
+      if (ph.s <= pe + 2) { const delay = pe + 3 - ph.s; ph.s = pe + 3; ph.delay = delay; if (delay > 10) notes.push({ i: ph.i, type: 'late', days: delay, crop: ph.id, after: prev.id }); }
+    });
+    for (const ph of phases) {
+      const c = ph.c, k = ph.k, len = ph.e - ph.s + 1;
+      for (let t = ph.s; t <= ph.e; t++) {
+        const u = U(t), d = u % 365, f = (t - ph.s) / len; let K, C, H = 0;
+        if (c.kind === 'summer') {
+          K = f < 0.2 ? c.kc[0] : f < 0.45 ? c.kc[0] + (c.kc[1] - c.kc[0]) * (f - 0.2) / 0.25 : f < 0.8 ? c.kc[1] : c.kc[1] + (c.kc[2] - c.kc[1]) * (f - 0.8) / 0.2;
+          C = f < 0.35 ? 0.1 + 0.85 * f / 0.35 : f > 0.9 ? 0.85 : 0.95;
+          if (f >= c.heatW[0] && f <= c.heatW[1]) H = c.heatT;
+        } else if (c.kind === 'winter') {
+          if (t < ph.i * 365) { C = Math.min(0.5, 0.1 + 0.4 * (t - ph.s) / 40); K = cl.tm[d] > 4 ? c.kc[0] : 0.25; nxt[u] = 1; }
+          else {
+            const g = (d - k.spring) / Math.max(1, k.harv - k.spring);
+            if (g < 0) { K = 0.25; C = 0.5; } else if (g < 0.35) { K = c.kc[0] + (c.kc[1] - c.kc[0]) * g / 0.35; C = 0.5 + 0.45 * g / 0.35; }
+            else if (g < 0.8) { K = c.kc[1]; C = 0.95; } else { K = c.kc[1] + (c.kc[2] - c.kc[1]) * (g - 0.8) / 0.2; C = 0.9; }
+            if (g >= 0.6 && g <= 0.95) H = c.heatT;
+          }
+        } else {
+          const est = ph.est ? Math.min(1, (t - ph.s) / 60) : 1; C = 0.1 + 0.8 * est; K = cl.tm[d] > 5 ? 0.35 + 0.6 * est : 0.3;
+        }
+        kc[u] = K; cov[u] = C; st[u] = c.kind === 'perennial' ? 4 : 2; ci[u] = ph.i; heat[u] = H; thr[u] = 0.55 - 0.05 * (c.dt - 3);
+      }
+    }
+
+    for (const ph of phases) {
+      const r0 = tillRes * 0.13 * ph.c.res;
+      for (let a = 1; a < T; a++) { const u = U(ph.e + a); if (st[u] >= 2) break; const C = r0 * (1 - 0.35 * Math.min(1, a / 200)); cov[u] = C; st[u] = C >= 0.3 ? 1 : 0; kc[u] = 0.25 - 0.1 * C; }
+    }
+    for (let u = 0; u < T; u++) if (kc[u] < 0) { kc[u] = 0.25; cov[u] = 0.03; st[u] = 0; }
+
+    const covers = [];
+    rot.forEach((r, i) => {
+      if (!r.cv || !COVERS[r.cv]) return; const ph = phases.find(p => p.i === i); if (!ph) return;
+      const start = ph.e + 7; let t = start; while (t - start < T && st[U(t)] < 2) t++;
+      const term = t - 14;
+      if (term - start < 40) { notes.push({ i, type: 'nocover', cover: r.cv, days: Math.max(0, term - start) }); return; }
+      let growth = 0, fallG = 0, inFall = true;
+      for (let q = start; q <= term; q++) {
+        const u = U(q), d = u % 365, warm = cl.tm[d] > 3; if (warm) growth++;
+        if (inFall) { if (cl.tm[d] < 0.5 || (q - start > 150)) inFall = false; else fallG += Math.max(0, cl.tm[d]); }
+        cov[u] = Math.max(cov[u], Math.min(0.85, 0.85 * growth / 45)); kc[u] = warm ? 0.3 + 0.5 * Math.min(1, growth / 60) : 0.25; st[u] = 3; thr[u] = 0.5;
+      }
+      covers.push({ i, id: r.cv, start: U(start) % 365, term: U(term) % 365, days: term - start + 1, growth, fallG });
+      if (fallG < 150) notes.push({ i, type: 'thinfall', cover: r.cv, gdd: Math.round(fallG) });
+    });
+    return { N, T, kc, cov, st, ci, nxt, heat, thr, phases, covers, notes };
+  }
+
+  function simulate(rot, cl, cal, inp) {
+    const tl = buildTimeline(rot, cl, cal, TILLAGE[inp.till].res);
+    const N = tl.N, Yn = cl.n, cap = SOILS[inp.soil].awc * 1.2, slopeF = Math.sqrt(SLOPES[inp.slope].f);
+    const dem = Array.from({ length: N }, () => new Float64Array(Yn)), def = Array.from({ length: N }, () => new Float64Array(Yn)), hd = Array.from({ length: N }, () => new Float64Array(Yn));
+    const etaY = new Float64Array(Yn), runY = new Float64Array(Yn), drainY = new Float64Array(Yn);
+    for (let o = 0; o < N; o++) {
+      let S = 0.6 * cap;
+      for (let pass = 0; pass < 2; pass++) {
+        for (let k = 0; k < Yn; k++) {
+          const Y = cl.years[k], r = (k + o) % N;
+          for (let d = 0; d < 365; d++) {
+            const t = r * 365 + d, p = Y.pr[d], c = tl.cov[t];
+            const ro = p > 20 ? (p - 20) * 0.4 * (1 - 0.7 * c) * slopeF : 0;
+            S += p - ro; const pot = tl.kc[t] * Y.et0[d], eta = pot * Math.min(1, S / (tl.thr[t] * cap)); S = Math.max(0, S - eta);
+            let dr = 0; if (S > cap) { dr = S - cap; S = cap; }
+            if (pass) {
+              etaY[k] += eta / N; runY[k] += ro / N; drainY[k] += dr / N;
+              const i = tl.ci[t];
+              if (i >= 0) { const ka = Math.min(Yn - 1, k + tl.nxt[t]); dem[i][ka] += pot; def[i][ka] += pot - eta; if (tl.heat[t] > 0 && Y.tx[d] >= tl.heat[t]) hd[i][ka]++; }
+            }
+          }
+        }
+      }
+    }
+
+    const crops = [];
+    rot.forEach((r, i) => {
+      const c = CROPS[r.c]; if (!c || c.kind === 'fallow') { crops.push({ i, id: r.c, fallow: true, rel: new Array(Yn).fill(0), hdY: new Array(Yn).fill(0), defY: new Array(Yn).fill(0), relMean: 0, stress: 0, heat: 0, defMm: 0, demMm: 0, reliab: 1 }); return; }
+      const rel = Array.from(dem[i], (v, k) => v > 0 ? def[i][k] / v : 0);
+      crops.push({ i, id: r.c, rel, hdY: Array.from(hd[i]), defY: Array.from(def[i]), relMean: mean(rel), stress: rel.filter(v => v > 0.25).length / Yn, heat: mean(Array.from(hd[i])), defMm: mean(Array.from(def[i])), demMm: mean(Array.from(dem[i])), reliab: cal[r.c].reliab });
+    });
+    const cash = crops.filter(c => !c.fallow);
+    let bare = 0, resid = 0, living = 0, coverDays = 0, exp = 0, bareEros = 0;
+    for (let t = 0; t < tl.T; t++) { const s = tl.st[t], e = cl.eros[t % 365]; if (s === 0) { bare++; bareEros += e; } else if (s === 1) resid++; else { living++; if (s === 3) coverDays++; } exp += e * (1 - tl.cov[t]); }
+    const fams = new Set(cash.map(c => CROPS[c.id].fam)); tl.covers.forEach(cv => fams.add(COVERS[cv.id].fam + ' cover'));
+    const nfix = (cash.reduce((s, c) => s + CROPS[c.id].nfix, 0) + tl.covers.reduce((s, cv) => s + COVERS[cv.id].nfix * Math.min(1, cv.growth / 90), 0)) / N;
+    let run = 1, best = 1; const seq = rot.map(r => CROPS[r.c] ? CROPS[r.c].fam : '-');
+    if (N === 1) best = 9; else for (let j = 1; j < 2 * N; j++) { if (seq[j % N] === seq[(j - 1) % N] && seq[j % N] !== '-') { run++; best = Math.max(best, run); } else run = 1; }
+    const relByYear = Array.from({ length: Yn }, (_, k) => cash.length ? mean(cash.map(c => c.rel[k])) : 0);
+    const m = {
+      bare: bare / N, resid: resid / N, living: living / N, coverDays: coverDays / N,
+      exposed: exp / N, exposedShare: cl.erosTotal > 0 ? exp / N / cl.erosTotal : 0, bareErosShare: cl.erosTotal > 0 ? bareEros / N / cl.erosTotal : 0,
+      nfix, fams: fams.size, famRun: best, deep: cash.some(c => CROPS[c.id].deep),
+      resAvg: mean(rot.map(r => CROPS[r.c] ? CROPS[r.c].res : 0)),
+      relMean: cash.length ? mean(cash.map(c => c.relMean)) : 0, stress: cash.length ? mean(cash.map(c => c.stress)) : 0,
+      heat: cash.length ? mean(cash.map(c => c.heat)) : 0, reliab: cash.length ? mean(cash.map(c => c.reliab)) : 1,
+      irrig: mean(crops.map(c => c.defMm)), eta: mean(Array.from(etaY)), runoff: mean(Array.from(runY)), drain: mean(Array.from(drainY)),
+      relByYear, relLo: quant(relByYear, 0.1), relHi: quant(relByYear, 0.9),
+      seasons: (cash.some(c => CROPS[c.id].kind === 'winter') ? 1 : 0) + (cash.some(c => CROPS[c.id].kind === 'summer') ? 1 : 0) + (cash.some(c => CROPS[c.id].kind === 'perennial') ? 1 : 0)
+    };
+
+    const sc = scoreSet({ rot, crops, m, tl }, inp);
+    return { rot, tl, crops, m, sc };
+  }
+  function scoreSet(R, inp, idx) {
+    const rot = R.rot, m = R.m, tl = R.tl, pick = a => idx ? idx.map(i => a[i]) : a;
+    const cs = R.crops.map(c => { const rel = pick(c.rel); return { fallow: c.fallow, reliab: c.reliab, rel: mean(rel), stress: rel.filter(v => v > 0.25).length / rel.length, heat: mean(pick(c.hdY)), def: mean(pick(c.defY)) }; });
+    const cash = cs.filter(c => !c.fallow), relMean = cash.length ? mean(cash.map(c => c.rel)) : 0, stress = cash.length ? mean(cash.map(c => c.stress)) : 0, heat = cash.length ? mean(cash.map(c => c.heat)) : 0, irrig = mean(cs.map(c => c.def));
+    const sc = {};
+    sc.water = inp.irrigated ? 100 * (1 - clip(irrig / 450)) : 100 * (1 - clip(relMean / 0.45));
+    sc.soil = 35 * m.living / 365 + 15 * clip(m.nfix / 60) + 15 * m.resAvg / 5 + 15 * clip((m.fams - 1) / 3) + 10 * (m.deep ? 1 : 0) + 10 * (1 - m.bare / 365);
+    sc.erosion = 100 * (1 - m.exposedShare);
+    sc.resilience = 100 * (0.35 * (1 - clip(stress)) + 0.2 * (1 - clip(heat / 10)) + 0.2 * m.reliab + 0.15 * clip((m.fams - 1) / 2) + 0.1 * clip(m.seasons / 2));
+    let inc = 0; rot.forEach((r, i) => {
+      const c = CROPS[r.c], cr = cs[i]; if (!c) return;
+      const water = inp.irrigated ? 1 : 1 - 0.8 * clip(cr.rel / 0.6);
+      inc += c.margin * (c.market / 5) * water * (0.5 + 0.5 * cr.reliab) + (inp.livestock && c.forage ? 1 : 0);
+      if (r.cv && tl.covers.some(cv => cv.i === i)) inc -= COVERS[r.cv].cost - (inp.livestock ? 0.3 : 0);
+    });
+    sc.income = clip(inc / rot.length / 4.2) * 100;
+    for (const k in sc) sc[k] = Math.round(clip(sc[k], 0, 100));
+    return sc;
+  }
+  function bootstrap(cur, list, inp, n) {
+    let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, B = 300, diff = list.map(() => []);
+    for (let b = 0; b < B; b++) {
+      const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)), mc = match(scoreSet(cur, inp, idx), inp.weights);
+      list.forEach((s, j) => diff[j].push(match(scoreSet(s, inp, idx), inp.weights) - mc));
+    }
+    list.forEach((s, j) => { s.boot = { win: diff[j].filter(d => d > 0).length / B, lo: quant(diff[j], 0.1), hi: quant(diff[j], 0.9), runs: B }; });
+  }
+  function terrain(z, step) {
+    const N = Math.round(Math.sqrt(z.length)), at = (r, c) => z[r * N + c], slopes = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const c0 = Math.max(0, c - 1), c1 = Math.min(N - 1, c + 1), r0 = Math.max(0, r - 1), r1 = Math.min(N - 1, r + 1);
+      const dx = (at(r, c1) - at(r, c0)) / ((c1 - c0) * step), dy = (at(r1, c) - at(r0, c)) / ((r1 - r0) * step);
+      slopes.push(100 * Math.sqrt(dx * dx + dy * dy));
+    }
+    const mu = mean(z), cut = quant(z, 0.15), low = z.map(v => v <= cut && v <= mu - 2), typ = median(slopes);
+    return { n: N, step, z, slopes, low, min: Math.min.apply(null, z), max: Math.max.apply(null, z), typical: typ, steepest: Math.max.apply(null, slopes), steepCells: slopes.filter(v => v > 6).length, lowCells: low.filter(Boolean).length, cls: quant(slopes, 0.75) > 6 ? 'steep' : quant(slopes, 0.75) >= 2 ? 'gentle' : 'flat' };
+  }
+  function textureClass(sand, clay) {
+    const silt = 100 - sand - clay;
+    if (clay >= 40) return 'clay'; if (clay >= 27) return 'clay_loam'; if (sand >= 85) return 'sand';
+    if (sand >= 52 && clay < 20) return 'sandy_loam'; if (silt >= 50) return 'silt_loam'; return 'loam';
+  }
+  function match(sc, w) { const ks = ['water', 'soil', 'erosion', 'income', 'resilience']; const tw = ks.reduce((s, k) => s + (w[k] || 0), 0); return tw ? ks.reduce((s, k) => s + sc[k] * (w[k] || 0), 0) / tw : mean(ks.map(k => sc[k])); }
+
+  function rotLabel(rot) { return rot.map(r => CROPS[r.c].short + (r.cv ? ' + ' + COVERS[r.cv].short : '')).join(' → '); }
+  function candidates(cur, curRes, cal, inp) {
+    const ex = inp.exclude || new Set(), ok = id => !ex.has(id), has = id => cur.some(r => r.c === id), out = [];
+    const cp = rot => rot.map(r => ({ c: r.c, cv: r.cv || null }));
+    const pickCover = r => { const c = CROPS[r.c]; const early = c.kind === 'winter' || (cal[r.c] && cal[r.c].harv < 235); const want = early ? 'legmix' : 'rye'; return ok(want) ? want : ok('rye') ? 'rye' : ok('legmix') ? 'legmix' : null; };
+    const withCover = rot => rot.map(r => (CROPS[r.c].kind === 'summer' || CROPS[r.c].kind === 'winter') && !r.cv ? { c: r.c, cv: pickCover(r) } : r);
+    const push = (id, name, tag, rot, extra) => { if (JSON.stringify(rot) !== JSON.stringify(cp(cur))) out.push(Object.assign({ id, name, tag, rot }, extra || {})); };
+
+    if (ok('rye') || ok('legmix')) push('cover', 'Keep the crops, cover the gaps', 'Same cash crops, with a cover crop wherever the soil sits empty', withCover(cp(cur)));
+
+    const hasSmall = has('wheat') || has('oats');
+    const grain = ok('wheat') && cal.wheat.reliab >= 0.7 ? 'wheat' : ok('oats') ? 'oats' : null;
+    if (!hasSmall && grain) {
+      const r = cp(cur); let at = r.findIndex(x => x.c === 'soy'); at = at < 0 ? r.length : at + 1;
+      r.splice(at, 0, { c: grain, cv: ok('legmix') ? 'legmix' : null });
+      push('smallgrain', 'Add a small-grain year', 'One more year in the rotation, with ' + CROPS[grain].short.toLowerCase() + ' and a summer-sown cover', r, { grain });
+      push('diverse', 'Longer rotation with covers', 'A small-grain year plus cover crops after every cash crop', withCover(cp(r)), { grain });
+    }
+
+    const swap = { corn: 'sorghum', soy: 'sunflower', oats: 'sorghum', pea: 'sunflower' };
+    const worst = curRes.crops.filter(c => swap[c.id] && ok(swap[c.id]) && !has(swap[c.id])).sort((a, b) => (b.relMean + b.heat / 30) - (a.relMean + a.heat / 30))[0];
+    if (worst) { const r = cp(cur); r[worst.i] = { c: swap[worst.id], cv: r[worst.i].cv }; push('drought', 'Swap in a drought-hardy crop', CROPS[swap[worst.id]].short + ' takes the place of ' + CROPS[worst.id].short.toLowerCase(), r, { from: worst.id, to: swap[worst.id] }); }
+
+    const leg = ok('soy') && cal.soy.reliab >= 0.8 ? 'soy' : ok('pea') ? 'pea' : null;
+    const fi = cur.findIndex(r => r.c === 'fallow');
+    if (fi >= 0) { const repl = ok('pea') ? 'pea' : ok('sorghum') ? 'sorghum' : null; if (repl) { const r = cp(cur); r[fi] = { c: repl, cv: null }; push('nofallow', 'Grow a crop instead of fallow', CROPS[repl].short + ' replaces the fallow year', r, { to: repl }); } }
+    else if (leg && !cur.some(r => CROPS[r.c].fam === 'Legume')) { const r = cp(cur); r.push({ c: leg, cv: null }); push('legume', 'Add a legume year', CROPS[leg].short + ' joins the rotation to fix nitrogen and break pest cycles', r, { to: leg }); }
+
+    if (ok('alfalfa') && !has('alfalfa') && cal.alfalfa.reliab >= 0.7) push('forage', 'Add a two-year forage phase', 'Two years of alfalfa after the cash crops', cp(cur).filter(r => r.c !== 'fallow').concat([{ c: 'alfalfa', cv: null }, { c: 'alfalfa', cv: null }]));
+    return out;
+  }
+
+  function analyse(raw, inp) {
+    const cl = buildClimate(raw, inp.lat, inp.scen), cal = calendar(cl);
+    const cur = simulate(inp.rot, cl, cal, inp);
+    const cands = candidates(inp.rot, cur, cal, inp).map(c => Object.assign(c, simulate(c.rot, cl, cal, inp)));
+    cands.forEach(c => c.match = match(c.sc, inp.weights)); cands.sort((a, b) => b.match - a.match);
+    bootstrap(cur, cands, inp, cl.n);
+    const current = Object.assign({ id: 'current', name: 'Your current rotation', tag: 'The baseline every other option is compared with' }, cur); current.match = match(cur.sc, inp.weights);
+    return { cl, cal, current, alts: cands.slice(0, 3), others: cands.slice(3) };
+  }
+
+  const API = { raMm, et0PM, parseExtra, terrain, textureClass, scoreSet, CROPS, COVERS, SOILS, SLOPES, TILLAGE, MON, CUM, parsePower, buildClimate, calendar, buildTimeline, simulate, candidates, analyse, match, rotLabel, mean, median, quant, clip, trend };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API; else G.Engine = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const E = window.Engine, C = E.CROPS, CV = E.COVERS, $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const r0 = x => Math.round(x), pc = x => Math.round(x * 100) + '%';
+  const DEMOS = [
+    { id: 'odesa', name: 'Odesa region, Ukraine', short: 'Odesa', lab: 'bottom', lat: 46.85, lon: 30.6, rot: [{ c: 'wheat' }, { c: 'sunflower' }], soil: 'clay_loam', slope: 'flat', till: 'conv' },
+    { id: 'minsk', name: 'Minsk region, Belarus', short: 'Minsk', lab: 'top', lat: 53.7, lon: 27.2, rot: [{ c: 'wheat' }, { c: 'canola' }, { c: 'oats' }], soil: 'sandy_loam', slope: 'gentle', till: 'conv' },
+    { id: 'iowa', name: 'Central Iowa, USA', short: 'Iowa, USA', lab: 'top', lat: 42.03, lon: -93.62, rot: [{ c: 'corn' }, { c: 'soy' }], soil: 'loam', slope: 'gentle', till: 'reduced' },
+    { id: 'freestate', name: 'Free State, South Africa', short: 'South Africa', lab: 'top', lat: -27.39, lon: 26.62, rot: [{ c: 'corn' }, { c: 'sunflower' }], soil: 'sandy_loam', slope: 'flat', till: 'reduced' },
+    { id: 'heilongjiang', name: 'Heilongjiang, China', short: 'Northeast China', lab: 'top', lat: 45.9, lon: 126.9, rot: [{ c: 'corn' }, { c: 'soy' }], soil: 'clay_loam', slope: 'gentle', till: 'conv' }
+  ];
+  const DIMS = [['water', 'Save water'], ['soil', 'Soil health (proxy)'], ['erosion', 'Shield soil from storms'], ['income', 'Market fit (proxy)'], ['resilience', 'Weather resilience']];
+  const TREND = { 'clear trend': 'trend, p < 0.05', 'possible trend': 'weak signal, p < 0.2', 'no clear trend': 'no clear trend' };
+  const S = { lat: 0, lon: 0, name: '', rot: [], soil: 'loam', slope: 'gentle', till: 'reduced', irrigated: false, livestock: false, exclude: new Set(), weights: { water: 3, soil: 3, erosion: 3, income: 3, resilience: 3 }, scen: { rain: 0, temp: 0 }, raw: null, demo: null, sel: 0, terrain: null, soilSug: null, touched: {} };
+  const COL = { bare: '#F2A541', et: '#F2907E', straw: '#B7A98A', crop: '#8FD694', cover: '#D6EBAE', peren: '#3E8E5A', water: '#7CC6E8', waterSoft: '#2F5D6B', ink: '#EEF2E6', muted: '#A8A89C', line: 'rgba(240,236,220,.13)', panel: '#171816' };
+
+  async function fetchPower(lat, lon) {
+    const key = 'furrow1:' + lat.toFixed(2) + ',' + lon.toFixed(2);
+    try { const c = localStorage.getItem(key); if (c) return JSON.parse(c); } catch (e) {}
+    const url = 'https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,GWETROOT&community=AG&longitude=' + lon + '&latitude=' + lat + '&start=20010101&end=20251231&format=JSON';
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('NASA POWER answered with status ' + r.status + '.');
+    const raw = E.parsePower(await r.json());
+    if (raw.n < 365 * 10) throw new Error('NASA POWER returned too little data for this point.');
+    try { localStorage.setItem(key, JSON.stringify(raw)); } catch (e) {}
+    return raw;
+  }
+  async function getJSON(url, ms) {
+    const c = new AbortController(), t = setTimeout(() => c.abort(), ms || 9000);
+    try { const r = await fetch(url, { signal: c.signal }); if (!r.ok) throw new Error('status ' + r.status); return await r.json(); } finally { clearTimeout(t); }
+  }
+  const cget = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+  const cset = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  function extras(id) {
+    const lat = S.lat, lon = S.lon, k = lat.toFixed(2) + ',' + lon.toFixed(2);
+    (async () => {
+      try {
+        let ex = cget('furrowx1:' + k);
+        if (!ex) { ex = E.parseExtra(await getJSON('https://power.larc.nasa.gov/api/temporal/daily/point?parameters=ALLSKY_SFC_SW_DWN,WS2M,RH2M&community=AG&longitude=' + lon + '&latitude=' + lat + '&start=20010101&end=20251231&format=JSON', 30000)); cset('furrowx1:' + k, ex); }
+        if (id !== req || !S.raw || !ex || !(ex.n >= S.raw.n)) return;
+        S.raw.ex = ex; const keep = S.sel; recompute(); if (keep < 1 + LAST.alts.length) { S.sel = keep; render(); }
+      } catch (e) {}
+    })();
+    (async () => {
+      try {
+        let z = cget('furrowz1:' + k);
+        if (!z) {
+          const dl = 250 / 111320, dn = 250 / (111320 * Math.cos(lat * Math.PI / 180)), la = [], lo = [];
+          for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) { la.push((lat + (2 - r) * dl).toFixed(5)); lo.push((lon + (c - 2) * dn).toFixed(5)); }
+          const j = await getJSON('https://api.open-meteo.com/v1/elevation?latitude=' + la.join(',') + '&longitude=' + lo.join(','), 9000);
+          z = j.elevation; if (!Array.isArray(z) || z.length !== 25 || z.some(v => !isFinite(v))) return; cset('furrowz1:' + k, z);
+        }
+        if (id !== req) return; S.terrain = E.terrain(z, 250); suggest(); drawZones(); render();
+      } catch (e) {}
+    })();
+    (async () => {
+      try {
+        let g = cget('furrows1:' + k);
+        if (!g) {
+          const j = await getJSON('https://rest.isric.org/soilgrids/v2.0/properties/query?lon=' + lon + '&lat=' + lat + '&property=clay&property=sand&depth=0-5cm&depth=5-15cm&depth=15-30cm&value=mean', 12000);
+          const val = name => { const L = j.properties.layers.find(x => x.name === name), f = (L.unit_measure && L.unit_measure.d_factor) || 10, v = L.depths.map(d => d.values.mean).filter(x => x !== null && isFinite(x)); return v.length ? E.mean(v) / f : NaN; };
+          g = { sand: val('sand'), clay: val('clay') }; if (!(g.sand >= 0 && g.clay >= 0 && g.sand + g.clay <= 100.5) || g.sand + g.clay === 0) return; cset('furrows1:' + k, g);
+        }
+        if (id !== req) return; S.soilSug = Object.assign({ cls: E.textureClass(g.sand, g.clay) }, g); suggest();
+      } catch (e) {}
+    })();
+  }
+  function suggest() {
+    let h = '';
+    if (S.soilSug) { if (!S.demo && !S.touched.soil) { S.soil = S.soilSug.cls; $('soil').value = S.soil; } h += '<p class="small">SoilGrids maps this spot as <b>' + E.SOILS[S.soilSug.cls].name.toLowerCase() + '</b> (' + r0(S.soilSug.sand) + '% sand, ' + r0(S.soilSug.clay) + '% clay)' + (S.soil !== S.soilSug.cls ? ' <button class="link" data-use="soil">Use it</button>' : '') + '</p>'; }
+    if (S.terrain) { if (!S.demo && !S.touched.slope) { S.slope = S.terrain.cls; $('slope').value = S.slope; } h += '<p class="small">Elevation data shows <b>' + E.SLOPES[S.terrain.cls].name.split(',')[0].toLowerCase() + '</b> ground (typical slope ' + S.terrain.typical.toFixed(1) + '%, steepest ' + S.terrain.steepest.toFixed(1) + '%)' + (S.slope !== S.terrain.cls ? ' <button class="link" data-use="slope">Use it</button>' : '') + '</p>'; }
+    $('sug').innerHTML = h; if ((S.soilSug || S.terrain) && !S.demo) recompute();
+  }
+  let req = 0;
+  async function load() {
+    const id = ++req; status('load');
+    try { const raw = await fetchPower(S.lat, S.lon); if (id !== req) return; S.raw = raw; status(''); recompute(); extras(id); }
+    catch (e) { if (id !== req) return; status('err', 'Could not load NASA data for this field. ' + esc(e.message || '') + ' Check your internet connection, then press Load field again.'); }
+  }
+  function status(kind, msg) {
+    const el = $('status');
+    if (!kind) { el.hidden = true; return; }
+    el.hidden = false; el.className = 'banner' + (kind === 'err' ? ' err' : '');
+    el.innerHTML = kind === 'load' ? '<span class="spin"></span>Fetching 25 years of daily NASA POWER data for ' + esc(S.name) + '…' : msg;
+    if (kind === 'load') $('out').innerHTML = '';
+  }
+
+  function bareMonths(s, cl) {
+    const cnt = new Array(12).fill(0);
+    for (let t = 0; t < s.tl.T; t++) if (s.tl.st[t] === 0) { const d = t % 365; let m = 0; while (d >= E.CUM[m + 1]) m++; cnt[m]++; }
+    const ms = cnt.map((v, m) => [v / s.tl.N / (E.CUM[m + 1] - E.CUM[m]), m]).filter(x => x[0] >= 0.5).map(x => x[1]);
+    if (!ms.length) return 'short gaps between crops';
+    if (ms.length === 12) return 'all year round';
+
+    let start = ms.find(m => !ms.includes((m + 11) % 12)); if (start === undefined) start = ms[0];
+    let end = start; while (ms.includes((end + 1) % 12) && (end + 1) % 12 !== start) end = (end + 1) % 12;
+    return start === end ? 'in ' + cl.monthName(start) : 'from ' + cl.monthName(start) + ' to ' + cl.monthName(end);
+  }
+  function explain(s, A) {
+    const cl = A.cl, cur = A.current, m = s.m, cm = cur.m, isCur = s.id === 'current';
+    const hot = cl.yearTypes && cl.yearTypes.types.find(t => t.name.indexOf('Hot') === 0);
+    const relHot = x => hot ? E.mean(hot.idx.map(i => x.m.relByYear[i])) : null;
+    const ar = (a, b) => isCur ? '<b>' + a + '</b>' : a + ' → <b>' + b + '</b>';
+    const ev = [];
+    ev.push('Bare soil: ' + ar(r0(cm.bare), r0(m.bare)) + ' days a year');
+    ev.push('Heavy rain landing on poorly covered soil: ' + ar(r0(cm.exposed), r0(m.exposed)) + ' mm a year, out of ' + r0(cl.erosTotal) + ' mm from days of 12.7 mm or more');
+    ev.push('Crop water demand left unmet: ' + ar(pc(cm.relMean), pc(m.relMean)) + ' on average' + (hot ? '; in hot, dry years ' + ar(pc(relHot(cur)), pc(relHot(s))) : ''));
+    ev.push('Living roots in the ground: ' + ar(r0(cm.living), r0(m.living)) + ' days a year');
+    if (cm.nfix > 1 || m.nfix > 1) ev.push('Nitrogen from legumes: ' + ar(r0(cm.nfix), r0(m.nfix)) + ' kg N/ha a year');
+    if (cm.heat >= 0.5 || m.heat >= 0.5) ev.push('Damaging heat in sensitive growth stages: ' + ar(cm.heat.toFixed(1), m.heat.toFixed(1)) + ' days a year');
+    ev.push('Spread across the ' + cl.n + ' years: unmet demand ran from ' + pc(m.relLo) + ' to ' + pc(m.relHi) + ' in 8 years out of 10');
+    let why = '', ben = [], gaps = [], rev = [];
+    const bm = bareMonths(cur, cl), topE = cl.mEros.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]).slice(0, 3).sort((a, b) => a[1] - b[1]).map(x => cl.monthName(x[1])).join(', ');
+    switch (s.id) {
+      case 'current':
+        why = 'This is what you grow now. It is replayed through the weather your field had in each of the last ' + cl.n + ' years, and every other option is measured against it. Soil here is bare ' + bm + ', and ' + pc(cm.bareErosShare) + ' of the heavy rain falls on that bare ground. The months with most heavy rain are ' + topE + '.';
+        ben = ['Known markets, equipment and routines', 'No transition cost or learning curve'];
+        gaps = ['Your real yields: Furrow has no harvest records for this field', 'Soil test results such as organic matter, pH and compaction'];
+        rev = ['Whether the bare periods shown match what you see on the ground'];
+        break;
+      case 'cover':
+        why = 'Your soil is bare ' + r0(cm.bare) + ' days a year, ' + bm + ', and ' + pc(cm.bareErosShare) + ' of the heavy rain arrives while it is bare. A cover crop fills those windows with leaves and living roots without changing what you sell.';
+        ben = ['Leaves and roots shield the soil when storms hit', 'Roots feed soil life and build organic matter over the years', 'Slower runoff, so more rain soaks in'];
+        if (s.rot.some(r => r.cv === 'legmix')) ben.push('The legume mix supplies nitrogen to the next crop');
+        gaps = ['Seed, seeding and termination costs on your farm', 'Herbicide carry-over that could stop a cover establishing'];
+        rev = ['Termination date: in a dry spring, ending the cover earlier saves water for the cash crop', 'Cereal rye ahead of corn can tie up nitrogen early in the season'];
+        break;
+      case 'smallgrain': case 'diverse': {
+        const g = C[s.grain], k = A.cal[s.grain];
+        why = g.name + ' is harvested around ' + cl.fmtDay(k.harv) + ', before the hottest and driest weeks, which spreads your weather risk across two seasons. The long gap after harvest is warm enough to grow a legume cover mix' + (s.id === 'diverse' ? ', and cover crops follow the other cash crops too.' : '.');
+        ben = ['A third crop family breaks pest, weed and disease cycles', 'Work and income are spread across the year', 'A long summer window for a nitrogen-fixing cover', 'Small-grain straw adds residue'];
+        gaps = ['A local buyer and price for ' + g.short.toLowerCase(), 'Whether you have, or can hire, a drill and suitable harvest setup'];
+        rev = ['Disease and weed pressure shifts when a new crop enters the rotation', 'One year in ' + s.rot.length + ' moves out of your main cash crops'];
+        break;
+      }
+      case 'drought': {
+        const f = cur.crops.find(c => c.id === s.from), to = C[s.to];
+        why = C[s.from].short + ' came up shortest on water here: ' + pc(f.relMean) + ' of its demand went unmet on average, with ' + f.heat.toFixed(1) + ' days a year of damaging heat in its sensitive weeks. ' + to.name + ' needs less water and stands heat up to about ' + to.heatT + ' °C.';
+        ben = ['Lower water demand in the hottest part of the season', 'Steadier output in hot, dry years', to.deep ? 'Deep roots reach water and loosen subsoil' : 'A different crop family in the rotation'];
+        gaps = ['A local market, delivery point and price for ' + to.short.toLowerCase(), 'Whether your planter and combine are set up for it'];
+        rev = ['Herbicide programme and bird or pest pressure for ' + to.short.toLowerCase()];
+        break;
+      }
+      case 'nofallow':
+        why = 'The fallow year leaves the field without a crop for more than a year at a stretch. Much of the rain that falls then evaporates or runs off before the next crop can use it. ' + C[s.to].name + ' turns that rain into a crop' + (C[s.to].fam === 'Legume' ? ' and fixes nitrogen.' : '.');
+        ben = ['Something to sell from every year of the rotation', 'Far fewer bare-soil days', C[s.to].fam === 'Legume' ? 'Nitrogen credit for the following wheat' : 'More residue returned to the soil'];
+        gaps = ['A local market for ' + C[s.to].short.toLowerCase(), 'Seed, inoculant and input costs'];
+        rev = ['In the driest years, water stored during fallow is what carries the wheat. Compare the hot, dry year column in the table below before trying this'];
+        break;
+      case 'legume':
+        why = 'There is no legume in your rotation, so every unit of nitrogen is bought in. ' + C[s.to].name + ' fixes its own nitrogen, leaves some for the next crop, and breaks the pest and disease cycles of your current crops.';
+        ben = ['Lower fertiliser need for the following crop', 'A different crop family interrupts pests and diseases', 'A wider spread of sowing and harvest dates'];
+        gaps = ['A local market for ' + C[s.to].short.toLowerCase(), 'Inoculant supply and root-disease history in your area'];
+        rev = ['Legumes leave little residue, so the soil after harvest needs protection'];
+        break;
+      case 'forage':
+        why = 'Two years of alfalfa keep the ground covered and rooted all year, fix nitrogen, and need no tillage. That rests the soil between runs of annual crops' + (S.livestock ? ' and gives you forage for your own livestock.' : '.');
+        ben = ['Year-round cover in the alfalfa years', 'Deep roots open compacted layers and draw on deep water', 'A large nitrogen credit for the next crop'];
+        gaps = ['A hay market, or livestock to use the forage', 'Establishment cost and access to hay equipment'];
+        rev = ['Alfalfa dries the deep soil; the crop after it may start with less stored water', 'Alfalfa should not follow alfalfa directly'];
+        break;
+    }
+
+    if (!isCur && m.relMean > cm.relMean + 0.02) rev.unshift('Water trade-off: unmet crop water demand rises from ' + pc(cm.relMean) + ' to ' + pc(m.relMean) + ' because the extra plants draw on soil water. In a dry year that can cost the next crop yield');
+    if (!isCur && s.sc.erosion < cur.sc.erosion - 2) rev.unshift('This option protects the soil less than your current rotation (storm-shield score ' + cur.sc.erosion + ' to ' + s.sc.erosion + ') because it leaves less residue. Pairing it with a cover crop would offset that');
+    for (const n of s.tl.notes) {
+      if (n.type === 'late') rev.push(C[n.crop].short + ' would be sown about ' + n.days + ' days later than ideal because ' + C[n.after].short.toLowerCase() + ' is still on the field');
+      if (n.type === 'nocover') rev.push('Only ' + n.days + ' days separate ' + C[s.rot[n.i].c].short.toLowerCase() + ' harvest from the next sowing, too short for a cover crop, so none is counted there');
+      if (n.type === 'thinfall') rev.push('The cover after ' + C[s.rot[n.i].c].short.toLowerCase() + ' gets little autumn warmth (about ' + n.gdd + ' growing degree days before winter), so stands may be thin. Seeding into the standing crop is one local workaround');
+    }
+    const seen = new Set();
+    for (const c of s.crops) {
+      if (c.fallow || seen.has(c.id) || c.reliab >= 0.9) continue; seen.add(c.id);
+      rev.push(C[c.id].kind === 'summer' ? C[c.id].short + ' reached maturity before a killing frost in only ' + pc(c.reliab) + ' of years' : 'Winters were cold enough to threaten ' + C[c.id].short.toLowerCase() + ' in ' + pc(1 - c.reliab) + ' of years');
+    }
+    return { why, ev, ben, gaps, rev };
+  }
+
+  const KEY = 'furrow:choices1';
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights, done: !S.intro && S.wiz == null })); } catch (e) {}
+  }
+  function restore() {
+    let v; try { v = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; }
+    if (!v || !v.done || !isFinite(v.lat) || !isFinite(v.lon) || !Array.isArray(v.rot) || !v.rot.length || v.rot.some(r => !C[r.c])) return null;
+    S.rot = v.rot.map(r => ({ c: r.c, cv: CV[r.cv] ? r.cv : null }));
+    if (E.SOILS[v.soil]) S.soil = v.soil; if (E.SLOPES[v.slope]) S.slope = v.slope; if (E.TILLAGE[v.till]) S.till = v.till;
+    S.irrigated = !!v.irrigated; S.livestock = !!v.livestock; S.exclude = new Set((v.exclude || []).filter(k => C[k] || CV[k]));
+    DIMS.forEach(d => { const w = v.weights && v.weights[d[0]]; if (w >= 0 && w <= 5) S.weights[d[0]] = w; $('w_' + d[0]).value = S.weights[d[0]]; $('wv_' + d[0]).textContent = S.weights[d[0]]; });
+    $('soil').value = S.soil; $('slope').value = S.slope; $('till').value = S.till; $('irrig').checked = S.irrigated; $('stock').checked = S.livestock;
+    document.querySelectorAll('#excl .chip').forEach(b => b.setAttribute('aria-pressed', S.exclude.has(b.dataset.id) ? 'true' : 'false'));
+    renderRot(); return v;
+  }
+
+  const TABS = [['result', 'Result'], ['climate', 'Climate'], ['calendar', 'Calendar'], ['options', 'Options'], ['years', 'Dry years'], ['method', 'Method']];
+  let LAST = null;
+  function recompute() {
+    if (!S.raw) return;
+    try { LAST = E.analyse(S.raw, S); } catch (e) { status('err', 'Something went wrong while analysing this field: ' + esc(e.message)); return; }
+    S.sel = LAST.alts.length ? 1 : 0; render(); save();
+  }
+  function render() {
+    const A = LAST; if (!A) return;
+    const cl = A.cl, all = [A.current].concat(A.alts), best = A.alts[0], better = best && best.match > A.current.match + 1;
+    const pane = (id, html) => '<div class="pane" data-pane="' + id + '">' + html + '</div>';
+
+    let R = '';
+    if (S.scen.rain || S.scen.temp) R += '<div class="banner warn"><b>Sensitivity test is on.</b> Everything here replays 2001 to 2025 with rainfall ' + (S.scen.rain > 0 ? '+' : '') + S.scen.rain + '% and temperature +' + S.scen.temp + ' °C.</div>';
+    if (cl.noFrost) R += '<div class="banner warn"><b>Few or no frosts here.</b> Furrow times crops by frost dates, so sowing and harvest dates for this field are rough. Treat the results as a starting point only.</div>';
+    R += '<div class="place">' + esc(S.name) + ', ' + Math.abs(S.lat).toFixed(2) + '°' + (S.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(S.lon).toFixed(2) + '°' + (S.lon < 0 ? 'W' : 'E') + '. ' + E.SOILS[S.soil].name + ', ' + E.TILLAGE[S.till].name.toLowerCase() + '.</div>';
+    R += '<h1>' + (!best ? 'No alternative rotations could be built from your choices' : better ? '“' + esc(best.name) + '” scores highest under your priorities' : 'Your current rotation scores about as high as any alternative tested') + '</h1>';
+    if (best) {
+      R += '<div class="vs"><div class="win"><span class="n">' + r0(best.match) + '</span><span class="l">' + esc(E.rotLabel(best.rot)) + '</span></div><div><span class="n">' + r0(A.current.match) + '</span><span class="l">' + esc(E.rotLabel(A.current.rot)) + ', what you grow now</span></div></div>';
+      const cm = A.current.m, bm2 = best.m, hot = cl.yearTypes && cl.yearTypes.types.find(t => t.name.indexOf('Hot') === 0);
+      const rh = q => hot ? E.mean(hot.idx.map(i => q.m.relByYear[i])) : q.m.relMean;
+      const kp = (a, b, unit, main, sub) => '<div class="kp"><div class="big ' + (b < a ? 'good' : b > a ? 'bad' : '') + '"><s>' + a + unit + ' → </s><em>' + b + unit + '</em></div><p>' + main + '<span>' + sub + '</span></p></div>';
+      R += '<div class="key"><h3>What changes most on this field</h3>' +
+        kp(r0(cm.bare), r0(bm2.bare), '', 'days of bare soil a year', 'Now bare ' + bareMonths(A.current, cl)) +
+        kp(r0(cm.exposed), r0(bm2.exposed), '', 'mm of heavy rain a year landing on poorly covered soil', 'Out of ' + r0(cl.erosTotal) + ' mm that falls on days of 12.7 mm or more') +
+        kp(Math.round(rh(A.current) * 100), Math.round(rh(best) * 100), '%', 'of crop water demand left unmet ' + (hot ? 'in hot, dry years' : 'on average'), hot ? hot.count + ' of the ' + cl.n + ' years were hot and dry' : 'Averaged over ' + cl.n + ' years') +
+        '</div><h2 class="second">Scores by priority, now → alternative</h2>';
+      for (const d of DIMS) { const a = A.current.sc[d[0]], b = best.sc[d[0]], dl = b - a; R += '<div class="drow"><span>' + d[1] + ' <span class="muted small">weight ' + S.weights[d[0]] + '</span></span><span class="mv">' + a + ' → ' + b + '</span><span class="dv ' + (dl > 2 ? 'up' : dl < -2 ? 'dn' : '') + '">' + (dl > 0 ? '+' : '') + dl + '</span></div>'; }
+      const bt = best.boot, w = Math.round(bt.win * 100);
+      R += '<p class="conf"><b>' + w + ' in 100.</b> When the ' + cl.n + ' years are reshuffled ' + bt.runs + ' times, this rotation still outscores your current one in ' + w + '% of them' + (bt.win >= 0.9 ? ', so the lead does not hinge on a few unusual years.' : bt.win >= 0.7 ? '. The lead is likely but not certain.' : '. Treat the two as roughly equal.') + ' The gap ranges from ' + (bt.lo > 0 ? '+' : '') + bt.lo.toFixed(1) + ' to ' + (bt.hi > 0 ? '+' : '') + bt.hi.toFixed(1) + ' points in 8 runs out of 10.</p>';
+      R += '<p class="why">' + explain(best, A).why + '</p><button class="link" data-go="options">Compare all four rotations</button>';
+    } else R += '<p class="why">Allow more crops under “Crops you cannot grow or sell” to see options.</p>';
+    R += '<p class="fine">Each score runs from 0 to 100 and comes from replaying the rotation through ' + cl.n + ' years of NASA weather for this spot. The match score is their average, weighted by your priorities. A gap of a few points is not a meaningful difference. The weather record covers a grid cell about 50 km wide (outlined on the map), so it describes your district, not one field. Soil health and market fit are rough indicators, not measurements.</p>';
+
+    let Cm = '<h2>The last ' + cl.n + ' years on this field</h2><p class="sub">NASA POWER daily records, ' + cl.years[0].label + ' to ' + cl.years[cl.n - 1].label + '. Each line is one value per year; the dashed line is the trend. Measures that are drifting are marked with a coloured dot.</p>';
+    for (const i of cl.indicators) {
+      const t = i.trend, cls = t.label === 'clear trend' ? ' clear' : t.label === 'possible trend' ? ' possible' : '';
+      Cm += '<div class="irow' + (cls === ' clear' ? ' hot' : cls === ' possible' ? ' warm' : '') + '" title="' + esc(i.note) + '"><div><div class="k">' + i.name + '</div><div class="r">' + i.lo.toFixed(i.digits) + ' to ' + i.hi.toFixed(i.digits) + ' in 8 years out of 10</div></div><div class="sp">' + spark(i, cl) + '</div><div><div class="v">' + i.mean.toFixed(i.digits) + ' <small>' + i.unit + '</small></div><div class="t' + cls + '">' + (t.perDecade > 0 ? '+' : '') + t.perDecade.toFixed(i.digits ? 1 : 0) + ' per decade, ' + TREND[t.label] + '</div></div></div>';
+    }
+    if (!cl.noFrost) Cm += '<div class="irow"><div><div class="k">Typical frost dates</div><div class="r">Median of ' + cl.n + ' years. Crop calendars are built from these.</div></div><div class="sp"></div><div><div class="v" style="font-size:16px">' + cl.fmtDay(cl.lastFrost) + ' <small>last</small></div><div class="v" style="font-size:16px">' + cl.fmtDay(cl.firstFrost) + ' <small>first</small></div></div></div>';
+    Cm += '<p class="fine">Evaporative demand: ' + (cl.pmShare > 0.5 ? 'FAO Penman-Monteith, using satellite-derived sunlight (NASA CERES), wind and humidity from NASA POWER on ' + Math.round(cl.pmShare * 100) + '% of days' + (cl.pmShare < 0.995 ? ', Hargreaves on the rest.' : '.') : 'Hargreaves equation from daily temperatures. The fuller Penman-Monteith inputs were not available for this load.') + '</p>';
+    if (S.terrain) Cm += terrainHTML(S.terrain);
+    if (cl.hasGw && cl.gwAnom) {
+      const dry = cl.gwAnom.map((r, i) => [E.mean(r), cl.years[i].label]).sort((a, b) => a[0] - b[0]);
+      Cm += '<h2>Soil moisture: which months and years ran dry</h2><p class="sub">Each square compares root-zone soil wetness with what is normal for that month here. Amber is drier than usual, blue is wetter. Driest years: <b>' + dry.slice(0, 3).map(d => d[1]).join(', ') + '</b>. Wettest: <b>' + dry.slice(-3).reverse().map(d => d[1]).join(', ') + '</b>. If you farmed here then, check this against your memory.</p><div class="fig">' + anomFigure(cl) + '</div><p class="fine">Source: NASA POWER root-zone soil wetness (GWETROOT), a model estimate for the grid cell.</p>';
+    }
+
+    const K = '<h2>When the rain falls, and what is on the field when it does</h2><p class="sub">Top: an average year of rain against evaporative demand. Below: each rotation, year by year. Amber is bare soil. Where amber sits under tall bright-blue bars, heavy rain is landing on unprotected ground.</p><div class="legend"><span><i style="background:' + COL.waterSoft + '"></i>Rain</span><span><i style="background:' + COL.water + '"></i>on heavy-rain days</span><span><i style="background:' + COL.et + ';border-radius:50%"></i>Evaporative demand</span><span><i style="background:' + COL.crop + '"></i>Cash crop</span><span><i style="background:' + COL.cover + '"></i>Cover crop</span><span><i style="background:' + COL.peren + '"></i>Perennial</span><span><i style="background:' + COL.straw + '"></i>Residue</span><span><i style="background:' + COL.bare + '"></i>Bare soil</span></div><div class="fig">' + yearFigure(cl, all) + '</div>';
+
+    if (S.sel >= all.length) S.sel = 0;
+    let O = '<h2>Your rotation and ' + A.alts.length + ' alternatives</h2><p class="sub">Ranked by match score under your priorities. Pick one to read its evidence.</p><div class="rank">';
+    all.slice().sort((p, q) => q.match - p.match).forEach(s => { const i = all.indexOf(s); O += '<button class="rk" data-sel="' + i + '" aria-pressed="' + (i === S.sel) + '"><span class="dot"></span><span class="nm"><b>' + esc(s.name) + '</b><small>' + esc(E.rotLabel(s.rot)) + (s.boot ? ' · ahead of current in ' + Math.round(s.boot.win * 100) + '% of reshuffles' : '') + '</small></span><span class="sc">' + r0(s.match) + '</span><span class="br"><i style="width:' + r0(s.match) + '%"></i></span></button>'; });
+    O += '</div>';
+    const s = all[S.sel], x = explain(s, A), isCur = s.id === 'current';
+    O += '<div class="optd' + (S.animOpt ? ' in' : '') + '"><h3>' + esc(s.name) + '</h3><div class="bars">';
+    for (const d of DIMS) { const v = s.sc[d[0]], dl = v - A.current.sc[d[0]]; O += '<span>' + d[1] + '</span><span class="track"><b style="width:' + v + '%"></b></span><span class="num">' + v + '</span><span class="d ' + (isCur || !dl ? '' : dl > 0 ? 'up' : 'dn') + '">' + (isCur || !dl ? '' : (dl > 0 ? '+' : '') + dl) + '</span>'; }
+    O += '</div><h4>' + (isCur ? 'What this shows' : 'Why it is suggested') + '</h4><p>' + x.why + '</p><h4>Evidence from ' + cl.n + ' years of NASA data</h4><ul>' + x.ev.map(e => '<li>' + e + '</li>').join('') + '</ul>';
+    O += '<div class="note warn"><h4>Check locally before acting</h4><ul>' + x.rev.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></div>';
+    O += '<div class="note"><h4>What Furrow does not know</h4><ul>' + x.gaps.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></div>';
+    O += '<details class="more"><summary>Possible benefits</summary><ul>' + x.ben.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></details>';
+    if (A.others.length) {
+      O += '<details class="more"><summary>Other rotations tested (' + A.others.length + ')</summary><div class="scroll"><table><thead><tr><th>Rotation</th><th>Match</th>' + DIMS.map(d => '<th>' + d[1].split(' ')[0] + '</th>').join('') + '</tr></thead><tbody>';
+      for (const o of A.others) O += '<tr><td>' + esc(o.name) + '<div class="muted small">' + esc(E.rotLabel(o.rot)) + '</div></td><td class="num">' + r0(o.match) + '</td>' + DIMS.map(d => '<td class="num">' + o.sc[d[0]] + '</td>').join('') + '</tr>';
+      O += '</tbody></table></div></details>';
+    }
+    O += '</div>'; S.animOpt = false;
+
+    const yt = cl.yearTypes; let Yh = '';
+    if (yt) {
+      Yh = '<h2>How each rotation copes in different kinds of year</h2><p class="sub">A clustering model (k-means) sorted the ' + cl.n + ' growing seasons into three kinds by warm-season rain, evaporative demand and hot days. Bars show the share of crop water demand that went unmet. Shorter is better.</p>';
+      for (const t of yt.types) {
+        Yh += '<div class="ytype"><div class="hd"><h3>' + t.name + '</h3><span class="small muted">' + t.early + ' of ' + yt.half + ' early years, ' + t.late + ' of ' + (cl.n - yt.half) + ' recent</span></div><div class="yrs">' + r0(t.rain) + ' mm rain, ' + r0(t.et0) + ' mm demand, ' + r0(t.hot) + ' days over 32 °C. ' + t.labels.join(', ') + '</div>';
+        for (const q of all) { const v = E.mean(t.idx.map(i => q.m.relByYear[i])); Yh += '<div class="yb"><span>' + esc(q.name) + '</span><span><i style="width:' + Math.min(100, Math.max(1, v * 200)) + '%"></i></span><span class="num">' + pc(v) + '</span></div>'; }
+        Yh += '</div>';
+      }
+      Yh += '<p class="fine">“Early” is ' + yt.firstLabel + ' to ' + cl.years[yt.half - 1].label + '; “recent” is ' + yt.midLabel + ' to ' + yt.lastLabel + '. A simpler rule (the driest, middle and wettest thirds by rain minus demand) puts ' + yt.agree + ' of the ' + cl.n + ' years in the same group as the clustering model, so ' + (yt.agree >= cl.n * 0.75 ? 'the grouping is not an artefact of one method' : 'the two methods disagree on a fair number of years and the groups are fuzzy') + '. With only ' + cl.n + ' seasons each group is small. Read this as a pattern to discuss with a local adviser, not a forecast.</p>';
+    } else Yh = '<p class="sub">Not enough seasons to group.</p>';
+    if (!S.keepAnim) $('scroll').classList.remove('anim'); S.keepAnim = false;
+    $('out').innerHTML = pane('result', R) + pane('climate', Cm) + pane('calendar', K) + pane('options', O) + pane('years', Yh);
+    story();
+  }
+
+  function terrainHTML(T) {
+    const c = 46, col = v => v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#3E8E5A'; let g = '';
+    T.slopes.forEach((v, i) => { const x = (i % T.n) * c, y = Math.floor(i / T.n) * c; g += '<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (c - 2) + '" height="' + (c - 2) + '" rx="3" fill="' + col(v) + '"' + (T.low[i] ? ' stroke="#7CC6E8" stroke-width="3"' : '') + '><title>' + r0(T.z[i]) + ' m, slope ' + v.toFixed(1) + '%' + (T.low[i] ? ', low spot' : '') + '</title></rect><text x="' + (x + c / 2) + '" y="' + (y + c / 2 + 4) + '" text-anchor="middle" font-size="11" fill="#10231A">' + r0(T.z[i]) + '</text>'; });
+    return '<h2>The lie of the land around your point</h2><div class="terr"><svg viewBox="0 0 ' + c * T.n + ' ' + c * T.n + '" role="img" aria-label="Elevation and slope on a 5 by 5 grid around the field">' + g + '</svg><div><p>Across a ' + (T.step * T.n / 1000).toFixed(2).replace(/0$/, '') + ' km square the ground runs from <b>' + r0(T.min) + ' m</b> to <b>' + r0(T.max) + ' m</b>. Typical slope is <b>' + T.typical.toFixed(1) + '%</b>, the steepest part <b>' + T.steepest.toFixed(1) + '%</b>.</p><p>' + (T.steepCells ? '<b>' + T.steepCells + ' of ' + T.slopes.length + '</b> squares slope more than 6%. Heavy rain on bare soil does the most damage there, so those are the places where cover matters most.' : 'No square slopes more than 6%, so runoff speed is not the main erosion driver here.') + '</p><p>' + (T.lowCells ? '<b>' + T.lowCells + '</b> low ' + (T.lowCells === 1 ? 'spot is' : 'spots are') + ' outlined in blue. Cold air settles in hollows, so frost can come later in spring and earlier in autumn there than the district dates suggest.' : 'No marked hollows where cold air would pool.') + '</p><div class="legend"><span><i style="background:#3E8E5A"></i>under 2%</span><span><i style="background:#F2A541"></i>2 to 6%</span><span><i style="background:#F2907E"></i>over 6%</span><span><i style="background:none;box-shadow:inset 0 0 0 2px #7CC6E8"></i>low spot</span></div></div></div><p class="fine">Numbers are metres above sea level. Source: Copernicus 90 m elevation model (ESA), read through Open-Meteo. Too coarse for a field survey; use it to know where to look.</p>';
+  }
+  function spark(i, cl) {
+    const v = i.series, n = v.length, W = 200, H = 44, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), sp = (hi - lo) || 1;
+    const X = k => 3 + k / (n - 1) * (W - 6), Y = y => H - 5 - (y - lo) / sp * (H - 10);
+    const sl = i.trend.perDecade / 10, b = E.median(v.map((y, k) => y - sl * k));
+    const cl2 = i.trend.label === 'clear trend' ? '#F2907E' : i.trend.label === 'possible trend' ? '#F2A541' : '#86867A';
+    return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(i.name) + ', each year from ' + cl.years[0].label + ' to ' + cl.years[n - 1].label + ', with trend line"><polyline points="' + v.map((y, k) => X(k).toFixed(1) + ',' + Y(y).toFixed(1)).join(' ') + '" fill="none" stroke="#A8A89C" stroke-width="1.3" stroke-linejoin="round"/><line x1="' + X(0) + '" y1="' + Y(Math.min(hi, Math.max(lo, b))).toFixed(1) + '" x2="' + X(n - 1) + '" y2="' + Y(Math.min(hi, Math.max(lo, b + sl * (n - 1)))).toFixed(1) + '" stroke="' + cl2 + '" stroke-width="2" stroke-dasharray="5 3"/><circle cx="' + X(n - 1) + '" cy="' + Y(v[n - 1]).toFixed(1) + '" r="2.8" fill="#EEF2E6"/></svg><div class="sparkax"><span>' + cl.years[0].label + '</span><span>' + cl.years[n - 1].label + '</span></div>';
+  }
+  function yearFigure(cl, list) {
+    const W = 960, L = 150, PW = 790, X = d => L + d / 365 * PW;
+    const top = 30, CH = 150, mx = Math.max.apply(null, cl.mRain.concat(cl.mEt0));
+    const step = mx > 200 ? 50 : mx > 80 ? 25 : 10, ymax = Math.ceil(mx / step) * step, Yv = v => top + CH - v / ymax * CH;
+    let s = '', y = top;
+    for (let v = 0; v <= ymax; v += step) s += '<line x1="' + L + '" x2="' + (L + PW) + '" y1="' + Yv(v) + '" y2="' + Yv(v) + '" stroke="' + COL.line + '" stroke-width="1"/><text x="' + (L - 8) + '" y="' + (Yv(v) + 4) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">' + v + '</text>';
+    s += '<text x="' + (L - 8) + '" y="' + (top - 16) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">mm a month</text>';
+    let pts = '';
+    for (let m = 0; m < 12; m++) {
+      const x0 = X(E.CUM[m]) + 5, w = X(E.CUM[m + 1]) - X(E.CUM[m]) - 10, cx = x0 + w / 2;
+      s += '<rect x="' + x0 + '" y="' + Yv(cl.mRain[m]) + '" width="' + w + '" height="' + (top + CH - Yv(cl.mRain[m])) + '" fill="' + COL.waterSoft + '" rx="2"><title>' + cl.monthName(m) + ': ' + r0(cl.mRain[m]) + ' mm rain</title></rect>';
+      s += '<rect x="' + x0 + '" y="' + Yv(cl.mEros[m]) + '" width="' + w + '" height="' + (top + CH - Yv(cl.mEros[m])) + '" fill="' + COL.water + '" rx="2"><title>' + cl.monthName(m) + ': ' + r0(cl.mEros[m]) + ' mm on days of 12.7 mm or more</title></rect>';
+      pts += (m ? ' ' : '') + cx + ',' + Yv(cl.mEt0[m]);
+      s += '<text x="' + cx + '" y="' + (top + CH + 16) + '" text-anchor="middle" font-size="12" fill="' + COL.ink + '">' + cl.monthName(m) + '</text>';
+    }
+    s += '<polyline points="' + pts + '" fill="none" stroke="' + COL.et + '" stroke-width="2"/>';
+    pts.split(' ').forEach((p, m) => { const q = p.split(','); s += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="3.5" fill="' + COL.et + '" stroke="' + COL.panel + '" stroke-width="1.5"><title>' + cl.monthName(m) + ': ' + r0(cl.mEt0[m]) + ' mm evaporative demand</title></circle>'; });
+    y = top + CH + 30;
+    const fill = { 0: COL.bare, 1: COL.straw, 2: COL.crop, 3: COL.cover, 4: COL.peren };
+    list.forEach(st => {
+      s += '<text x="0" y="' + (y + 12) + '" font-size="13" font-weight="600" fill="' + COL.ink + '">' + esc(st.name) + '</text>'; y += 20;
+      const tl = st.tl;
+      for (let i = 0; i < tl.N; i++) {
+        s += '<text x="' + (L - 8) + '" y="' + (y + 12) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">Year ' + (i + 1) + '</text>';
+        let a = 0;
+        while (a < 365) {
+          const t0 = i * 365 + a, k = tl.st[t0], who = tl.ci[t0]; let b = a;
+          while (b < 365 && tl.st[i * 365 + b] === k && tl.ci[i * 365 + b] === who) b++;
+          const x0 = X(a), w = X(b) - x0;
+          let lab = k === 0 ? 'Bare soil' : k === 1 ? 'Residue' : k === 3 ? 'Cover crop' : C[st.rot[who].c].short;
+          s += '<rect x="' + x0 + '" y="' + y + '" width="' + Math.max(0.5, w) + '" height="16" fill="' + fill[k] + '"><title>' + lab + ': ' + cl.fmtDay(a) + ' to ' + cl.fmtDay(b - 1) + '</title></rect>';
+          if (w > lab.length * 6.5 + 8) s += '<text x="' + (x0 + w / 2) + '" y="' + (y + 12) + '" text-anchor="middle" font-size="10.5" fill="' + (k === 4 ? '#fff' : '#10231A') + '" pointer-events="none">' + lab + '</text>';
+          a = b;
+        }
+        y += 19;
+      }
+      y += 8;
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + y + '" role="img" aria-label="Monthly rain and evaporative demand above a calendar of ground cover for each rotation">' + s + '</svg>';
+  }
+
+  function anomFigure(cl) {
+    const L = 58, cw = 34, chh = 13, W = L + 12 * cw + 6, H = 22 + cl.n * chh + 34;
+    const mix = (a, b, t) => 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')';
+    const col = z => { const t = Math.min(1, Math.abs(z) / 2); return z < 0 ? mix([40, 40, 36], [242, 165, 65], t) : mix([40, 40, 36], [124, 198, 232], t); };
+    let s = '';
+    for (let m = 0; m < 12; m++) s += '<text x="' + (L + m * cw + cw / 2) + '" y="14" text-anchor="middle" font-size="11" fill="' + COL.muted + '">' + cl.monthName(m) + '</text>';
+    cl.gwAnom.forEach((row, i) => {
+      const y = 22 + i * chh;
+      s += '<text x="' + (L - 6) + '" y="' + (y + 10) + '" text-anchor="end" font-size="10" fill="' + COL.muted + '">' + cl.years[i].label + '</text>';
+      row.forEach((z, m) => { s += '<rect x="' + (L + m * cw) + '" y="' + y + '" width="' + (cw - 1) + '" height="' + (chh - 1) + '" fill="' + col(z) + '"><title>' + cl.monthName(m) + ' ' + cl.years[i].label + ': ' + (z > 0 ? '+' : '') + z.toFixed(1) + ' standard deviations</title></rect>'; });
+    });
+    const ly = 22 + cl.n * chh + 10;
+    for (let j = 0; j <= 8; j++) s += '<rect x="' + (L + j * 22) + '" y="' + ly + '" width="22" height="9" fill="' + col(-2 + j * 0.5) + '"/>';
+    s += '<text x="' + L + '" y="' + (ly + 21) + '" font-size="10" fill="' + COL.muted + '">much drier</text><text x="' + (L + 99) + '" y="' + (ly + 21) + '" text-anchor="middle" font-size="10" fill="' + COL.muted + '">normal</text><text x="' + (L + 198) + '" y="' + (ly + 21) + '" text-anchor="end" font-size="10" fill="' + COL.muted + '">much wetter</text>';
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="min-width:420px" role="img" aria-label="Soil wetness anomaly by month and year">' + s + '</svg>';
+  }
+
+  function renderRot() {
+    const cropOpts = id => Object.keys(C).map(k => '<option value="' + k + '"' + (k === id ? ' selected' : '') + '>' + C[k].name + '</option>').join('');
+    $('rot').innerHTML = S.rot.map((r, i) => {
+      const noCv = C[r.c].kind === 'fallow' || C[r.c].kind === 'perennial';
+      return '<div class="rotrow"><span class="yr">Year ' + (i + 1) + '</span><select id="rc' + i + '" aria-label="Crop in year ' + (i + 1) + '">' + cropOpts(r.c) + '</select><select id="rv' + i + '" aria-label="Cover crop after year ' + (i + 1) + '"' + (noCv ? ' disabled' : '') + '><option value="">No cover crop</option>' + Object.keys(CV).map(k => '<option value="' + k + '"' + (k === r.cv ? ' selected' : '') + '>+ ' + CV[k].short + '</option>').join('') + '</select>' + (S.rot.length > 1 ? '<button id="rx' + i + '" aria-label="Remove year ' + (i + 1) + '" title="Remove this year">×</button>' : '<span></span>') + '</div>';
+    }).join('');
+    S.rot.forEach((r, i) => {
+      $('rc' + i).onchange = e => { r.c = e.target.value; if (C[r.c].kind === 'fallow' || C[r.c].kind === 'perennial') r.cv = null; renderRot(); recompute(); };
+      $('rv' + i).onchange = e => { r.cv = e.target.value || null; recompute(); };
+      if ($('rx' + i)) $('rx' + i).onclick = () => { S.rot.splice(i, 1); renderRot(); recompute(); };
+    });
+    $('addyr').disabled = S.rot.length >= 6;
+  }
+  const EV = ['climate', 'calendar', 'years', 'method'];
+  const ICON = { field: '<path d="M12 21s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.500 15.400 12 21 12 21z"/><circle cx="12" cy="10.500" r="2.300"/>', result: '<path d="M12 21V11"/><path d="M12 13c0-4 2.500-6.500 7-7 0 4.500-2.500 7-7 7z"/><path d="M12 16c0-3-2-5-5.500-5.500C6.500 14 8.500 16 12 16z"/>', options: '<path d="M4 7h16M4 12h16M4 17h10"/>', evidence: '<path d="M4 20V4"/><path d="M4 20h16"/><path d="M7 15l4-4 3 2.500L19 8"/>' };
+  function setTab(id) {
+    if (id === 'evidence') id = S.ev || 'climate';
+    if (id === 'field') document.body.dataset.view = 'field';
+    else { document.body.dataset.view = 'results'; document.body.dataset.tab = id; $('scroll').scrollTop = 0; }
+    const sc = $('scroll'); sc.classList.remove('anim'); void sc.offsetWidth; sc.classList.add('anim');
+    if (window.innerWidth <= 900) { const lim = Math.round(window.innerHeight * 0.36) - 46; if (window.scrollY > lim) window.scrollTo(0, lim); }
+    const ev = EV.indexOf(id) >= 0; if (ev) S.ev = id;
+    document.body.dataset.group = id === 'field' ? 'field' : ev ? 'ev' : 'main';
+    document.querySelectorAll('#tabs [data-tab-btn]').forEach(b => b.setAttribute('aria-selected', b.dataset.tabBtn === document.body.dataset.tab ? 'true' : 'false'));
+    document.querySelectorAll('#dock [data-tab-btn]').forEach(b => b.setAttribute('aria-selected', b.dataset.tabBtn === id || (ev && b.dataset.tabBtn === 'evidence') ? 'true' : 'false'));
+    moveInk();
+  }
+  function moveInk() {
+    ['tabs', 'dock'].forEach(n => { const nav = $(n), ink = nav.querySelector('.ink'), b = nav.querySelector('[aria-selected=true]'); if (!ink) return; if (!b || !b.offsetWidth) { ink.style.opacity = 0; return; } ink.style.opacity = 1; ink.style.width = b.offsetWidth + 'px'; ink.style.transform = 'translateX(' + b.offsetLeft + 'px)'; });
+  }
+  const WIZ = [['rot', 'What do you grow here now?', 'One row per year of your rotation. Add a cover crop if you already grow one.'], ['soil', 'Your soil and how you work it', 'A rough answer is fine. You can change any of this later.'], ['pri', 'What matters most to you?', '0 means ignore it, 5 means it matters most. These weights decide which rotation scores highest.'], ['excl', 'Anything you cannot grow or sell?', 'Tap a crop to rule it out. Skip this if everything is possible.']];
+  function wizard(i) {
+    S.wiz = i; document.body.classList.add('wiz');
+    document.querySelectorAll('[data-wiz]').forEach(b => { const on = b.dataset.wiz === WIZ[i][0]; b.classList.toggle('cur', on); if (on) b.open = true; });
+    $('wizn').textContent = 'Step ' + (i + 1) + ' of ' + WIZ.length; $('wizplace').textContent = S.name;
+    $('wizt').textContent = WIZ[i][1]; $('wizd').textContent = WIZ[i][2]; $('wizbar').style.width = (i + 1) / WIZ.length * 100 + '%';
+    $('wizback').style.visibility = i ? 'visible' : 'hidden'; $('wiznext').textContent = i === WIZ.length - 1 ? 'Show my results' : 'Next';
+    $('setup').scrollTop = 0;
+  }
+  function wizEnd() {
+    S.wiz = null; document.body.classList.remove('wiz'); save();
+    document.querySelectorAll('[data-wiz]').forEach(b => { b.classList.remove('cur'); b.open = b.dataset.wiz === 'rot' || b.dataset.wiz === 'pri'; });
+    setTab('result'); if (map) goStep(0, true); moveInk();
+  }
+  let introPick = null;
+  function intro() {
+    const el = $('intro'), off = () => { document.body.classList.remove('intro'); S.intro = false; introPick = null; };
+    if (!el) { off(); return; }
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.remove(); off(); return; }
+    S.intro = true; let phase = 1, tick, y = 2001, pins = [];
+    const fmt = c => Math.abs(c.lat).toFixed(2) + '°' + (c.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(c.lng).toFixed(2) + '°' + (c.lng < 0 ? 'W' : 'E');
+    if (map) {
+      map.setView([DEMOS[0].lat, DEMOS[0].lon], 5.5, { animate: false });
+      const ll = $('introll'), upd = () => { ll.textContent = fmt(map.getCenter()); }; upd(); map.on('move', upd);
+    }
+    const bar = $('introbar'), yr = $('introyr'), big = $('introbig');
+    setTimeout(() => {
+      bar.style.transition = 'transform 2.6s linear'; bar.style.transform = 'scaleX(1)';
+      tick = setInterval(() => { yr.textContent = y; big.textContent = y; if (++y > 2025) clearInterval(tick); }, 104);
+      if (map && phase === 1) map.flyTo([DEMOS[0].lat, DEMOS[0].lon], 9.5, { duration: 3.4, easeLinearity: 0.1 });
+    }, 600);
+    $('introchips').innerHTML = DEMOS.map(d => '<button class="chip" data-demo="' + d.id + '">' + d.short + '</button>').join('');
+    const end = () => {
+      el.classList.add('dark');
+      setTimeout(() => {
+        off(); wizard(0);
+        if (map) { map.stop(); pins.forEach(m => map.removeLayer(m)); goStep(0, true); }
+        moveInk(); el.classList.add('out'); setTimeout(() => el.remove(), 900);
+      }, 540);
+    };
+    const pick = (lat, lon, demo) => {
+      if (phase === 3) return; phase = 3; clearInterval(tick); el.classList.add('choose', 'go');
+      setPlace(lat, lon, demo);
+      const far = map && map.distance(map.getCenter(), [S.lat, S.lon]) > 60000;
+      if (map) { map.stop(); map.flyTo([S.lat, S.lon], 12, { duration: far ? 3 : 1.5, easeLinearity: 0.15 }); }
+      setTimeout(end, map ? (far ? 2750 : 1300) : 150);
+    };
+    const choose = () => {
+      if (phase !== 1) return; phase = 2; el.classList.add('choose'); introPick = pick;
+      if (map) DEMOS.forEach(d => { const m = window.L.marker([d.lat, d.lon], { icon: window.L.divIcon({ className: 'cpin', html: '<i></i><span class="' + d.lab + '">' + d.short + '</span>', iconSize: [0, 0] }) }).addTo(map); m.on('click', () => pick(d.lat, d.lon, d)); pins.push(m); });
+    };
+    $('introchips').addEventListener('click', e => { const b = e.target.closest('[data-demo]'); if (b) { e.stopPropagation(); const d = DEMOS.find(x => x.id === b.dataset.demo); pick(d.lat, d.lon, d); } });
+    $('introgo').onclick = e => { e.stopPropagation(); if (map) { const c = map.getCenter(); const d = DEMOS.find(x => Math.abs(x.lat - c.lat) < 0.02 && Math.abs(x.lon - c.lng) < 0.02); pick(c.lat, c.lng, d || null); } else pick(DEMOS[0].lat, DEMOS[0].lon, DEMOS[0]); };
+    setTimeout(choose, 4200); el.addEventListener('click', e => { if (phase === 1) choose(); });
+  }
+  let map, marker, cell, overlay, co = [], step = 0, playing = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const GIBS = { ndvi: ['MODIS_Terra_NDVI_8Day', 'GoogleMapsCompatible_Level9', 'png', 9], smap: ['SMAP_L4_Analyzed_Root_Zone_Soil_Moisture', 'GoogleMapsCompatible_Level6', 'png', 6], imerg: ['IMERG_Precipitation_Rate', 'GoogleMapsCompatible_Level6', 'png', 6] };
+  const STEPS = ['', 'ndvi', 'smap', 'imerg'];
+  function setLayer() {
+    if (!map) return; const old = overlay; overlay = null;
+    if (old) { old.setOpacity(0); setTimeout(() => map.removeLayer(old), 950); }
+    const g = GIBS[$('layer').value]; if (!g) return;
+    const lyr = window.L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/' + g[0] + '/default/' + $('ldate').value + '/' + g[1] + '/{z}/{y}/{x}.' + g[2], { maxNativeZoom: g[3], maxZoom: 17, opacity: 0, className: 'ovl', attribution: 'NASA GIBS' }).addTo(map);
+    overlay = lyr; setTimeout(() => { if (overlay === lyr) lyr.setOpacity(0.72); }, 60);
+  }
+  function cellBounds() { const cy = Math.round(S.lat / 0.5) * 0.5, cx = Math.round(S.lon / 0.625) * 0.625; return [[cy - 0.25, cx - 0.3125], [cy + 0.25, cx + 0.3125]]; }
+  function callout(html) { co.push(window.L.marker([S.lat, S.lon], { interactive: false, keyboard: false, icon: window.L.divIcon({ className: 'co', html: '<i></i><div>' + html + '</div>', iconSize: [0, 0] }) }).addTo(map)); }
+
+  function story() {
+    if (!map || S.intro) return; co.forEach(m => map.removeLayer(m)); co = [];
+    const A = LAST; if (!A) return; const cl = A.cl, k = $('layer').value, d = $('ldate').value, cur = A.current;
+    const ind = key => cl.indicators.find(i => i.key === key).mean;
+    if (k === '') callout('<b>' + esc(S.name) + '</b>' + esc(E.rotLabel(cur.rot)) + '<br>Soil sits bare ' + r0(cur.m.bare) + ' days a year, ' + bareMonths(cur, cl));
+    else if (k === 'ndvi') callout('<b>Crop greenness, ' + d + '</b>Greener means denser plants.<br>Living roots here ' + r0(cur.m.living) + ' days a year' + (A.alts[0] ? ', ' + r0(A.alts[0].m.living) + ' with the top alternative' : ''));
+    else if (k === 'smap') { const dry = cl.gwAnom ? cl.gwAnom.map((r, i) => [E.mean(r), cl.years[i].label]).sort((a, b) => a[0] - b[0]).slice(0, 3).map(x => x[1]).join(', ') : ''; callout('<b>Soil moisture, ' + d + '</b>Crops here ran short of ' + pc(cur.m.relMean) + ' of the water they wanted' + (dry ? '<br>Driest years: ' + dry : '')); }
+    else callout('<b>Rainfall, ' + d + '</b>' + r0(ind('rain')) + ' mm a year here, ' + ind('heavy').toFixed(1) + ' heavy-rain days<br>' + pc(cur.m.bareErosShare) + ' of the heavy rain lands on bare soil');
+  }
+
+  function goStep(i, quick) {
+    if (!map || S.intro) return; step = (i + STEPS.length) % STEPS.length; const k = STEPS[step];
+    if ($('layer').value !== k) { $('layer').value = k; setLayer(); }
+    map.invalidateSize();
+    const cb = cellBounds(), b = k === '' ? [[S.lat - 0.035, S.lon - 0.05], [S.lat + 0.035, S.lon + 0.05]] : k === 'ndvi' ? cb : [[cb[0][0] - 1.5, cb[0][1] - 2], [cb[1][0] + 1.5, cb[1][1] + 2]];
+    const wide = window.innerWidth > 900, wz = S.wiz != null, o = wz ? { paddingTopLeft: [16, 40], paddingBottomRight: [wide ? Math.round(window.innerWidth * 0.07) + 490 : 16, wide ? 40 : Math.round(window.innerHeight * 0.62)], maxZoom: 13 } : { paddingTopLeft: [wide ? 376 : 16, wide ? 190 : 118], paddingBottomRight: [wide ? document.querySelector('.res').offsetWidth + 36 : 16, wide ? 110 : 60], maxZoom: 13 };
+    if (quick) map.fitBounds(b, o); else map.flyToBounds(b, Object.assign({ duration: 1.8 }, o));
+    story();
+  }
+  let zones = [];
+  function drawZones() {
+    if (!map) return; zones.forEach(z => map.removeLayer(z)); zones = []; const T = S.terrain; if (!T) return;
+    const dl = T.step / 111320, dn = T.step / (111320 * Math.cos(S.lat * Math.PI / 180));
+    T.slopes.forEach((v, i) => { const r = Math.floor(i / T.n), c = i % T.n, la = S.lat + (2 - r) * dl, lo = S.lon + (c - 2) * dn; zones.push(window.L.rectangle([[la - dl / 2, lo - dn / 2], [la + dl / 2, lo + dn / 2]], { stroke: T.low[i], color: '#7CC6E8', weight: 2, fillColor: v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#3E8E5A', fillOpacity: 0.3, interactive: false }).addTo(map)); });
+  }
+  function setPlaying(on) { playing = on; $('play').textContent = on ? 'Pause tour' : 'Play tour'; $('play').setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  function setPlace(lat, lon, demo, keep) {
+    lon = ((lon + 180) % 360 + 360) % 360 - 180; lat = Math.max(-60, Math.min(70, lat));
+    S.lat = Math.round(lat * 100) / 100; S.lon = Math.round(lon * 100) / 100; S.demo = demo ? demo.id : null;
+    S.name = demo ? demo.name : 'Your field';
+    if (demo && !keep) { S.rot = demo.rot.map(r => ({ c: r.c, cv: r.cv || null })); S.soil = demo.soil; S.slope = demo.slope; S.till = demo.till; $('soil').value = S.soil; $('slope').value = S.slope; $('till').value = S.till; renderRot(); }
+    $('lat').value = S.lat; $('lon').value = S.lon; $('demo').value = S.demo || '';
+    S.terrain = null; S.soilSug = null; S.touched = {}; $('sug').innerHTML = ''; drawZones();
+    if (map) { marker.setLatLng([S.lat, S.lon]); cell.setBounds(cellBounds()); goStep(0, true); }
+    load();
+  }
+  function init() {
+    const fill = (id, obj) => { $(id).innerHTML = Object.keys(obj).map(k => '<option value="' + k + '">' + obj[k].name + '</option>').join(''); };
+    fill('soil', E.SOILS); fill('slope', E.SLOPES); fill('till', E.TILLAGE);
+    $('demo').innerHTML = DEMOS.map(d => '<option value="' + d.id + '">' + d.name + '</option>').join('') + '<option value="">Your own point</option>';
+    $('demo').onchange = e => { const d = DEMOS.find(x => x.id === e.target.value); if (d) setPlace(d.lat, d.lon, d); };
+    $('tabs').innerHTML = TABS.map(t => '<button data-tab-btn="' + t[0] + '">' + t[1] + '</button>').join('') + '<span class="ink"></span>';
+    $('tabs').querySelectorAll('button').forEach(b => { if (EV.indexOf(b.dataset.tabBtn) >= 0) b.className = 'ev'; });
+    $('dock').innerHTML = [['field', 'Field'], ['result', 'Result'], ['options', 'Options'], ['evidence', 'Evidence']].map(t => '<button data-tab-btn="' + t[0] + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[t[0]] + '</svg>' + t[1] + '</button>').join('') + '<span class="ink"></span>';
+    document.querySelectorAll('[data-tab-btn]').forEach(b => b.onclick = () => setTab(b.dataset.tabBtn));
+    $('out').addEventListener('click', e => {
+      const o = e.target.closest('[data-sel]'); if (o) { S.sel = +o.dataset.sel; S.animOpt = true; S.keepAnim = $('scroll').classList.contains('anim'); render(); return; }
+      const g = e.target.closest('[data-go]'); if (g) setTab(g.dataset.go);
+    });
+    $('weights').innerHTML = DIMS.map(d => '<div class="slider"><label for="w_' + d[0] + '">' + d[1] + '</label><input id="w_' + d[0] + '" type="range" min="0" max="5" step="1" value="3"><span class="num" id="wv_' + d[0] + '">3</span></div>').join('');
+    DIMS.forEach(d => { $('w_' + d[0]).oninput = e => { S.weights[d[0]] = +e.target.value; $('wv_' + d[0]).textContent = e.target.value; recompute(); }; });
+    const ex = Object.keys(C).filter(k => k !== 'fallow').map(k => [k, C[k].short]).concat(Object.keys(CV).map(k => [k, CV[k].short]));
+    $('excl').innerHTML = ex.map(x => '<button class="chip" data-id="' + x[0] + '" aria-pressed="false">' + x[1] + '</button>').join('');
+    document.querySelectorAll('#excl .chip').forEach(b => b.onclick = () => { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); if (on) S.exclude.add(b.dataset.id); else S.exclude.delete(b.dataset.id); recompute(); });
+    ['soil', 'slope', 'till'].forEach(id => { $(id).onchange = e => { S[id] = e.target.value; S.touched[id] = true; suggest(); recompute(); }; });
+    $('sug').addEventListener('click', e => { const b = e.target.closest('[data-use]'); if (!b) return; if (b.dataset.use === 'soil') { S.soil = S.soilSug.cls; $('soil').value = S.soil; } else { S.slope = S.terrain.cls; $('slope').value = S.slope; } S.touched[b.dataset.use] = true; suggest(); recompute(); });
+    $('croptab').innerHTML = '<table><thead><tr><th>Crop</th><th>Family</th><th>Peak water use (Kc)</th><th>Heat limit</th><th>Warmth to mature</th><th>Nitrogen credit</th><th>Residue</th><th>Drought tolerance</th></tr></thead><tbody>' + Object.keys(C).filter(k => k !== 'fallow').map(k => { const c = C[k]; return '<tr><td>' + c.name + '</td><td>' + c.fam + '</td><td class="num">' + c.kc[1] + '</td><td class="num">' + (c.heatT ? c.heatT + ' °C' : '') + '</td><td class="num">' + (c.gdd ? c.gdd + ' °C days' + (c.base !== undefined ? ' above ' + c.base + ' °C' : ' above 0 °C from 1 Jan') : '') + '</td><td class="num">' + c.nfix + ' kg N/ha</td><td class="num">' + c.res + ' of 5</td><td class="num">' + c.dt + ' of 5</td></tr>'; }).join('') + '</tbody></table>';
+    $('irrig').onchange = e => { S.irrigated = e.target.checked; recompute(); };
+    $('stock').onchange = e => { S.livestock = e.target.checked; recompute(); };
+    $('srain').oninput = e => { S.scen.rain = +e.target.value; $('srainv').textContent = (S.scen.rain > 0 ? '+' : '') + S.scen.rain + '%'; recompute(); };
+    $('stemp').oninput = e => { S.scen.temp = +e.target.value; $('stempv').textContent = '+' + S.scen.temp + '°'; recompute(); };
+    $('addyr').onclick = () => { if (S.rot.length < 6) { S.rot.push({ c: 'soy', cv: null }); renderRot(); recompute(); } };
+    $('load').onclick = () => { const la = parseFloat($('lat').value), lo = parseFloat($('lon').value); if (isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180) { setPlace(la, lo, null); setTab('result'); } else status('err', 'Enter a latitude between -60 and 70 and a longitude between -180 and 180.'); };
+    $('wizback').onclick = () => { if (S.wiz > 0) wizard(S.wiz - 1); };
+    $('wiznext').onclick = () => { if (S.wiz < WIZ.length - 1) wizard(S.wiz + 1); else wizEnd(); };
+    $('ldate').max = new Date(Date.now() - 3 * 864e5).toISOString().slice(0, 10);
+    $('layer').onchange = () => { setPlaying(false); setLayer(); goStep(STEPS.indexOf($('layer').value)); };
+    $('ldate').onchange = () => { setLayer(); story(); };
+    $('play').onclick = () => { setPlaying(!playing); if (playing) goStep(step + 1); };
+    setInterval(() => { if (playing && map && LAST && !S.intro && S.wiz == null && !document.hidden) goStep(step + 1); }, 9000);
+    if (window.L) {
+      map = window.L.map('map', { attributionControl: false, zoomSnap: 0.25, minZoom: 3, worldCopyJump: true, maxBounds: [[-85, -1000], [85, 1000]], maxBoundsViscosity: 1 }).setView([DEMOS[0].lat, DEMOS[0].lon], 7);
+      window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 17, attribution: 'Imagery © Esri, Maxar, Earthstar Geographics' }).addTo(map);
+      window.L.control.attribution({ prefix: false }).addTo(map);
+      cell = window.L.rectangle([[0, 0], [1, 1]], { color: '#EEF2E6', weight: 1.5, fillOpacity: 0.03, dashArray: '6 5', interactive: false }).addTo(map);
+      cell.bindTooltip('NASA POWER grid cell, about 50 km', { permanent: true, direction: 'bottom', className: 'cell' });
+      marker = window.L.marker([DEMOS[0].lat, DEMOS[0].lon], { interactive: false, keyboard: false, icon: window.L.divIcon({ className: 'pin', iconSize: [0, 0] }) }).addTo(map);
+      map.on('dragstart', () => setPlaying(false));
+      map.on('click', e => { if (S.intro) { if (introPick) introPick(e.latlng.lat, e.latlng.lng, null); return; } setPlace(e.latlng.lat, e.latlng.lng, null); });
+      window.addEventListener('resize', () => map.invalidateSize());
+    } else { $('play').hidden = true;
+    }
+    $('reset').onclick = () => { try { localStorage.removeItem(KEY); } catch (e) {} window.location.reload(); };
+    const saved = restore();
+    if (saved) { const el = $('intro'); if (el) el.remove(); document.body.classList.remove('intro'); S.intro = false; } else intro();
+    setTab('result');
+    window.addEventListener('resize', moveInk); setTimeout(moveInk, 400); if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveInk);
+    if (saved) setPlace(saved.lat, saved.lon, DEMOS.find(d => d.id === saved.demo) || null, true); else setPlace(DEMOS[0].lat, DEMOS[0].lon, DEMOS[0]);
+  }
+  init();
+})();
+
+</script>
+</body>
+</html>

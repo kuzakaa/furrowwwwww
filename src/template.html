@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Furrow Rotation Explorer</title>
+<meta name="theme-color" content="#171816">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body class="intro" data-view="results" data-tab="result">
+<div id="intro">
+  <div class="shade"></div>
+  <div class="ghost" id="introbig" aria-hidden="true">2001</div>
+  <div class="hair h"></div><div class="hair v"></div>
+  <div class="ro tl">NASA POWER weather record, 2001 to 2025</div>
+  <div class="ret"><i></i></div>
+  <div class="ro tr num" id="introll"></div>
+  <div class="ro bl">Satellite imagery: Esri World Imagery</div>
+  <div class="ro br sk">Tap to skip</div>
+  <div class="lock">
+    <div class="nm" aria-label="Furrow"><span>F</span><span>u</span><span>r</span><span>r</span><span>o</span><span>w</span></div>
+    <p class="ln">Crop rotations, tested against 25 years of NASA weather records</p>
+    <div class="ruler"><i id="introbar"></i></div>
+    <div class="ends"><span>2001</span><span id="introyr">2001</span><span>2025</span></div>
+    <p class="by">Made by Valerii and Veta</p>
+  </div>
+  <div class="pick">
+    <h2>Find your field</h2>
+    <p>Drag the map in any direction, then tap a spot or press the button.</p>
+    <button class="btn" id="introgo">Start with this spot</button>
+    <div class="ex"><span>Or jump to an example</span><div class="chips" id="introchips"></div></div>
+  </div>
+</div>
+<div id="map" role="application" aria-label="Satellite map. Click to choose a field."></div>
+<header class="bar glass">
+  <div class="brand"><svg viewBox="0 0 34 22" aria-hidden="true"><path d="M1 5c5-4 9 4 16 0s11 4 16 0M1 11c5-4 9 4 16 0s11 4 16 0M1 17c5-4 9 4 16 0s11 4 16 0" fill="none" stroke="#8FD694" stroke-width="3" stroke-linecap="round"/></svg>Furrow</div>
+  <select id="demo" aria-label="Example fields"></select>
+  <div class="src" id="srcline">NASA POWER daily record, 2001 to 2025</div>
+</header>
+<div class="mapbox glass">
+  <div class="field"><label for="layer">NASA layer</label>
+    <select id="layer">
+      <option value="">Satellite photo</option>
+      <option value="ndvi">Greenness (MODIS NDVI)</option>
+      <option value="smap">Soil moisture (SMAP)</option>
+      <option value="imerg">Rainfall (GPM IMERG)</option>
+    </select></div>
+  <div class="field dt"><label for="ldate">Date</label><input id="ldate" type="date" value="2025-07-12" min="2015-04-01"></div>
+  <button class="btn ghost" id="play" aria-pressed="true">Pause tour</button>
+</div>
+<aside class="setup glass" id="setup">
+  <div class="wizhead"><div class="wp"><i id="wizbar"></i></div><div class="wn"><span id="wizn"></span><span id="wizplace"></span></div><h2 id="wizt"></h2><p id="wizd"></p></div>
+  <details class="box" open><summary>Field</summary>
+    <p class="small muted">Tap the map, pick an example in the top bar, or type coordinates.</p>
+    <div class="row">
+      <div class="field"><label for="lat">Latitude</label><input id="lat" type="number" step="0.01" min="-60" max="70"></div>
+      <div class="field"><label for="lon">Longitude</label><input id="lon" type="number" step="0.01" min="-180" max="180"></div>
+      <button class="btn" id="load">Load</button>
+    </div>
+    <div class="row"><button class="btn ghost" id="reset">Start over from the intro</button></div>
+    <p class="small muted">Your choices are saved on this device, so a reload keeps them.</p>
+  </details>
+  <details class="box" open data-wiz="rot"><summary>What you grow now</summary>
+    <div id="rot"></div>
+    <div class="row"><button class="btn ghost" id="addyr">Add a year</button></div>
+  </details>
+  <details class="box" open data-wiz="pri"><summary>Your priorities</summary>
+    <div id="weights"></div>
+    <p class="small muted">0 means ignore, 5 means most important. The match score is the weighted average of the five scores.</p>
+  </details>
+  <details class="box" data-wiz="soil"><summary>Soil and management</summary>
+    <div class="row">
+      <div class="field"><label for="soil">Soil texture</label><select id="soil"></select></div>
+      <div class="field"><label for="slope">Slope</label><select id="slope"></select></div>
+    </div>
+    <div class="field"><label for="till">Tillage</label><select id="till"></select></div>
+    <label class="check"><input type="checkbox" id="irrig"> I can irrigate this field</label>
+    <label class="check"><input type="checkbox" id="stock"> I have livestock that can use forage</label>
+    <div id="sug"></div>
+    <p class="small muted">Look up your soil at <a href="https://websoilsurvey.nrcs.usda.gov/app/">Web Soil Survey</a> (US) or <a href="https://soilgrids.org">SoilGrids</a>.</p>
+  </details>
+  <details class="box" data-wiz="excl"><summary>Crops you cannot grow or sell</summary>
+    <div class="chips" id="excl"></div>
+  </details>
+  <details class="box"><summary>Sensitivity test</summary>
+    <div class="slider"><label for="srain">Rainfall</label><input id="srain" type="range" min="-30" max="30" step="5" value="0"><span class="num" id="srainv">0%</span></div>
+    <div class="slider"><label for="stemp">Temperature</label><input id="stemp" type="range" min="0" max="3" step="0.5" value="0"><span class="num" id="stempv">+0°</span></div>
+    <p class="small muted">Replays all 25 years wetter, drier or warmer and rescores every rotation. A stress test of the past record, not a climate forecast.</p>
+  </details>
+  <div class="wizfoot"><button class="btn ghost" id="wizback">Back</button><button class="btn" id="wiznext">Next</button></div>
+</aside>
+<section class="res glass">
+  <nav class="tabs" id="tabs" aria-label="Results"></nav>
+  <div class="scrollarea" id="scroll">
+    <div class="banner" id="status"><span class="spin"></span>Fetching 25 years of daily NASA POWER data…</div>
+    <div id="out"></div>
+    <div class="pane" data-pane="method">
+      <h2>What the terms mean</h2>
+      <dl>
+        <div><dt>Evapotranspiration (ET)</dt><dd>Water leaving the field as evaporation from soil plus water plants draw up and release through their leaves. ET0 is the reference amount a well-watered grass surface would use; each crop uses a share of it that changes through its season.</dd></div>
+        <div><dt>Unmet water demand</dt><dd>The share of the water a crop wanted that the soil could not supply. Furrow tracks a daily soil-water account for your field: rain goes in, crop water use and runoff come out.</dd></div>
+        <div><dt>Soil moisture anomaly</dt><dd>How wet or dry the soil was compared with what is normal for that place and month. A dry anomaly in July means drier than a usual July, not drier than a desert.</dd></div>
+        <div><dt>Heavy rain on bare soil</dt><dd>Furrow counts rain on days with 12.7 mm or more, the cut-off the RUSLE erosion method uses to decide which storms matter. True erosivity depends on how hard the rain falls within half an hour, which daily data cannot show, so treat this as a rough exposure measure, not an erosion estimate.</dd></div>
+        <div><dt>Growing degree days</dt><dd>A running total of useful warmth. Each crop needs a certain total to mature, so this tells you whether a crop fits between your last spring frost and first autumn frost.</dd></div>
+        <div><dt>NDVI</dt><dd>A greenness score satellites calculate from red and near-infrared light. Dense healthy crops score high, bare soil scores low. Choose the greenness layer on the map to see it.</dd></div>
+        <div><dt>Cover crop</dt><dd>A crop grown between cash crops to protect and feed the soil, not to sell. Cereal rye survives winter; legumes such as vetch and clover also add nitrogen.</dd></div>
+        <div><dt>Satellite versus ground data</dt><dd>Satellites see every field on Earth regularly but in coarse blocks and only the top few centimetres of soil. A rain gauge or soil probe is exact but covers one spot. The best picture uses both, which is why Furrow asks for your soil and your knowledge.</dd></div>
+      </dl>
+      <h2>How Furrow works, and where it stops</h2>
+      <div class="limits">
+        <div class="box"><h3>What it does</h3><ul>
+          <li>Downloads daily maximum and minimum temperature, precipitation, root-zone soil wetness, sunlight reaching the ground, wind and humidity for your point from NASA POWER, 2001 to 2025. The sunlight values come from NASA's CERES satellite instruments.</li>
+          <li>Works out frost dates, heat, heavy rain, dry spells and evaporative demand (FAO Penman-Monteith), and tests each for a trend (Theil-Sen slope, Mann-Kendall test).</li>
+          <li>Builds crop calendars from your site's own temperatures using growing degree days, so sowing and harvest dates move with your climate.</li>
+          <li>Replays every rotation through all 25 years with a daily soil-water account, then scores water, soil, storm exposure, market fit and resilience.</li>
+          <li>Groups the 25 seasons into kinds of year two ways, with k-means clustering and with a simple thirds rule, and reports how far they agree.</li>
+          <li>Reshuffles the 25 years 300 times (a bootstrap) to see how often each alternative still outscores your current rotation.</li>
+          <li>Reads a 90 m elevation model on a 5 by 5 grid around your point to find steep ground and frost-prone hollows, and reads SoilGrids for a soil texture suggestion.</li>
+        </ul></div>
+        <div class="box"><h3>What it cannot see</h3><ul>
+          <li>NASA POWER describes a grid cell about 50 km across. It gives your district's climate, not the frost pocket at the bottom of your field.</li>
+          <li>Soil texture comes from you or from a 250 m global map. A soil test for organic matter, pH and compaction will always beat a texture class.</li>
+          <li>Market fit uses generic 1 to 5 ratings, not your local prices, contracts or input costs. It is not an income forecast.</li>
+          <li>Soil health is a proxy built from living-root days, legume nitrogen, residue, crop diversity and bare-soil days. Furrow does not measure organic matter or soil life.</li>
+          <li>Storm exposure uses daily rain totals, not measured storm intensity.</li>
+          <li>Crop traits are generic values in the range given by FAO Irrigation and Drainage Paper 56 and extension guides, not your varieties. The table below shows every value used.</li>
+          <li>Trend tags are exploratory: 25 years is a short record.</li>
+          <li>Pests, diseases, weeds, herbicide carry-over, equipment and labour are not modelled.</li>
+          <li>Calendars assume a temperate, frost-defined season. Results in the tropics are rough.</li>
+          <li>The model has not been checked against field trials or by an agronomist.</li>
+        </ul></div>
+        <div class="box"><h3>Who decides</h3><ul>
+          <li>You do. Furrow shows patterns and possibilities; it does not give instructions.</li>
+          <li>Take any option that interests you to an agronomist or extension adviser, and try it on a strip before the whole field.</li>
+          <li>Every rotation lists what needs local review before acting.</li>
+        </ul></div>
+      </div>
+      <details class="more"><summary>Every crop value the model uses</summary><div class="scroll" id="croptab"></div></details>
+      <footer>
+      Data: <a href="https://power.larc.nasa.gov/">NASA POWER</a> daily agroclimatology (T2M_MAX, T2M_MIN, PRECTOTCORR, GWETROOT, ALLSKY_SFC_SW_DWN, WS2M, RH2M). Elevation: Copernicus DEM (ESA) through <a href="https://open-meteo.com/">Open-Meteo</a>. Soil texture: <a href="https://soilgrids.org">SoilGrids</a> (ISRIC). Map layers: <a href="https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api">NASA GIBS</a> (MODIS, SMAP, GPM IMERG). Satellite base map: Esri World Imagery. Crop coefficients follow FAO Irrigation and Drainage Paper 56; reference evapotranspiration uses the FAO Penman-Monteith equation, with Hargreaves as a fallback. Built for the 2026 NASA Space Apps Challenge. NASA does not endorse this tool.
+    </footer>
+    </div>
+  </div>
+</section>
+<nav class="dock glass" id="dock" aria-label="Sections"></nav>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/*__ENGINE__*/
+</script>
+<script>
+/*__UI__*/
+</script>
+</body>
+</html>
