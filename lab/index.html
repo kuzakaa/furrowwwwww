@@ -690,6 +690,7 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 .gt[open]>summary::after{transform:rotate(45deg)}
 .gt p{margin:0 0 12px;font-size:14.5px;line-height:1.45;animation:paneIn .3s ease both}
 @media (max-width:760px){.flow,.cando,.gloss{grid-template-columns:1fr}}
+.sug.live{background:rgba(163,230,53,.08);border-color:rgba(163,230,53,.35)}
 
 </style>
 </head>
@@ -777,6 +778,7 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
       <div class="field"><label for="soil">Soil texture</label><select id="soil"></select></div>
     </div>
     <div id="sugsoil"></div>
+    <div id="livewx"></div>
     <div class="explain-row"><button class="why" data-x="soil">What does this mean?</button><div class="explain" id="x_soil"><p id="soiltxt"></p><p>Texture sets how much water the root zone can store, which drives drought stress in the model.</p><p class="small">Not sure? <a href="https://soilgrids.org" target="_blank" rel="noopener">SoilGrids map</a> · <a href="https://websoilsurvey.nrcs.usda.gov/app/" target="_blank" rel="noopener">Web Soil Survey (US)</a> · <a href="https://en.wikipedia.org/wiki/Soil_texture" target="_blank" rel="noopener">Soil texture by feel</a></p></div></div>
     <div class="slider"><label for="slopep">Slope</label><input id="slopep" type="range" min="0" max="20" step="0.5" value="3"><span class="num" id="slopev">3%</span></div>
     <div id="sugslope"></div>
@@ -1968,13 +1970,28 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
     T.slopes.forEach((v, i) => { const r = Math.floor(i / T.n), c = i % T.n, la = S.lat + (2 - r) * dl, lo = S.lon + (c - 2) * dn; const z = window.L.rectangle([[la - dl / 2, lo - dn / 2], [la + dl / 2, lo + dn / 2]], { stroke: true, color: T.low[i] ? '#7CC6E8' : 'rgba(255,255,255,.85)', weight: T.low[i] ? 3 : 1.2, fillColor: v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#5FBF73', fillOpacity: 0.42, interactive: true }).addTo(map); z.bindTooltip(v.toFixed(1) + '% slope' + (T.low[i] ? ', low spot' : ''), { direction: 'top' }); zones.push(z); });
   }
   function setPlaying(on) { playing = on; $('play').textContent = on ? 'Pause tour' : 'Play tour'; $('play').setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  const PROXY = 'https://still-cell-0930.kuzaka.workers.dev';
+  function liveWx() {
+    const box = $('livewx'), lat = S.lat, lon = S.lon, d = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+    box.innerHTML = '<div class="sug"><span>Loading the last 30 days of weather at your field…</span></div>';
+    fetch(PROXY + '/weather?lat=' + lat + '&lon=' + lon + '&from=' + d(30) + '&to=' + d(1)).then(r => r.json()).then(j => {
+      if (lat !== S.lat || lon !== S.lon) return;
+      const s = j.series || {}, v = k => (s[k] || []).map(x => x[1]).filter(x => x != null && x > -900);
+      const sum = a => a.reduce((x, y) => x + y, 0), rain = sum(v('precip_24h:mm')), et = sum(v('evapotranspiration_24h:mm')), t = v('t_2m:C'), sm = v('soil_moisture_index_-15cm:idx');
+      if (!t.length) throw 0;
+      const bal = rain - et, smi = sm.length ? sm[sm.length - 1] : null;
+      const wet = smi == null ? '' : smi < 0.3 ? 'dry' : smi < 0.7 ? 'moderately moist' : smi <= 1.05 ? 'moist' : 'very wet';
+      S.live = { rain, et, bal, temp: sum(t) / t.length, smi };
+      box.innerHTML = '<div class="sug live"><span><b>Your field over the last 30 days</b> (Meteomatics): ' + r0(rain) + ' mm of rain, ' + r0(et) + ' mm of water lost from soil and plants, average ' + (sum(t) / t.length).toFixed(1) + ' °C' + (wet ? ', topsoil now <b>' + wet + '</b>' : '') + '. ' + (bal >= 0 ? 'Rain covered what the field used, with ' + r0(bal) + ' mm to spare.' : 'The field used ' + r0(-bal) + ' mm more than it got, so the soil is drying out.') + '</span></div>';
+    }).catch(() => { if (lat === S.lat && lon === S.lon) box.innerHTML = ''; });
+  }
   function setPlace(lat, lon, demo, keep) {
     lon = ((lon + 180) % 360 + 360) % 360 - 180; lat = Math.max(-60, Math.min(70, lat));
     S.lat = Math.round(lat * 100) / 100; S.lon = Math.round(lon * 100) / 100; S.demo = demo ? demo.id : null;
     S.name = demo ? demo.name : 'Your field';
     if (demo && !keep) { S.rot = demo.rot.map(r => ({ c: r.c, cv: r.cv || null })); S.soil = demo.soil; setSlope(demo.slope); S.till = demo.till; $('soil').value = S.soil; $('till').value = S.till; renderRot(); }
     $('lat').value = S.lat; $('lon').value = S.lon; $('demo').value = S.demo || '';
-    S.terrain = null; S.soilSug = null; S.ndvi = null; S.touched = {}; $('sugsoil').innerHTML = ''; $('sugslope').innerHTML = ''; drawZones();
+    S.terrain = null; S.soilSug = null; S.ndvi = null; S.touched = {}; $('sugsoil').innerHTML = ''; $('sugslope').innerHTML = ''; drawZones(); liveWx();
     if (map) { marker.setLatLng([S.lat, S.lon]); cell.setBounds(cellBounds()); goStep(0, true); }
     load();
   }

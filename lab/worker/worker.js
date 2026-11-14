@@ -1,0 +1,21 @@
+const ALLOW = ['https://kuzakaa.github.io'];
+const MM = 'https://api.meteomatics.com';
+const PARAMS = 't_2m:C,precip_24h:mm,evapotranspiration_24h:mm,soil_moisture_index_-15cm:idx';
+const cors = o => ({ 'Access-Control-Allow-Origin': ALLOW.includes(o) ? o : ALLOW[0], 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Vary': 'Origin' });
+const json = (d, s, o) => new Response(JSON.stringify(d), { status: s, headers: Object.assign({ 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }, cors(o)) });
+const num = (v, lo, hi) => { const x = parseFloat(v); return isFinite(x) && x >= lo && x <= hi ? x : null; };
+const day = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : null;
+export default { async fetch(req, env) {
+const o = req.headers.get('Origin') || '';
+if (req.method === 'OPTIONS') return new Response(null, { headers: cors(o) });
+const u = new URL(req.url), q = u.searchParams;
+if (u.pathname === '/health') return json({ ok: true, meteomatics: !!env.MM_USER }, 200, o);
+if (u.pathname !== '/weather') return json({ error: 'unknown route' }, 404, o);
+const lat = num(q.get('lat'), -70, 70), lon = num(q.get('lon'), -180, 180), from = day(q.get('from')), to = day(q.get('to'));
+if (lat == null || lon == null || !from || !to) return json({ error: 'lat, lon, from, to needed' }, 400, o);
+const r = await fetch(MM + '/' + from + 'T00:00:00Z--' + to + 'T00:00:00Z:P1D/' + PARAMS + '/' + lat + ',' + lon + '/json', { headers: { Authorization: 'Basic ' + btoa(env.MM_USER + ':' + env.MM_PASS) } });
+if (!r.ok) return json({ error: 'Meteomatics ' + r.status }, 502, o);
+const j = await r.json(), out = {};
+for (const d of j.data || []) out[d.parameter] = d.coordinates[0].dates.map(x => [x.date.slice(0, 10), x.value]);
+return json({ series: out }, 200, o);
+} };

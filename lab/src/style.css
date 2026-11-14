@@ -679,3 +679,4 @@ body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
 .gt[open]>summary::after{transform:rotate(45deg)}
 .gt p{margin:0 0 12px;font-size:14.5px;line-height:1.45;animation:paneIn .3s ease both}
 @media (max-width:760px){.flow,.cando,.gloss{grid-template-columns:1fr}}
+.sug.live{background:rgba(163,230,53,.08);border-color:rgba(163,230,53,.35)}
