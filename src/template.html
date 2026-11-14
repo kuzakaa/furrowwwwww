@@ -141,6 +141,14 @@
           <li>Every rotation lists what needs local review before acting.</li>
         </ul></div>
       </div>
+      <h3 style="margin-top:22px">Do the crop dates match real life?</h3>
+      <p class="sub">We compared the sowing and harvest dates Furrow works out from 25 years of NASA temperatures with the "most active" dates in USDA's <a href="https://esmis.nal.usda.gov/sites/default/release-files/vm40xr56k/9p290c614/j9602330g/planting-12-05-1997.html">Usual Planting and Harvesting Dates</a> handbook. We tuned three crop settings until all six dates landed inside USDA's windows, so this shows the model can be made to fit, not that it was right first time.</p>
+      <div class="scroll"><table><thead><tr><th>Crop and place</th><th>Furrow sows</th><th>USDA most active</th><th>Furrow harvests</th><th>USDA most active</th></tr></thead><tbody>
+        <tr><td>Corn, central Iowa</td><td>May 6</td><td>May 2 to May 16</td><td>Oct 10</td><td>Oct 7 to Oct 31</td></tr>
+        <tr><td>Soybean, central Iowa</td><td>May 17</td><td>May 14 to Jun 2</td><td>Oct 1</td><td>Oct 1 to Oct 15</td></tr>
+        <tr><td>Winter wheat, western Kansas</td><td>Oct 5</td><td>Sep 20 to Oct 10</td><td>Jun 21</td><td>Jun 20 to Jul 10</td></tr>
+      </tbody></table></div>
+      <p class="fine">USDA dates are state-wide and from the 1997 edition. Outside the US we have no published dates to compare with, so the satellite check on the Calendar tab is the only test there.</p>
       <details class="more"><summary>All the crop numbers we used</summary><div class="scroll" id="croptab"></div></details>
       <footer>
       Data: <a href="https://power.larc.nasa.gov/">NASA POWER</a> daily agroclimatology (T2M_MAX, T2M_MIN, PRECTOTCORR, GWETROOT, ALLSKY_SFC_SW_DWN, WS2M, RH2M). Field greenness: MODIS MOD13Q1 through the <a href="https://modis.ornl.gov/">ORNL DAAC</a> subset service. Elevation: Copernicus DEM (ESA) through <a href="https://open-meteo.com/">Open-Meteo</a>. Soil texture: <a href="https://soilgrids.org">SoilGrids</a> (ISRIC). Map layers: <a href="https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api">NASA GIBS</a> (MODIS, SMAP, GPM IMERG). Satellite base map: Esri World Imagery. Crop coefficients follow FAO Irrigation and Drainage Paper 56; reference evapotranspiration uses the FAO Penman-Monteith equation, with Hargreaves as a fallback. Built for the 2026 NASA Space Apps Challenge. NASA does not endorse this tool.

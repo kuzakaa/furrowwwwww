@@ -9,13 +9,13 @@
   const quant = (a, q) => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y); const p = (s.length - 1) * q, i = Math.floor(p); return s[i] + (s[Math.min(i + 1, s.length - 1)] - s[i]) * (p - i); };
 
   const CROPS = {
-    corn: { name: 'Corn (maize)', short: 'Corn', fam: 'Grass', kind: 'summer', base: 10, gdd: 1500, off: 10, dry: 28, kc: [0.3, 1.2, 0.5], heatT: 35, heatW: [0.45, 0.65], nfix: 0, res: 5, deep: 0, dt: 2, margin: 4, market: 5, forage: 0 },
-    soy: { name: 'Soybean', short: 'Soybean', fam: 'Legume', kind: 'summer', base: 10, gdd: 1450, off: 20, dry: 14, kc: [0.4, 1.15, 0.5], heatT: 36, heatW: [0.5, 0.8], nfix: 45, res: 2, deep: 0, dt: 3, margin: 4, market: 5, forage: 0 },
+    corn: { name: 'Corn (maize)', short: 'Corn', fam: 'Grass', kind: 'summer', base: 10, gdd: 1500, off: 15, dry: 28, kc: [0.3, 1.2, 0.5], heatT: 35, heatW: [0.45, 0.65], nfix: 0, res: 5, deep: 0, dt: 2, margin: 4, market: 5, forage: 0 },
+    soy: { name: 'Soybean', short: 'Soybean', fam: 'Legume', kind: 'summer', base: 10, gdd: 1450, off: 26, dry: 18, kc: [0.4, 1.15, 0.5], heatT: 36, heatW: [0.5, 0.8], nfix: 45, res: 2, deep: 0, dt: 3, margin: 4, market: 5, forage: 0 },
     sorghum: { name: 'Grain sorghum', short: 'Sorghum', fam: 'Grass', kind: 'summer', base: 10, gdd: 1250, off: 30, dry: 20, kc: [0.3, 1.05, 0.55], heatT: 38, heatW: [0.45, 0.65], nfix: 0, res: 4, deep: 1, dt: 5, margin: 3, market: 3, forage: 1 },
     sunflower: { name: 'Sunflower', short: 'Sunflower', fam: 'Aster', kind: 'summer', base: 6.7, gdd: 1650, off: 15, dry: 20, kc: [0.35, 1.1, 0.35], heatT: 34, heatW: [0.45, 0.65], nfix: 0, res: 2, deep: 1, dt: 4, margin: 3, market: 3, forage: 0 },
     oats: { name: 'Spring oats', short: 'Oats', fam: 'Grass', kind: 'summer', base: 0, gdd: 1400, off: -25, dry: 7, kc: [0.3, 1.15, 0.25], heatT: 30, heatW: [0.6, 0.9], nfix: 0, res: 3, deep: 0, dt: 2, margin: 2, market: 3, forage: 1 },
     pea: { name: 'Field pea', short: 'Field pea', fam: 'Legume', kind: 'summer', base: 4.4, gdd: 1000, off: -20, dry: 7, kc: [0.4, 1.15, 0.3], heatT: 28, heatW: [0.5, 0.8], nfix: 60, res: 2, deep: 0, dt: 3, margin: 3, market: 3, forage: 0 },
-    wheat: { name: 'Winter wheat', short: 'Winter wheat', fam: 'Grass', kind: 'winter', gdd: 1650, lead: 18, kc: [0.45, 1.15, 0.3], heatT: 32, nfix: 0, res: 4, deep: 0, dt: 4, margin: 3, market: 5, forage: 0, kill: -30 },
+    wheat: { name: 'Winter wheat', short: 'Winter wheat', fam: 'Grass', kind: 'winter', gdd: 1700, lead: 22, kc: [0.45, 1.15, 0.3], heatT: 32, nfix: 0, res: 4, deep: 0, dt: 4, margin: 3, market: 5, forage: 0, kill: -30 },
     canola: { name: 'Winter canola', short: 'Canola', fam: 'Brassica', kind: 'winter', gdd: 1450, lead: 40, kc: [0.45, 1.1, 0.35], heatT: 30, nfix: 0, res: 2, deep: 1, dt: 3, margin: 3, market: 3, forage: 0, kill: -20 },
     alfalfa: { name: 'Alfalfa', short: 'Alfalfa', fam: 'Legume', kind: 'perennial', kc: [0.4, 0.95, 0.9], nfix: 60, res: 3, deep: 1, dt: 4, margin: 3, market: 3, forage: 1, kill: -32 },
     fallow: { name: 'Fallow (no crop)', short: 'Fallow', fam: '-', kind: 'fallow', nfix: 0, res: 0, deep: 0, dt: 3, margin: 0, market: 5, forage: 0 }

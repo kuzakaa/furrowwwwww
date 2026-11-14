@@ -51,12 +51,13 @@
     })();
     (async () => {
       try {
-        let nd = cget('furrown1:' + k);
+        let nd = cget('furrown2:' + k);
         if (!nd) {
-          const yrs = [2024, 2025], parts = [['001', '145'], ['161', '305'], ['321', '365']], sum = new Array(23).fill(0), cnt = new Array(23).fill(0);
+          const yrs = [2024, 2025], parts = [['001', '145'], ['161', '305'], ['321', '365']], by = {};
+          yrs.forEach(y => { by[y] = new Array(23).fill(null); });
           const got = await Promise.all(yrs.reduce((a, y) => a.concat(parts.map(q => getJSON('https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=' + lat + '&longitude=' + lon + '&band=250m_16_days_NDVI&startDate=A' + y + q[0] + '&endDate=A' + y + q[1] + '&kmAboveBelow=0&kmLeftRight=0', 25000))), []));
-          got.forEach(j => (j.subset || []).forEach(r => { const d = +String(r.modis_date).slice(5), i = Math.round((d - 1) / 16), v = Array.isArray(r.data) ? +r.data[0] : NaN; if (i >= 0 && i < 23 && v > -2000 && v <= 10000) { sum[i] += v * 0.0001; cnt[i]++; } }));
-          if (cnt.filter(Boolean).length < 15) return; nd = { yrs, v: sum.map((x, i) => cnt[i] ? Math.round(x / cnt[i] * 1000) / 1000 : null) }; cset('furrown1:' + k, nd);
+          got.forEach(j => (j.subset || []).forEach(r => { const m = String(r.modis_date), y = +m.slice(1, 5), i = Math.round((+m.slice(5) - 1) / 16), v = Array.isArray(r.data) ? +r.data[0] : NaN; if (by[y] && i >= 0 && i < 23 && v > -2000 && v <= 10000) by[y][i] = Math.round(v * 0.1) / 1000; }));
+          if (yrs.some(y => by[y].filter(v => v !== null).length < 15)) return; nd = { yrs, by }; cset('furrown2:' + k, nd);
         }
         if (id !== req) return; S.ndvi = nd; render();
       } catch (e) {}
@@ -319,9 +320,13 @@
   }
 
   function ndviNote(A) {
-    if (!S.ndvi) return ''; const cl = A.cl, tl = A.current.tl; let n = 0, ok = 0;
-    S.ndvi.v.forEach((v, i) => { if (v === null) return; const d = ((i * 16 + 8 - cl.off) % 365 + 365) % 365; let c = 0; for (let r = 0; r < tl.N; r++) c += tl.cov[r * 365 + d] / tl.N; n++; if ((v > 0.4) === (c > 0.5)) ok++; });
-    return '<p class="fine"><b style="color:#fff">Satellite check.</b> The top strip is greenness measured by NASA\'s MODIS instrument on a 250 m square at your point, averaged over ' + S.ndvi.yrs.join(' and ') + '. In ' + ok + ' of ' + n + ' sixteen-day windows it agrees with the modelled calendar for your current rotation on whether the ground is green or not. Mismatches can mean the model\'s dates are off for your area, that a different crop was grown in those years, or that the square mixes several fields.</p>';
+    if (!S.ndvi) return ''; const cl = A.cl, tl = A.current.tl, rot = A.current.rot, parts = [];
+    S.ndvi.yrs.forEach(yr => {
+      let bestR = 0, bestOk = -1, n = 0;
+      for (let r = 0; r < tl.N; r++) { let ok = 0; n = 0; S.ndvi.by[yr].forEach((v, i) => { if (v === null) return; const d = ((i * 16 + 8 - cl.off) % 365 + 365) % 365; n++; if ((v >= 0.45) === (tl.cov[r * 365 + d] >= 0.6)) ok++; }); if (ok > bestOk) { bestOk = ok; bestR = r; } }
+      parts.push('In ' + yr + ' the field looked most like your <b style="color:#fff">' + C[rot[bestR].c].short.toLowerCase() + '</b> year: ' + bestOk + ' of ' + n + ' sixteen-day windows match on whether the ground was green.');
+    });
+    return '<p class="fine"><b style="color:#fff">Satellite check.</b> The top strips are greenness measured by NASA\'s MODIS instrument on a 250 m square at your point. ' + parts.join(' ') + ' A poor match can mean our dates are off for your area, that something else was grown that year, or that the square covers several fields.</p>';
   }
   function dumbbell(cur, best) {
     const W = 560, L = 168, R = 44, pw = W - L - R, X = v => L + v / 100 * pw; let g = '', y = 26;
@@ -371,9 +376,12 @@
     if (S.ndvi) {
       const mixc = (a, b, t) => 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')', nc = v => v < 0.3 ? mixc([120, 92, 60], [196, 168, 110], Math.max(0, v) / 0.3) : mixc([196, 168, 110], [62, 160, 84], Math.min(1, (v - 0.3) / 0.5));
       s += '<text x="0" y="' + (y + 12) + '" font-size="13" font-weight="600" fill="' + COL.ink + '">What the satellite saw</text>'; y += 20;
-      s += '<text x="' + (L - 8) + '" y="' + (y + 12) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">MODIS ' + S.ndvi.yrs.join(', ') + '</text><clipPath id="cN"><rect x="' + L + '" y="' + y + '" width="' + PW + '" height="16" rx="4"/></clipPath><g clip-path="url(#cN)">';
-      S.ndvi.v.forEach((v, i) => { if (v === null) return; const d0 = ((i * 16 - cl.off) % 365 + 365) % 365, x0 = X(d0), w = X(Math.min(365, d0 + 16)) - x0; s += '<rect x="' + x0 + '" y="' + y + '" width="' + (w + 0.5) + '" height="16" fill="' + nc(v) + '"><title>Greenness (NDVI) ' + v.toFixed(2) + ' around ' + cl.fmtDay(d0 + 8) + '</title></rect>'; if (d0 + 16 > 365) s += '<rect x="' + X(0) + '" y="' + y + '" width="' + (X(d0 + 16 - 365) - X(0)) + '" height="16" fill="' + nc(v) + '"/>'; });
-      s += '</g>'; y += 27;
+      S.ndvi.yrs.forEach(yr => {
+        s += '<text x="' + (L - 8) + '" y="' + (y + 12) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">MODIS ' + yr + '</text><clipPath id="cN' + yr + '"><rect x="' + L + '" y="' + y + '" width="' + PW + '" height="16" rx="4"/></clipPath><g clip-path="url(#cN' + yr + ')">';
+        S.ndvi.by[yr].forEach((v, i) => { if (v === null) return; const d0 = ((i * 16 - cl.off) % 365 + 365) % 365, x0 = X(d0), w = X(Math.min(365, d0 + 16)) - x0; s += '<rect x="' + x0 + '" y="' + y + '" width="' + (w + 0.5) + '" height="16" fill="' + nc(v) + '"><title>' + yr + ', around ' + cl.fmtDay(d0 + 8) + ': greenness (NDVI) ' + v.toFixed(2) + '</title></rect>'; if (d0 + 16 > 365) s += '<rect x="' + X(0) + '" y="' + y + '" width="' + (X(d0 + 16 - 365) - X(0)) + '" height="16" fill="' + nc(v) + '"/>'; });
+        s += '</g>'; y += 20;
+      });
+      y += 7;
     }
     const fill = { 0: COL.bare, 1: COL.straw, 2: COL.crop, 3: COL.cover, 4: COL.peren };
     list.forEach((st, si) => {

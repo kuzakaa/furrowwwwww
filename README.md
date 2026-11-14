@@ -55,6 +55,7 @@ Farmers picking a crop rotation are betting on weather they can't see coming. Wi
 
 - Extraterrestrial radiation against FAO-56 Example 8, and Penman-Monteith evapotranspiration against FAO-56 Example 18. Both are in `test/test.js`.
 - Software checks on made-up climates for five kinds of region, including the southern hemisphere and a frost-free site. Run them with `node test/test.js`.
+- Crop dates against USDA's Usual Planting and Harvesting Dates handbook: after tuning three crop settings, Furrow's sowing and harvest dates for Iowa corn, Iowa soybean and Kansas winter wheat all fall inside USDA's "most active" windows. The table is in the app under How it works.
 - The live site with real NASA data for the Odesa example.
 
 ## Running it
