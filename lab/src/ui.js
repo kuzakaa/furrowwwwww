@@ -330,16 +330,28 @@
     const allx = all.concat(A.others), rk = []; let O = '';
     allx.slice().sort((p, q) => q.match - p.match).forEach(s => { const i = allx.indexOf(s); rk.push('<button class="rk" data-sel="' + i + '" aria-pressed="' + (i === S.sel) + '"><span class="dot"></span><span class="nm"><b>' + esc(s.name) + '</b><small>' + esc(E.rotLabel(s.rot)) + (s.boot ? ' · beats yours in ' + Math.round(s.boot.win * 100) + '% of reshuffles' : '') + '</small></span><span class="sc">' + r0(s.match) + '</span><span class="br"><i style="width:' + r0(s.match) + '%"></i></span></button>'); });
     if (S.sel >= allx.length) S.sel = 0;
-    const s = allx[S.sel], x = explain(s, A), isCur = s.id === 'current';
-    O += '<div class="optd' + (S.animOpt ? ' in' : '') + '"><span class="tag">' + (isCur ? 'What you grow now' : s === A.alts[0] ? 'Your best match' : s.tag && s.tag.indexOf('New') === 0 ? 'New, less tested' : 'Option') + '</span><h3 class="big">' + esc(E.rotLabel(s.rot)) + '</h3><p class="muted">' + esc(s.name) + ', ' + r0(s.match) + ' / 100</p><div class="bars">';
-    for (const d of DIMS) { const v = s.sc[d[0]], dl = v - A.current.sc[d[0]]; O += '<span>' + d[1] + '</span><span class="track"><b style="width:' + v + '%"></b></span><span class="num">' + v + '</span><span class="d ' + (isCur || !dl ? '' : dl > 0 ? 'up' : 'dn') + '">' + (isCur || !dl ? '' : (dl > 0 ? '+' : '') + dl) + '</span>'; }
-    O += '</div><h4>' + (isCur ? 'What this is' : 'Why we suggest it') + '</h4><p>' + x.why + '</p><h4>What the data says (' + cl.n + ' years, tap a line to see the chart)</h4><ul>' + x.ev.map(e => '<li class="lnk" data-go="' + (/^(Bare soil|Heavy rain|Living roots)/.test(e) ? 'calendar' : /^Nitrogen/.test(e) ? 'method' : /^Damaging heat/.test(e) ? 'climate' : 'years') + '">' + e + '</li>').join('') + '</ul>';
-    if (s.need && Object.keys(s.need).length) O += '<h4>What it asks of you</h4><ul>' + Object.keys(s.need).map(k => '<li' + (s.adj.blocked.includes(k) ? ' class="badtxt"' : '') + '>' + Lab.ACCEPT[k].q + ': ' + esc(s.need[k]) + (s.adj.blocked.includes(k) ? ' (you said this isn’t possible)' : '') + '</li>').join('') + '</ul>';
-    if (s.boot) O += '<h4>How sure we are</h4><p>Beats your current rotation in ' + Math.round(s.boot.win * s.boot.runs) + ' of ' + s.boot.runs + ' reshuffles of the ' + cl.n + ' years.</p>';
-    O += '<div class="note warn"><h4>Double-check this locally first</h4><ul>' + x.rev.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></div>';
-    O += '<div class="note"><h4>What we can’t know from here</h4><ul>' + x.gaps.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></div>';
-    O += '<details class="more"><summary>What you could gain</summary><ul>' + x.ben.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></details>';
-    O += '<button class="btn bigbtn" id="showrank">' + (S.showRank ? 'Hide other options' : 'See other options (' + (allx.length - 1) + ')') + '</button><div class="rank"' + (S.showRank ? '' : ' hidden') + '>' + rk.join('') + '</div>';
+    const s = allx[S.sel], x = explain(s, A), isCur = s.id === 'current', cur = A.current;
+    const tagt = isCur ? 'What you grow now' : s === A.alts[0] ? 'Your best match' : s.tag && s.tag.indexOf('New') === 0 ? 'New, less tested' : 'Option';
+    const delta = r0(s.match) - r0(cur.match);
+    O += '<div class="optd' + (S.animOpt ? ' in' : '') + '"><div class="ohead"><span class="tag">' + tagt + '</span>' + (s.adj && s.adj.blocked.length ? '<span class="tag no">Needs something you ruled out</span>' : '') + '</div>';
+    O += '<h3 class="big">' + esc(E.rotLabel(s.rot)) + '</h3><div class="oscore"><b>' + r0(s.match) + '</b><span>/ 100 for your priorities' + (isCur ? '' : ', <em class="' + (delta >= 0 ? 'up' : 'dn') + '">' + (delta >= 0 ? '+' : '') + delta + '</em> vs now') + '</span></div>';
+    O += '<p class="lead">' + x.why + '</p>';
+    if (!isCur) {
+      const kpi = (lab, a, b, unit, good) => { const better = good ? b > a : b < a, same = a === b; return '<div class="kpi"><span class="kl">' + lab + '</span><span class="kv"><s>' + a + unit + '</s> ' + b + unit + '</span><span class="kd ' + (same ? '' : better ? 'up' : 'dn') + '">' + (same ? 'same' : better ? 'better' : 'worse') + '</span></div>'; };
+      O += '<div class="kpis">' + kpi('Bare soil, days a year', r0(cur.m.bare), r0(s.m.bare), '', false) + kpi('Heavy rain on open soil, mm', r0(cur.m.exposed), r0(s.m.exposed), '', false) + kpi('Water crops missed', Math.round(cur.m.relMean * 100), Math.round(s.m.relMean * 100), '%', false) + kpi('Living roots, days a year', r0(cur.m.living), r0(s.m.living), '', true) + '</div>';
+    }
+    O += '<div class="bars">';
+    for (const d of DIMS) { const v = s.sc[d[0]], dl = v - cur.sc[d[0]]; O += '<span>' + d[1] + '</span><span class="track"><b style="width:' + v + '%"></b></span><span class="num">' + v + '</span><span class="d ' + (isCur || !dl ? '' : dl > 0 ? 'up' : 'dn') + '">' + (isCur || !dl ? '' : (dl > 0 ? '+' : '') + dl) + '</span>'; }
+    O += '</div>';
+    const sec = (title, body, open, cls) => '<details class="osec' + (cls ? ' ' + cls : '') + '"' + (open ? ' open' : '') + '><summary>' + title + '</summary><div class="ob">' + body + '</div></details>';
+    const ul = a => '<ul>' + a.map(e => '<li>' + e + '</li>').join('') + '</ul>';
+    if (s.need && Object.keys(s.need).length) O += sec('What it asks of you', ul(Object.keys(s.need).map(k => (s.adj.blocked.includes(k) ? '<span class="badtxt">' : '') + Lab.ACCEPT[k].q + ': ' + esc(s.need[k]) + (s.adj.blocked.includes(k) ? ' (you said this isn’t possible)</span>' : ''))), true);
+    if (x.ben.length) O += sec('What you could gain', ul(x.ben.map(esc)), false);
+    O += sec('Check locally before acting', ul(x.rev.map(esc)), false, 'warn');
+    O += sec('What the data shows', ul(x.ev.map(e => '<span class="lnk" data-go="' + (/^(Bare soil|Heavy rain|Living roots)/.test(e) ? 'calendar' : /^Nitrogen/.test(e) ? 'method' : /^Damaging heat/.test(e) ? 'climate' : 'years') + '">' + e + '</span>')), false);
+    if (s.boot) O += sec('How sure we are', '<p>Beats your current rotation in <b>' + Math.round(s.boot.win * s.boot.runs) + ' of ' + s.boot.runs + '</b> reshuffles of the ' + cl.n + ' years. Each reshuffle rebuilds the record from randomly drawn years, so a high number means the result does not hinge on a few unusual seasons.</p>', false);
+    O += sec('What we can’t know from here', ul(x.gaps.map(esc)), false);
+    O += '<button class="btn bigbtn" id="showrank">' + (S.showRank ? 'Hide other options' : 'Compare with ' + (allx.length - 1) + ' other options') + '</button><div class="rank"' + (S.showRank ? '' : ' hidden') + '>' + rk.join('') + '</div>';
     if (false) {
       O += '<details class="more"><summary>Other ones we tried (' + A.others.length + ')</summary><div class="scroll"><table><thead><tr><th>Rotation</th><th>Match</th>' + DIMS.map(d => '<th>' + d[1].split(' ')[0] + '</th>').join('') + '</tr></thead><tbody>';
       for (const o of A.others) O += '<tr><td>' + esc(o.name) + '<div class="muted small">' + esc(E.rotLabel(o.rot)) + '</div></td><td class="num">' + r0(o.match) + '</td>' + DIMS.map(d => '<td class="num">' + o.sc[d[0]] + '</td>').join('') + '</tr>';
@@ -496,7 +508,7 @@
   function moveInk() {
     ['tabs', 'dock'].forEach(n => { const nav = $(n), ink = nav.querySelector('.ink'), b = nav.querySelector('[aria-selected=true]'); if (!ink) return; if (!b || !b.offsetWidth) { ink.style.opacity = 0; return; } ink.style.opacity = 1; ink.style.width = b.offsetWidth + 'px'; ink.style.transform = 'translateX(' + b.offsetLeft + 'px)'; });
   }
-  const WIZ = [['rot', 'What do you grow now?', 'One row per year, in rotation order. Add a cover crop if you already use one.'], ['soil', 'Soil and slope', 'Pick the closest texture class. Tap “What does this mean?” on any item for details.'], ['pri', 'What is your priority right now?', 'Set how important each goal is for the coming seasons. You can plan a change of priorities later.'], ['excl', 'Crops you can’t grow or sell', 'Tap a crop to exclude it. Skip if everything is available.'], ['acc', 'What you can take on', 'The best options for your priorities need the following. Rate how feasible each is: 0 = not possible at all, 5 = no problem.']];
+  const WIZ = [['field', 'Where is your field?', 'Enter coordinates, tap the map, or pick an example at the top.'], ['rot', 'What do you grow now?', 'One row per year, in rotation order. Add a cover crop if you already use one.'], ['soil', 'Soil and slope', 'Pick the closest texture class. Tap “What does this mean?” on any item for details.'], ['pri', 'What is your priority right now?', 'Set how important each goal is for the coming seasons. You can plan a change of priorities later.'], ['excl', 'Crops you can’t grow or sell', 'Tap a crop to exclude it. Skip if everything is available.'], ['acc', 'What you can take on', 'The best options for your priorities need the following. Rate how feasible each is: 0 = not possible at all, 5 = no problem.']];
   function soilTxt() { if ($('soiltxt')) $('soiltxt').textContent = SOILTXT[S.soil] || ''; }
   function showUnd() {
     const r = window.Lab ? Lab.parseConstraints(S.text) : [];
@@ -519,7 +531,7 @@
   }
   function wizard(i) {
     if (WIZ[i][0] === 'acc') { $('acc').dataset.keys = ''; drawAcc(); }
-    S.wiz = i; document.body.classList.add('wiz'); document.body.classList.toggle('wacc', WIZ[i][0] === 'acc'); document.body.classList.toggle('wpri', WIZ[i][0] === 'pri');
+    S.wiz = i; document.body.classList.add('wiz'); document.body.classList.remove('noset'); document.body.classList.toggle('wacc', WIZ[i][0] === 'acc'); document.body.classList.toggle('wpri', WIZ[i][0] === 'pri');
     document.querySelectorAll('[data-wiz]').forEach(b => { const on = b.dataset.wiz === WIZ[i][0]; b.classList.toggle('cur', on); if (on) b.open = true; });
     $('wizn').textContent = 'Step ' + (i + 1) + ' of ' + WIZ.length; $('wizplace').textContent = S.name;
     $('wizt').textContent = WIZ[i][1]; $('wizd').textContent = WIZ[i][2]; $('wizbar').style.width = (i + 1) / WIZ.length * 100 + '%';
@@ -527,7 +539,7 @@
     $('setup').scrollTop = 0;
   }
   function wizEnd() {
-    S.wiz = null; document.body.classList.remove('wiz'); save();
+    S.wiz = null; document.body.classList.remove('wiz'); document.body.classList.add('noset'); save();
     document.querySelectorAll('[data-wiz]').forEach(b => { b.classList.remove('cur'); b.open = b.dataset.wiz === 'rot'; }); document.querySelectorAll('.setup details.box:not([data-wiz])').forEach(b => b.open = false); document.body.classList.remove('wacc', 'wpri');
     setTab('result'); if (map) goStep(0, true); moveInk();
   }
@@ -683,7 +695,8 @@
     $('out').addEventListener('click', e => { if (e.target.id === 'showrank') { S.showRank = !S.showRank; render(); } });
     $('soil').addEventListener('change', soilTxt); soilTxt();
     $('wizback').onclick = () => { if (S.wiz > 0) wizard(S.wiz - 1); };
-    $('wiznext').onclick = () => { if (S.wiz < WIZ.length - 1) wizard(S.wiz + 1); else if (S.exp == null) askExp(wizEnd); else wizEnd(); };
+    $('wiznext').onclick = () => { if (WIZ[S.wiz][0] === 'field') { const la = parseFloat($('lat').value), lo = parseFloat($('lon').value); if (!(isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180)) { $('lat').focus(); $('lat').classList.add('bad'); return; } $('lat').classList.remove('bad'); if (Math.abs(la - S.lat) > 1e-4 || Math.abs(lo - S.lon) > 1e-4) setPlace(la, lo, null, true); }
+     if (S.wiz < WIZ.length - 1) wizard(S.wiz + 1); else if (S.exp == null) askExp(wizEnd); else wizEnd(); };
     $('ldate').max = new Date(Date.now() - 3 * 864e5).toISOString().slice(0, 10);
     $('layer').onchange = () => { setPlaying(false); setLayer(); goStep(STEPS.indexOf($('layer').value)); };
     $('ldate').onchange = () => { setLayer(); story(); };
