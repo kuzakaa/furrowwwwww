@@ -215,3 +215,4 @@ nav.tabs{scrollbar-width:none}nav.tabs::-webkit-scrollbar{display:none}
 th{white-space:nowrap}
 .scroll{scrollbar-width:thin}
 html{font-size:18.5px}
+*{scrollbar-width:none}*::-webkit-scrollbar{display:none;width:0;height:0}

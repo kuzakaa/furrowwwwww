@@ -615,3 +615,35 @@ details.box>summary{font-size:18px;color:#fff}
 .btn.ghost{box-shadow:inset 0 0 0 1.5px rgba(180,236,143,.45)}
 
 .osec>summary .q{margin-left:10px;margin-right:auto}
+.vs{display:grid!important;grid-template-columns:1fr 1fr;align-items:stretch;gap:14px}
+.vs>div{display:flex;flex-direction:column;align-items:flex-start;min-width:0;margin:0}
+.vs .l{font-size:15px!important;font-weight:600!important;color:#fff!important;max-width:none!important;margin-top:10px}
+.vs .n{font-size:64px!important}
+.vs .tag{margin-bottom:8px}
+.vs .win,.vs .nowc{padding:16px 18px!important;border-width:2px!important}
+.plan{display:grid!important;grid-template-columns:1fr 1fr;gap:12px}
+.plan>div{min-width:0!important}
+.kpis{grid-auto-rows:1fr}
+.kpi{align-content:space-between}
+.mapbox .btn,.mapbox select,.mapbox input{height:40px}
+.mapbox{align-items:flex-end}
+.mapbox #play{align-self:flex-end}
+.res .acts{display:grid;grid-template-columns:1fr 1fr}
+.res .acts #shared{grid-column:1/3}
+.res .acts .btn{width:100%}
+@media (max-width:760px){.vs .n{font-size:48px!important}}
+.res .tabs button{flex:1 1 auto;text-align:center}
+.setup .slider{grid-template-columns:70px 1fr 48px;gap:12px}
+.setup .slider input{height:30px}
+.wrow .wh label{flex:1;min-width:0}
+.wrow .lvl{white-space:nowrap}
+body.wiz.wacc .wrow{padding:7px 12px;margin:5px 0}
+body.wiz.wacc .wizhead p{font-size:15px}
+body.wiz.wfree #limchips .chip{padding:7px 12px;font-size:14.5px}
+body.wiz.wfree #limchips{gap:6px;margin:4px 0 10px}
+body.wiz .wizhead{margin-bottom:10px}
+body.wiz .wizfoot{margin-top:12px}
+body.wiz.wacc .setup{width:min(1060px,calc(100vw - 24px))}
+body.wiz.wacc #acc{grid-template-columns:1fr 1fr 1fr}
+@media (max-width:1000px){body.wiz.wacc #acc{grid-template-columns:1fr 1fr}}
+*{scrollbar-width:none}*::-webkit-scrollbar{display:none;width:0;height:0}
