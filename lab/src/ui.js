@@ -385,16 +385,16 @@
     return '<p class="fine"><b style="color:#fff">Satellite check.</b> The top strips are greenness measured by NASA\'s MODIS instrument on a 250 m square at your point. ' + parts.join(' ') + ' A poor match can mean our dates are off for your area, that something else was grown that year, or that the square covers several fields.</p>';
   }
   function dumbbell(cur, best) {
-    const W = 560, L = 168, R = 44, pw = W - L - R, X = v => L + v / 100 * pw; let g = '', y = 26;
-    [0, 25, 50, 75, 100].forEach(v => { g += '<line x1="' + X(v) + '" x2="' + X(v) + '" y1="16" y2="' + (26 + DIMS.length * 34 - 12) + '" stroke="' + COL.line + '"/><text x="' + X(v) + '" y="10" text-anchor="middle" font-size="10.5" fill="' + COL.muted + '">' + v + '</text>'; });
+    const W = 560, L = 190, R = 44, pw = W - L - R, X = v => L + v / 100 * pw; let g = '', y = 26;
+    [0, 25, 50, 75, 100].forEach(v => { g += '<line x1="' + X(v) + '" x2="' + X(v) + '" y1="16" y2="' + (26 + DIMS.length * 44 - 12) + '" stroke="' + COL.line + '"/><text x="' + X(v) + '" y="10" text-anchor="middle" font-size="13.7" fill="' + COL.muted + '">' + v + '</text>'; });
     for (const d of DIMS) {
       const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, c = dl > 2 ? '#8FD694' : dl < -2 ? '#F2907E' : '#A8A89C';
-      g += '<text x="0" y="' + (y + 4) + '" font-size="13" fill="' + COL.ink + '">' + d[1] + '</text><text x="0" y="' + (y + 17) + '" font-size="10.5" fill="' + COL.muted + '">importance ' + S.weights[d[0]] + '</text>';
+      g += '<text x="0" y="' + (y + 4) + '" font-size="16.9" fill="' + COL.ink + '">' + d[1] + '</text><text x="0" y="' + (y + 20) + '" font-size="13.7" fill="' + COL.muted + '">importance ' + S.weights[d[0]] + '</text>';
       g += '<line x1="' + X(a) + '" x2="' + X(b) + '" y1="' + y + '" y2="' + y + '" stroke="' + c + '" stroke-width="4" stroke-linecap="round" opacity=".55"/><circle cx="' + X(a) + '" cy="' + y + '" r="5.5" fill="' + COL.panel + '" stroke="#A8A89C" stroke-width="2"><title>Now: ' + a + '</title></circle><circle cx="' + X(b) + '" cy="' + y + '" r="7" fill="' + c + '"><title>Alternative: ' + b + '</title></circle>';
-      g += '<text x="' + (W - 2) + '" y="' + (y + 4.5) + '" text-anchor="end" font-size="13" font-weight="700" fill="' + c + '">' + (dl > 0 ? '+' : '') + dl + '</text><rect x="0" y="' + (y - 15) + '" width="' + W + '" height="32" fill="transparent" data-tip="' + esc(d[1] + ': ' + DIMTIP[d[0]] + ' Yours now: ' + a + '. The other option: ' + b + '.') + '"/>';
-      y += 34;
+      g += '<text x="' + (W - 2) + '" y="' + (y + 4.5) + '" text-anchor="end" font-size="16.9" font-weight="700" fill="' + c + '">' + (dl > 0 ? '+' : '') + dl + '</text><rect x="0" y="' + (y - 18) + '" width="' + W + '" height="40" fill="transparent" data-tip="' + esc(d[1] + ': ' + DIMTIP[d[0]] + ' Yours now: ' + a + '. The other option: ' + b + '.') + '"/>';
+      y += 44;
     }
-    return '<div class="legend" style="margin-bottom:2px"><span><i style="background:none;box-shadow:inset 0 0 0 2px #A8A89C;border-radius:50%"></i>your rotation now</span><span><i style="background:#8FD694;border-radius:50%"></i>the alternative</span></div><svg class="dumb" viewBox="0 0 ' + W + ' ' + (26 + DIMS.length * 34 - 6) + '" role="img" aria-label="Scores for each priority, current rotation against the alternative">' + g + '</svg>';
+    return '<div class="legend" style="margin-bottom:2px"><span><i style="background:none;box-shadow:inset 0 0 0 2px #A8A89C;border-radius:50%"></i>your rotation now</span><span><i style="background:#8FD694;border-radius:50%"></i>the alternative</span></div><svg class="dumb" viewBox="0 0 ' + W + ' ' + (26 + DIMS.length * 44 - 6) + '" role="img" aria-label="Scores for each priority, current rotation against the alternative">' + g + '</svg>';
   }
   function terrainHTML(T) {
     const c = 46, col = v => v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#3E8E5A'; let g = '';
@@ -410,51 +410,51 @@
     return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(i.name) + ', each year from ' + cl.years[0].label + ' to ' + cl.years[n - 1].label + ', with trend line"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A8A89C" stop-opacity=".28"/><stop offset="1" stop-color="#A8A89C" stop-opacity="0"/></linearGradient></defs><rect x="3" y="' + Y(Math.min(hi, i.hi)).toFixed(1) + '" width="' + (W - 6) + '" height="' + Math.max(1, Y(Math.max(lo, i.lo)) - Y(Math.min(hi, i.hi))).toFixed(1) + '" fill="rgba(255,255,255,.045)"/><polygon points="3,' + H + ' ' + pts + ' ' + (W - 3) + ',' + H + '" fill="url(#' + id + ')"/><polyline points="' + pts + '" fill="none" stroke="#C9C7BA" stroke-width="1.4" stroke-linejoin="round"/><line x1="' + X(0) + '" y1="' + Y(Math.min(hi, Math.max(lo, b))).toFixed(1) + '" x2="' + X(n - 1) + '" y2="' + Y(Math.min(hi, Math.max(lo, b + sl * (n - 1)))).toFixed(1) + '" stroke="' + c2 + '" stroke-width="2" stroke-dasharray="5 3"/><circle cx="' + X(n - 1) + '" cy="' + Y(v[n - 1]).toFixed(1) + '" r="3" fill="#EEF2E6"/>' + v.map((y, k) => '<rect x="' + (X(k) - (W - 6) / (n - 1) / 2).toFixed(1) + '" y="0" width="' + ((W - 6) / (n - 1)).toFixed(1) + '" height="' + H + '" fill="transparent" data-tip="' + cl.years[k].label + ': ' + y.toFixed(i.digits) + ' ' + i.unit + '"/>').join('') + '</svg><div class="sparkax"><span>' + cl.years[0].label + '</span><span>' + cl.years[n - 1].label + '</span></div>';
   }
   function yearFigure(cl, list) {
-    const W = 960, L = 150, PW = 790, X = d => L + d / 365 * PW;
-    const top = 30, CH = 160, mx = Math.max.apply(null, cl.mRain.concat(cl.mEt0));
+    const W = 720, L = 118, PW = 596, X = d => L + d / 365 * PW;
+    const top = 34, CH = 170, mx = Math.max.apply(null, cl.mRain.concat(cl.mEt0));
     const step = mx > 200 ? 50 : mx > 80 ? 25 : 10, ymax = Math.ceil(mx / step) * step, Yv = v => top + CH - v / ymax * CH;
     let s = '<defs><linearGradient id="gRain" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3B7186"/><stop offset="1" stop-color="#234652"/></linearGradient><linearGradient id="gHeavy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9AD8F2"/><stop offset="1" stop-color="#5AAED3"/></linearGradient><linearGradient id="gEt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2907E" stop-opacity=".22"/><stop offset="1" stop-color="#F2907E" stop-opacity="0"/></linearGradient></defs>', y = top;
-    for (let v = 0; v <= ymax; v += step) s += '<line x1="' + L + '" x2="' + (L + PW) + '" y1="' + Yv(v) + '" y2="' + Yv(v) + '" stroke="' + COL.line + '" stroke-width="1"/><text x="' + (L - 8) + '" y="' + (Yv(v) + 4) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">' + v + '</text>';
-    s += '<text x="' + (L - 8) + '" y="' + (top - 16) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">mm a month</text>';
+    for (let v = 0; v <= ymax; v += step) s += '<line x1="' + L + '" x2="' + (L + PW) + '" y1="' + Yv(v) + '" y2="' + Yv(v) + '" stroke="' + COL.line + '" stroke-width="1"/><text x="' + (L - 8) + '" y="' + (Yv(v) + 4) + '" text-anchor="end" font-size="14.3" fill="' + COL.muted + '">' + v + '</text>';
+    s += '<text x="' + (L - 8) + '" y="' + (top - 16) + '" text-anchor="end" font-size="14.3" fill="' + COL.muted + '">mm a month</text>';
     const pt = [];
     for (let m = 0; m < 12; m++) {
       const x0 = X(E.CUM[m]) + 6, w = X(E.CUM[m + 1]) - X(E.CUM[m]) - 12, cx = x0 + w / 2;
       s += '<rect x="' + x0 + '" y="' + Yv(cl.mRain[m]) + '" width="' + w + '" height="' + (top + CH - Yv(cl.mRain[m])) + '" fill="url(#gRain)" rx="4"><title>' + cl.monthName(m) + ': ' + r0(cl.mRain[m]) + ' mm rain</title></rect>';
       s += '<rect x="' + (x0 + w * 0.18) + '" y="' + Yv(cl.mEros[m]) + '" width="' + w * 0.64 + '" height="' + (top + CH - Yv(cl.mEros[m])) + '" fill="url(#gHeavy)" rx="3"><title>' + cl.monthName(m) + ': ' + r0(cl.mEros[m]) + ' mm on days of 12.7 mm or more</title></rect>';
       pt.push([cx, Yv(cl.mEt0[m])]);
-      s += '<text x="' + cx + '" y="' + (top + CH + 17) + '" text-anchor="middle" font-size="12" fill="' + COL.ink + '">' + cl.monthName(m) + '</text>';
+      s += '<text x="' + cx + '" y="' + (top + CH + 20) + '" text-anchor="middle" font-size="15.6" fill="' + COL.ink + '">' + cl.monthName(m) + '</text>';
     }
     const line = pt.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
     s += '<polygon points="' + pt[0][0] + ',' + (top + CH) + ' ' + line + ' ' + pt[11][0] + ',' + (top + CH) + '" fill="url(#gEt)"/><polyline points="' + line + '" fill="none" stroke="' + COL.et + '" stroke-width="2.2" stroke-linejoin="round"/>';
     pt.forEach((p, m) => { s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3.6" fill="' + COL.et + '" stroke="' + COL.panel + '" stroke-width="1.5"><title>' + cl.monthName(m) + ': ' + r0(cl.mEt0[m]) + ' mm evaporative demand</title></circle>'; });
-    y = top + CH + 34;
+    y = top + CH + 40;
     const y0 = y;
     if (S.ndvi) {
       const mixc = (a, b, t) => 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')', nc = v => v < 0.3 ? mixc([120, 92, 60], [196, 168, 110], Math.max(0, v) / 0.3) : mixc([196, 168, 110], [62, 160, 84], Math.min(1, (v - 0.3) / 0.5));
-      s += '<text x="0" y="' + (y + 12) + '" font-size="13" font-weight="600" fill="' + COL.ink + '">What the satellite saw</text>'; y += 20;
+      s += '<text x="0" y="' + (y + 16) + '" font-size="16.9" font-weight="600" fill="' + COL.ink + '">What the satellite saw</text>'; y += 27;
       S.ndvi.yrs.forEach(yr => {
-        s += '<text x="' + (L - 8) + '" y="' + (y + 12) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">MODIS ' + yr + '</text><clipPath id="cN' + yr + '"><rect x="' + L + '" y="' + y + '" width="' + PW + '" height="16" rx="4"/></clipPath><g clip-path="url(#cN' + yr + ')">';
-        S.ndvi.by[yr].forEach((v, i) => { if (v === null) return; const d0 = ((i * 16 - cl.off) % 365 + 365) % 365, x0 = X(d0), w = X(Math.min(365, d0 + 16)) - x0; s += '<rect x="' + x0 + '" y="' + y + '" width="' + (w + 0.5) + '" height="16" fill="' + nc(v) + '"><title>' + yr + ', around ' + cl.fmtDay(d0 + 8) + ': greenness (NDVI) ' + v.toFixed(2) + '</title></rect>'; if (d0 + 16 > 365) s += '<rect x="' + X(0) + '" y="' + y + '" width="' + (X(d0 + 16 - 365) - X(0)) + '" height="16" fill="' + nc(v) + '"/>'; });
-        s += '</g>'; y += 20;
+        s += '<text x="' + (L - 8) + '" y="' + (y + 16) + '" text-anchor="end" font-size="14.3" fill="' + COL.muted + '">MODIS ' + yr + '</text><clipPath id="cN' + yr + '"><rect x="' + L + '" y="' + y + '" width="' + PW + '" height="22" rx="4"/></clipPath><g clip-path="url(#cN' + yr + ')">';
+        S.ndvi.by[yr].forEach((v, i) => { if (v === null) return; const d0 = ((i * 16 - cl.off) % 365 + 365) % 365, x0 = X(d0), w = X(Math.min(365, d0 + 16)) - x0; s += '<rect x="' + x0 + '" y="' + y + '" width="' + (w + 0.5) + '" height="22" fill="' + nc(v) + '"><title>' + yr + ', around ' + cl.fmtDay(d0 + 8) + ': greenness (NDVI) ' + v.toFixed(2) + '</title></rect>'; if (d0 + 16 > 365) s += '<rect x="' + X(0) + '" y="' + y + '" width="' + (X(d0 + 16 - 365) - X(0)) + '" height="22" fill="' + nc(v) + '"/>'; });
+        s += '</g>'; y += 27;
       });
       y += 7;
     }
     const fill = { 0: COL.bare, 1: COL.straw, 2: COL.crop, 3: COL.cover, 4: COL.peren };
     list.forEach((st, si) => {
-      s += '<text x="0" y="' + (y + 12) + '" font-size="13" font-weight="600" fill="' + COL.ink + '">' + esc(st.name) + '</text>'; y += 20;
+      s += '<text x="0" y="' + (y + 16) + '" font-size="16.9" font-weight="600" fill="' + COL.ink + '">' + esc(st.name) + '</text>'; y += 27;
       const tl = st.tl;
       for (let i = 0; i < tl.N; i++) {
-        s += '<text x="' + (L - 8) + '" y="' + (y + 12) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">Year ' + (i + 1) + '</text><clipPath id="c' + si + '_' + i + '"><rect x="' + L + '" y="' + y + '" width="' + PW + '" height="16" rx="4"/></clipPath><g clip-path="url(#c' + si + '_' + i + ')">';
+        s += '<text x="' + (L - 8) + '" y="' + (y + 16) + '" text-anchor="end" font-size="14.3" fill="' + COL.muted + '">Year ' + (i + 1) + '</text><clipPath id="c' + si + '_' + i + '"><rect x="' + L + '" y="' + y + '" width="' + PW + '" height="22" rx="4"/></clipPath><g clip-path="url(#c' + si + '_' + i + ')">';
         let a = 0;
         while (a < 365) {
           const t0 = i * 365 + a, k = tl.st[t0], who = tl.ci[t0]; let b = a;
           while (b < 365 && tl.st[i * 365 + b] === k && tl.ci[i * 365 + b] === who) b++;
           const x0 = X(a), w = X(b) - x0, lab = k === 0 ? 'Bare soil' : k === 1 ? 'Residue' : k === 3 ? 'Cover crop' : C[st.rot[who].c].short;
-          s += '<rect x="' + x0 + '" y="' + y + '" width="' + Math.max(0.5, w - 1) + '" height="16" fill="' + fill[k] + '"><title>' + lab + ': ' + cl.fmtDay(a) + ' to ' + cl.fmtDay(b - 1) + '</title></rect>';
-          if (w > lab.length * 6.5 + 8) s += '<text x="' + (x0 + w / 2) + '" y="' + (y + 12) + '" text-anchor="middle" font-size="10.5" font-weight="600" fill="' + (k === 4 ? '#fff' : '#10231A') + '" pointer-events="none">' + lab + '</text>';
+          s += '<rect x="' + x0 + '" y="' + y + '" width="' + Math.max(0.5, w - 1) + '" height="22" fill="' + fill[k] + '"><title>' + lab + ': ' + cl.fmtDay(a) + ' to ' + cl.fmtDay(b - 1) + '</title></rect>';
+          if (w > lab.length * 8.4 + 10) s += '<text x="' + (x0 + w / 2) + '" y="' + (y + 16) + '" text-anchor="middle" font-size="13.7" font-weight="600" fill="' + (k === 4 ? '#fff' : '#10231A') + '" pointer-events="none">' + lab + '</text>';
           a = b;
         }
-        s += '</g>'; y += 20;
+        s += '</g>'; y += 27;
       }
       y += 8;
     });
@@ -462,19 +462,19 @@
     return '<svg viewBox="0 0 ' + W + ' ' + y + '" role="img" aria-label="Monthly rain and evaporative demand above a calendar of ground cover for each rotation">' + grid + s + '</svg>';
   }
   function anomFigure(cl) {
-    const L = 58, cw = 34, chh = 13, W = L + 12 * cw + 6, H = 22 + cl.n * chh + 34;
+    const L = 66, cw = 40, chh = 17, W = L + 12 * cw + 6, H = 22 + cl.n * chh + 34;
     const mix = (a, b, t) => 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')';
     const col = z => { const t = Math.min(1, Math.abs(z) / 2); return z < 0 ? mix([40, 40, 36], [242, 165, 65], t) : mix([40, 40, 36], [124, 198, 232], t); };
     let s = '';
-    for (let m = 0; m < 12; m++) s += '<text x="' + (L + m * cw + cw / 2) + '" y="14" text-anchor="middle" font-size="11" fill="' + COL.muted + '">' + cl.monthName(m) + '</text>';
+    for (let m = 0; m < 12; m++) s += '<text x="' + (L + m * cw + cw / 2) + '" y="14" text-anchor="middle" font-size="14.3" fill="' + COL.muted + '">' + cl.monthName(m) + '</text>';
     cl.gwAnom.forEach((row, i) => {
       const y = 22 + i * chh;
-      s += '<text x="' + (L - 6) + '" y="' + (y + 10) + '" text-anchor="end" font-size="10" fill="' + COL.muted + '">' + cl.years[i].label + '</text>';
+      s += '<text x="' + (L - 6) + '" y="' + (y + 10) + '" text-anchor="end" font-size="13" fill="' + COL.muted + '">' + cl.years[i].label + '</text>';
       row.forEach((z, m) => { s += '<rect x="' + (L + m * cw) + '" y="' + y + '" width="' + (cw - 2) + '" height="' + (chh - 2) + '" rx="2.5" fill="' + col(z) + '"><title>' + cl.monthName(m) + ' ' + cl.years[i].label + ': ' + (z > 0 ? '+' : '') + z.toFixed(1) + ' standard deviations</title></rect>'; });
     });
     const ly = 22 + cl.n * chh + 10;
     for (let j = 0; j <= 8; j++) s += '<rect x="' + (L + j * 22) + '" y="' + ly + '" width="22" height="9" fill="' + col(-2 + j * 0.5) + '"/>';
-    s += '<text x="' + L + '" y="' + (ly + 21) + '" font-size="10" fill="' + COL.muted + '">much drier</text><text x="' + (L + 99) + '" y="' + (ly + 21) + '" text-anchor="middle" font-size="10" fill="' + COL.muted + '">normal</text><text x="' + (L + 198) + '" y="' + (ly + 21) + '" text-anchor="end" font-size="10" fill="' + COL.muted + '">much wetter</text>';
+    s += '<text x="' + L + '" y="' + (ly + 21) + '" font-size="13" fill="' + COL.muted + '">much drier</text><text x="' + (L + 99) + '" y="' + (ly + 21) + '" text-anchor="middle" font-size="13" fill="' + COL.muted + '">normal</text><text x="' + (L + 198) + '" y="' + (ly + 21) + '" text-anchor="end" font-size="13" fill="' + COL.muted + '">much wetter</text>';
     return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="min-width:420px" role="img" aria-label="Soil wetness anomaly by month and year">' + s + '</svg>';
   }
 
@@ -515,11 +515,11 @@
     $('modal').classList.add('on', 'wide');
   }
   const ANIM = {
-    rain: '<svg viewBox="0 0 320 150" class="anim"><g class="a-drops">' + [24, 60, 96, 132, 188, 224, 260, 296].map((x, i) => '<line x1="' + x + '" y1="0" x2="' + (x - 5) + '" y2="12" style="animation-delay:' + (i * 0.16) + 's"/>').join('') + '</g><rect x="8" y="90" width="146" height="34" rx="4" fill="#8a6a43"/><rect x="166" y="90" width="146" height="34" rx="4" fill="#8a6a43"/><rect x="166" y="86" width="146" height="5" rx="2" fill="#c9b27a"/>' + [180, 200, 220, 240, 260, 280, 300].map((x, i) => '<path class="a-sway" d="M' + x + ' 88 q5 -22 0 -38 q-5 16 0 38" fill="#9fd67a" style="animation-delay:' + (i * 0.2) + 's"/>').join('') + '<g class="a-wash"><circle cx="40" cy="92" r="3" fill="#c9a06a"/><circle cx="80" cy="93" r="2.5" fill="#c9a06a"/><circle cx="120" cy="92" r="3" fill="#c9a06a"/></g><text x="81" y="143" text-anchor="middle">bare: soil washes off</text><text x="239" y="143" text-anchor="middle">covered: water soaks in</text></svg>',
-    bucket: '<svg viewBox="0 0 320 130" class="anim"><defs><clipPath id="bk"><path d="M112 24 L128 120 H192 L208 24 Z"/></clipPath></defs><g clip-path="url(#bk)"><rect class="a-level" x="100" y="24" width="120" height="96" fill="#7cc6e8" opacity=".8"/></g><path d="M112 24 L128 120 H192 L208 24" fill="none" stroke="#e6f2e4" stroke-width="3" stroke-linejoin="round"/><g class="a-fall">' + [140, 160, 180].map((x, i) => '<line x1="' + x + '" y1="0" x2="' + (x - 3) + '" y2="10" style="animation-delay:' + (i * 0.35) + 's"/>').join('') + '</g><path class="a-leaf" d="M236 64 q30 -30 56 0 q-28 22 -56 0" fill="#9fd67a"/><path d="M208 70 Q222 66 236 64" stroke="#7cc6e8" stroke-width="3" fill="none" class="a-sip"/><text x="20" y="18">rain fills it</text><text x="240" y="100">crop drinks</text><text x="20" y="118">soil = bucket</text></svg>',
-    shuffle: '<svg viewBox="0 0 320 130" class="anim">' + Array.from({ length: 10 }, (_, i) => '<rect class="a-card a-c' + (i % 5) + '" x="' + (17 + i * 29) + '" y="40" width="24" height="34" rx="4" style="animation-delay:' + (i * 0.12) + 's"/>').join('') + '<text x="160" y="112" text-anchor="middle">25 real years, redrawn 300 times</text></svg>',
-    roots: '<svg viewBox="0 0 320 150" class="anim"><rect x="0" y="72" width="320" height="78" fill="#6b5233"/>' + [60, 160, 260].map((x, i) => '<path d="M' + x + ' 72 q5 -26 0 -40 q-5 14 0 40" fill="#9fd67a"/><path class="a-root" d="M' + x + ' 72 q-10 26 -4 70 M' + x + ' 72 q12 22 6 62" stroke="#ead9b2" stroke-width="2" fill="none" style="animation-delay:' + (i * 0.3) + 's"/>').join('') + '<text x="160" y="18" text-anchor="middle">roots hold soil and feed soil life</text></svg>',
-    score: '<svg viewBox="0 0 320 130" class="anim">' + [0, 1, 2, 3, 4].map(i => '<rect x="20" y="' + (10 + i * 23) + '" width="280" height="11" rx="5.5" fill="rgba(220,245,225,.12)"/><rect class="a-bar" x="20" y="' + (10 + i * 23) + '" width="' + [180, 240, 150, 210, 120][i] + '" height="11" rx="5.5" fill="#9fd67a" style="animation-delay:' + (i * 0.15) + 's"/>').join('') + '</svg>'
+    rain: '<svg viewBox="0 0 320 150" class="xanim"><g class="a-drops">' + [24, 60, 96, 132, 188, 224, 260, 296].map((x, i) => '<line x1="' + x + '" y1="0" x2="' + (x - 5) + '" y2="12" style="animation-delay:' + (i * 0.16) + 's"/>').join('') + '</g><rect x="8" y="90" width="146" height="34" rx="4" fill="#8a6a43"/><rect x="166" y="90" width="146" height="34" rx="4" fill="#8a6a43"/><rect x="166" y="86" width="146" height="5" rx="2" fill="#c9b27a"/>' + [180, 200, 220, 240, 260, 280, 300].map((x, i) => '<path class="a-sway" d="M' + x + ' 88 q5 -22 0 -38 q-5 16 0 38" fill="#9fd67a" style="animation-delay:' + (i * 0.2) + 's"/>').join('') + '<g class="a-wash"><circle cx="40" cy="92" r="3" fill="#c9a06a"/><circle cx="80" cy="93" r="2.5" fill="#c9a06a"/><circle cx="120" cy="92" r="3" fill="#c9a06a"/></g><text x="81" y="143" text-anchor="middle">bare: soil washes off</text><text x="239" y="143" text-anchor="middle">covered: water soaks in</text></svg>',
+    bucket: '<svg viewBox="0 0 320 130" class="xanim"><defs><clipPath id="bk"><path d="M112 24 L128 120 H192 L208 24 Z"/></clipPath></defs><g clip-path="url(#bk)"><rect class="a-level" x="100" y="24" width="120" height="96" fill="#7cc6e8" opacity=".8"/></g><path d="M112 24 L128 120 H192 L208 24" fill="none" stroke="#e6f2e4" stroke-width="3" stroke-linejoin="round"/><g class="a-fall">' + [140, 160, 180].map((x, i) => '<line x1="' + x + '" y1="0" x2="' + (x - 3) + '" y2="10" style="animation-delay:' + (i * 0.35) + 's"/>').join('') + '</g><path class="a-leaf" d="M236 64 q30 -30 56 0 q-28 22 -56 0" fill="#9fd67a"/><path d="M208 70 Q222 66 236 64" stroke="#7cc6e8" stroke-width="3" fill="none" class="a-sip"/><text x="20" y="18">rain fills it</text><text x="240" y="100">crop drinks</text><text x="20" y="118">soil = bucket</text></svg>',
+    shuffle: '<svg viewBox="0 0 320 130" class="xanim">' + Array.from({ length: 10 }, (_, i) => '<rect class="a-card a-c' + (i % 5) + '" x="' + (17 + i * 29) + '" y="40" width="24" height="34" rx="4" style="animation-delay:' + (i * 0.12) + 's"/>').join('') + '<text x="160" y="112" text-anchor="middle">25 real years, redrawn 300 times</text></svg>',
+    roots: '<svg viewBox="0 0 320 150" class="xanim"><rect x="0" y="72" width="320" height="78" fill="#6b5233"/>' + [60, 160, 260].map((x, i) => '<path d="M' + x + ' 72 q5 -26 0 -40 q-5 14 0 40" fill="#9fd67a"/><path class="a-root" d="M' + x + ' 72 q-10 26 -4 70 M' + x + ' 72 q12 22 6 62" stroke="#ead9b2" stroke-width="2" fill="none" style="animation-delay:' + (i * 0.3) + 's"/>').join('') + '<text x="160" y="18" text-anchor="middle">roots hold soil and feed soil life</text></svg>',
+    score: '<svg viewBox="0 0 320 130" class="xanim">' + [0, 1, 2, 3, 4].map(i => '<rect x="20" y="' + (10 + i * 23) + '" width="280" height="11" rx="5.5" fill="rgba(220,245,225,.12)"/><rect class="a-bar" x="20" y="' + (10 + i * 23) + '" width="' + [180, 240, 150, 210, 120][i] + '" height="11" rx="5.5" fill="#9fd67a" style="animation-delay:' + (i * 0.15) + 's"/>').join('') + '</svg>'
   };
   const TERMS = {
     bare: ['Bare soil days', 'rain', ['Days in a year when nothing is growing on the field and little straw covers it.', 'Bare soil loses water to evaporation and is washed or blown away in storms. One heavy storm on bare ground can remove topsoil that took decades to form.', 'Cover crops, keeping straw on the surface and less ploughing all cut these days.']],

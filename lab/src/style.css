@@ -479,30 +479,30 @@ body.wiz [data-wiz=field] #reset{display:none}
 .q:hover{background:rgba(168,224,138,.3)}
 .osec>summary .q{margin-left:8px}
 .animbox{background:rgba(0,0,0,.25);border-radius:16px;padding:8px 10px;margin:10px 0;overflow:hidden}
-.anim{width:100%;height:auto;display:block}
-.anim text{fill:#d3e6d4;font:13px Rubik,sans-serif}
-.anim .a-drops line,.anim .a-fall line{stroke:#7cc6e8;stroke-width:2.5;stroke-linecap:round;animation:a-drop 1.2s linear infinite}
-.anim .a-fall line{animation-name:a-fall;animation-duration:1.1s}
+.xanim{width:100%;height:auto;display:block}
+.xanim text{fill:#d3e6d4;font:13px Rubik,sans-serif}
+.xanim .a-drops line,.xanim .a-fall line{stroke:#7cc6e8;stroke-width:2.5;stroke-linecap:round;animation:a-drop 1.2s linear infinite}
+.xanim .a-fall line{animation-name:a-fall;animation-duration:1.1s}
 @keyframes a-drop{from{transform:translateY(-10px);opacity:0}15%{opacity:1}85%{opacity:1}to{transform:translateY(70px);opacity:0}}
 @keyframes a-fall{from{transform:translateY(-6px);opacity:0}20%{opacity:1}to{transform:translateY(30px);opacity:0}}
-.anim .a-wash circle{animation:a-wash 2.4s ease-in infinite}
+.xanim .a-wash circle{animation:a-wash 2.4s ease-in infinite}
 @keyframes a-wash{from{transform:translateX(0);opacity:1}to{transform:translate(28px,22px);opacity:0}}
-.anim .a-sway{transform-origin:50% 100%;transform-box:fill-box;animation:a-sway 2.6s ease-in-out infinite alternate}
+.xanim .a-sway{transform-origin:50% 100%;transform-box:fill-box;animation:a-sway 2.6s ease-in-out infinite alternate}
 @keyframes a-sway{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}
-.anim .a-level{transform-origin:50% 100%;transform-box:fill-box;animation:a-level 4s ease-in-out infinite alternate}
+.xanim .a-level{transform-origin:50% 100%;transform-box:fill-box;animation:a-level 4s ease-in-out infinite alternate}
 @keyframes a-level{from{transform:scaleY(.3)}to{transform:scaleY(.8)}}
-.anim .a-leaf{transform-origin:0 50%;transform-box:fill-box;animation:a-sway 2s ease-in-out infinite alternate}
-.anim .a-sip{stroke-dasharray:6 6;animation:a-sip 1s linear infinite}
+.xanim .a-leaf{transform-origin:0 50%;transform-box:fill-box;animation:a-sway 2s ease-in-out infinite alternate}
+.xanim .a-sip{stroke-dasharray:6 6;animation:a-sip 1s linear infinite}
 @keyframes a-sip{to{stroke-dashoffset:-12}}
-.anim .a-card{fill:#9fd67a;animation:a-shuf 2.4s cubic-bezier(.5,0,.3,1) infinite}
-.anim .a-c1{fill:#7cc6e8}.anim .a-c2{fill:#f2b04f}.anim .a-c3{fill:#ead9b2}.anim .a-c4{fill:#f39a86}
+.xanim .a-card{fill:#9fd67a;animation:a-shuf 2.4s cubic-bezier(.5,0,.3,1) infinite}
+.xanim .a-c1{fill:#7cc6e8}.xanim .a-c2{fill:#f2b04f}.xanim .a-c3{fill:#ead9b2}.xanim .a-c4{fill:#f39a86}
 @keyframes a-shuf{0%,100%{transform:translate(0,0)}30%{transform:translate(12px,-22px)}60%{transform:translate(-10px,10px)}}
-.anim .a-root{stroke-dasharray:110;stroke-dashoffset:110;animation:a-grow 2.6s ease-out infinite}
+.xanim .a-root{stroke-dasharray:110;stroke-dashoffset:110;animation:a-grow 2.6s ease-out infinite}
 @keyframes a-grow{70%,100%{stroke-dashoffset:0}}
-.anim .a-bar{transform-origin:0 50%;transform-box:fill-box;animation:a-barg 1.6s cubic-bezier(.2,.8,.2,1) both}
+.xanim .a-bar{transform-origin:0 50%;transform-box:fill-box;animation:a-barg 1.6s cubic-bezier(.2,.8,.2,1) both}
 @keyframes a-barg{from{transform:scaleX(0)}}
 .mbox .step{opacity:0;animation:paneIn .5s cubic-bezier(.2,.8,.2,1) forwards;font-size:17px;line-height:1.55}
-@media (prefers-reduced-motion:reduce){.anim *,.mbox .step{animation:none!important;opacity:1!important;stroke-dashoffset:0!important}}
+@media (prefers-reduced-motion:reduce){.xanim *,.mbox .step{animation:none!important;opacity:1!important;stroke-dashoffset:0!important}}
 .mbox .step{margin:0 0 10px}
 
 #limchips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
@@ -541,7 +541,7 @@ body.wiz.wfree #free{height:64px;min-height:0}
 .mbox .step{font-size:16.5px;margin:0 0 8px}
 .mbox .ask{margin-top:10px;padding-top:10px}
 .mbox .mrow .bigbtn{margin-top:12px}
-.anim{max-height:160px}
+.xanim{max-height:160px}
 
 .modal.term .mbox{max-width:980px;width:100%}
 .tgrid{display:grid;grid-template-columns:1.1fr 1fr;gap:24px;align-items:start}
