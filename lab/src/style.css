@@ -562,3 +562,26 @@ body.wiz.wfree #free{height:64px;min-height:0}
 
 body.wiz.wpri #weights,body.wiz.wpri #weights2,body.wiz.wacc #acc{align-items:start}
 .modal{z-index:60}
+
+.res{transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .3s ease}
+body.nores .res{transform:translateX(calc(100% + 24px))!important;opacity:0!important;pointer-events:none}
+.rhandle{left:auto;right:calc(clamp(460px,44vw,740px) + 12px);transform:translate(50%,-50%);transition:right .35s cubic-bezier(.2,.8,.2,1),background .2s}
+.rhandle:active{transform:translate(50%,-50%) scale(.94)}
+body.nores .rhandle{right:12px;transform:translate(0,-50%);padding:0 10px 0 14px;flex-direction:row-reverse}
+body.nores .rhandle svg{transform:rotate(180deg)}
+body.nores .rhandle span{display:inline}
+body.nores .rhandle:active{transform:translate(0,-50%) scale(.94)}
+.leaflet-bottom.leaflet-right{transition:right .35s cubic-bezier(.2,.8,.2,1)}
+body.nores .leaflet-bottom.leaflet-right{right:12px}
+body .rhandle,body.noset .rhandle{left:auto;padding:0 9px}
+body.nores .rhandle,body.noset.nores .rhandle{padding:0 10px 0 14px}
+body.noset .rhandle span{display:none}
+body.nores .rhandle span{display:inline}
+body.noset:not(.nores) .rhandle{transform:translate(50%,-50%)}
+body.noset .rhandle svg{transform:none}
+body.nores .rhandle svg{transform:rotate(180deg)}
+.mbox .rk:active,.rank .rk:active{transform:none}
+.mbox .rk{transition:background .15s ease}
+.mbox .rk:hover{background:rgba(168,224,138,.1)}
+.stickbar{bottom:-30px;margin-bottom:-30px;padding-bottom:22px}
+@media (max-width:1400px){.res .tabs{gap:4px;padding:8px}.res .tabs button{padding:7px 9px;font-size:14px}}

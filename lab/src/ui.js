@@ -769,6 +769,8 @@
     $('free').oninput = e => { S.text = e.target.value; syncChips(); showUnd(); clearTimeout(ft); ft = setTimeout(recompute, 600); };
     document.addEventListener('click', e => { const b = e.target.closest('.why'); if (b) { const x = $('x_' + b.dataset.x); if (x) x.classList.toggle('on'); } });
     document.querySelectorAll('.setup details.box').forEach(d => d.addEventListener('toggle', () => { if (d.open && S.wiz == null) document.querySelectorAll('.setup details.box').forEach(o => { if (o !== d) o.open = false; }); }));
+    document.body.classList.add('noset');
+    $('rhandle').onclick = () => { const off = document.body.classList.toggle('nores'); $('rhandle').setAttribute('aria-expanded', String(!off)); $('rhandle').setAttribute('aria-label', off ? 'Show results' : 'Hide results'); if (map) setTimeout(() => map.invalidateSize(), 350); };
     $('handle').onclick = () => { const off = document.body.classList.toggle('noset'); $('handle').setAttribute('aria-expanded', String(!off)); $('handle').setAttribute('aria-label', off ? 'Show settings' : 'Hide settings'); if (map) setTimeout(() => map.invalidateSize(), 350); };
     window.goTools = () => {
       const t = { field: S.demo || 'custom', lat: S.lat, lon: S.lon, rot: S.rot.map(r => r.c), soil: S.soil, till: S.till, slope: S.slopePct, w: S.weights, later: S.later, w2: S.w2, years: S.years, acc: S.acc, text: S.text, exp: S.exp };
@@ -800,7 +802,7 @@
     $('load').onclick = () => { const la = parseFloat($('lat').value), lo = parseFloat($('lon').value); if (isFinite(la) && isFinite(lo) && Math.abs(la) <= 70 && Math.abs(lo) <= 180) { setPlace(la, lo, null); setTab('result'); } else status('err', 'Enter a latitude between -60 and 70 and a longitude between -180 and 180.'); };
     $('out').addEventListener('click', e => { if (e.target.id === 'showrank') openRank(); });
     document.addEventListener('click', e => { const q = e.target.closest('[data-term]'); if (q) { e.stopPropagation(); explainTerm(q.dataset.term); } }, true);
-    $('modal').addEventListener('click', e => { if (e.target.id === 'modal' || e.target.closest('[data-close]')) closeModal(); const o = e.target.closest('#mbox [data-sel]'); if (o) { S.sel = +o.dataset.sel; S.animOpt = true; closeModal(); render(); $('scroll').scrollTop = 0; } });
+    $('modal').addEventListener('click', e => { if (e.target.id === 'modal' || e.target.closest('[data-close]')) closeModal(); const o = e.target.closest('#mbox [data-sel]'); if (o && !o.dataset.done) { o.dataset.done = 1; S.sel = +o.dataset.sel; S.animOpt = true; closeModal(); render(); $('scroll').scrollTop = 0; } });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
     $('soil').addEventListener('change', () => { soilTxt(); suggest(); }); soilTxt();
     $('wizback').onclick = () => { if (S.wiz > 0) wizard(S.wiz - 1); };
