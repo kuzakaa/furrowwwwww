@@ -137,7 +137,7 @@ code{background:#38332c;border-radius:5px;padding:1px 5px;font-size:13px}
 
   function strat() {
     const fb = store.get('furrowlab:fb', {}), mine = fb[fieldKey] || {};
-    let h = '<p class="mute">Every strategy we could build from your rotation, ranked by the same overall score as the main app. Open one to see why it is here, what backs it up, what we don’t know, and what someone local should check.</p>';
+    let h = '';
     R.list.forEach((s, i) => {
       const I = L.INFO[s.id], f = mine[s.id] || {};
       h += '<div class="card"><details' + (i === 0 ? ' open' : '') + '><summary>' + (i + 1) + '. ' + esc(s.name) + ' <span class="mute">· ' + s.match.toFixed(0) + '</span></summary>'
@@ -163,29 +163,29 @@ code{background:#38332c;border-radius:5px;padding:1px 5px;font-size:13px}
       ['Crop families', s => s.x.fams], ['Same family in a row (max)', s => s.x.famRun], ['Water short, avg %', s => s.x.waterGap], ['Water short, worst 10% yrs', s => s.x.badYear],
       ['Hot days at flowering', s => s.x.heat], ['Soil carbon gain t C/ha/yr (rough)', s => s.x.carbon], ['Sowings per year', s => s.x.ops]
     ];
-    let h = '<p class="mute">The five scores from the main app plus the raw numbers behind them, and a few more. Lower is better for bare days, open soil, same family in a row, water shortage and hot days.</p><div class="card scroll"><table><tr><th>Strategy</th>' + cols.map(c => '<th class="n">' + c[0] + '</th>').join('') + '</tr>';
+    let h = '<div class="card scroll"><table><tr><th>Strategy</th>' + cols.map(c => '<th class="n">' + c[0] + '</th>').join('') + '</tr>';
     R.list.forEach(s => { h += '<tr><td>' + esc(s.name) + '</td>' + cols.map(c => '<td class="n">' + c[1](s) + '</td>').join('') + '</tr>'; });
-    h += '</table></div><p class="mute">Soil carbon is a rough guess from published averages (about 0.32 t C/ha/yr for cover crops, from a big review of field trials), not something we measure. Nitrogen from legumes is the model’s estimate, not a soil test.</p>';
+    h += '</table></div>';
     $('params').innerHTML = h;
   }
 
   function stress() {
     const sc = L.SCEN, top = R.winners, nm = id => R.list.find(s => s.id === id).name;
     const col = (v, best) => '<span class="cell" style="background:' + (v === best ? 'rgba(143,196,106,.25)' : 'transparent') + '">' + v.toFixed(0) + '</span>';
-    let h = '<div class="card"><b>' + (R.stable ? '<span class="ok">The winner holds up.</span> ' + esc(nm(top.base)) + ' comes first in every climate version and with recent years only.' : '<span class="warn">The winner changes.</span> Which strategy comes first depends on the climate we assume, so treat the ranking as close.') + '</b>'
-      + '<p class="mute">We don’t forecast the weather. We replay the past 25 years, then replay them again warmer and drier to see if the advice survives. That’s our answer to “what if the future isn’t like the past”.</p></div>';
+    let h = '<div class="card"><b>' + (R.stable ? '<span class="ok">The winner holds up.</span> ' + esc(nm(top.base)) : '<span class="warn">The winner changes.</span>') + '</b>'
+      + '</div>';
     h += '<div class="card scroll"><table><tr><th>Strategy</th>' + sc.map(s => '<th class="n">' + s.name + '</th>').join('') + '<th class="n">Only 2013-2025</th><th class="n">Worst case</th><th class="n">Swing</th></tr>';
     const best = {}; sc.forEach(x => best[x.id] = Math.max.apply(null, R.list.map(s => s.byScen[x.id]))); const bestR = Math.max.apply(null, R.list.map(s => s.recent));
     R.list.forEach(s => { h += '<tr><td>' + esc(s.name) + '</td>' + sc.map(x => '<td class="n">' + col(s.byScen[x.id], best[x.id]) + '</td>').join('') + '<td class="n">' + col(s.recent, bestR) + '</td><td class="n">' + s.worst.toFixed(0) + '</td><td class="n">' + s.spread.toFixed(0) + '</td></tr>'; });
-    h += '</table></div><p class="mute">Swing is how far the score moves between the kindest and harshest climate. Small swing means the strategy doesn’t depend much on the weather staying the same.</p>';
+    h += '</table></div>';
     $('stress').innerHTML = h;
   }
 
   function farm() {
     const saved = store.get('furrowlab:farm', {})[fieldKey] || '';
-    $('farm').innerHTML = '<div class="card"><b>Your own records</b><p class="mute">Paste what actually happened on the field, one line per crop: <code>year, crop, sowing date, harvest date, yield t/ha</code>. We compare it with our dates so you can see where the model is off for your farm.</p>'
+    $('farm').innerHTML = '<div class="card"><b>Your own records</b><p class="mute"><code>year, crop, sowing date, harvest date, yield t/ha</code></p>'
       + '<textarea id="csv" placeholder="2024, wheat, 2023-10-01, 2024-07-05, 5.1&#10;2024, sunflower, 2024-04-25, 2024-09-20, 2.4">' + esc(saved) + '</textarea><div class="bar"><button class="go" id="cmp">Compare</button></div><div id="cmpout"></div></div>'
-      + '<div class="card"><b>Share and collect feedback</b><p class="mute">Everything you mark on the strategies and paste here stays in this browser. Export it to send to us, or import someone else’s file to see their notes. Collected from many farms, this is the data we would need to tune the model for each region.</p>'
+      + '<div class="card"><b>Share and collect feedback</b>'
       + '<div class="bar"><button id="exp">Export my notes</button><label><button id="impb">Import notes</button><input id="imp" type="file" accept=".json" hidden></label></div><div id="fbsum" class="mute"></div></div>';
     $('cmp').onclick = () => {
       const t = $('csv').value, all = store.get('furrowlab:farm', {}); all[fieldKey] = t; store.set('furrowlab:farm', all);
@@ -193,7 +193,7 @@ code{background:#38332c;border-radius:5px;padding:1px 5px;font-size:13px}
       if (!rows.length) { $('cmpout').innerHTML = '<p class="warn">No lines we could read. Start each with a 4-digit year.</p>'; return; }
       const d = v => v == null ? '–' : (v > 0 ? '+' : '') + v + ' d';
       $('cmpout').innerHTML = '<div class="scroll"><table><tr><th>Year</th><th>Crop</th><th class="n">Sowing vs ours</th><th class="n">Harvest vs ours</th><th class="n">Yield</th></tr>'
-        + rows.map(r => '<tr><td>' + r.year + '</td><td>' + esc(r.crop ? C[r.crop].short : r.raw + ' (unknown)') + '</td><td class="n">' + d(r.sowDiff) + '</td><td class="n">' + d(r.harvDiff) + '</td><td class="n">' + (r.yield || '–') + '</td></tr>').join('') + '</table></div><p class="mute">Plus means you were later than our date. A steady gap of more than two weeks tells us the crop settings need tuning for your area.</p>';
+        + rows.map(r => '<tr><td>' + r.year + '</td><td>' + esc(r.crop ? C[r.crop].short : r.raw + ' (unknown)') + '</td><td class="n">' + d(r.sowDiff) + '</td><td class="n">' + d(r.harvDiff) + '</td><td class="n">' + (r.yield || '–') + '</td></tr>').join('') + '</table></div>';
     };
     $('exp').onclick = () => {
       const blob = new Blob([JSON.stringify({ app: 'furrow-lab', at: new Date().toISOString(), feedback: store.get('furrowlab:fb', {}), records: store.get('furrowlab:farm', {}) }, null, 1)], { type: 'application/json' });
@@ -216,13 +216,12 @@ code{background:#38332c;border-radius:5px;padding:1px 5px;font-size:13px}
 
   function care() {
     const base = R.list.find(s => s.id === 'current'), opts = R.list.filter(s => s.id !== 'current' && s.x.carbon > base.x.carbon);
-    let h = '<div class="card"><b>Paying farmers for looking after the soil</b><p class="mute">An idea, not a working market. If a farmer switches to a strategy that keeps soil covered, we estimate how much carbon the soil could gain and what that might be worth. Then a simple agreement pays out in steps, only when satellite data shows the field really was covered. Below is a simulation of that agreement. No real money, no real blockchain, just how it would work.</p>'
+    let h = '<div class="card"><b>Paying farmers for looking after the soil</b>'
       + '<div class="bar"><select id="cs">' + opts.map(s => '<option value="' + s.id + '">' + esc(s.name) + '</option>').join('') + '</select>'
       + '<label>Hectares <input id="ha" type="number" value="100" min="1"></label><label>€ per t CO₂ <input id="pr" type="number" value="40" min="0"></label><label>Years <input id="yr" type="number" value="5" min="1" max="20"></label></div><div id="cres"></div></div>'
-      + '<div class="card"><b>Agreement log</b><p class="mute">Each step is chained to the one before with a SHA-256 fingerprint, so nobody can quietly change an old entry. This is the part a real smart contract would do on a public chain.</p><div class="bar"><button id="sign">1. Farmer and buyer sign</button><button id="check">2. Satellite check for a year</button><button id="reset">Start over</button></div><div id="ledger"></div></div>'
-      + '<div class="card mute">What’s missing before this could be real: measuring soil carbon in the field (we only estimate it), an independent checker, a buyer, and legal terms. Carbon from cover crops can also be lost again if the practice stops.</div>';
+      + '<div class="card"><b>Agreement log</b><div class="bar"><button id="sign">1. Farmer and buyer sign</button><button id="check">2. Satellite check for a year</button><button id="reset">Start over</button></div><div id="ledger"></div></div>';
     $('care').innerHTML = h;
-    if (!opts.length) { $('cres').textContent = 'None of the strategies adds soil cover compared with the current one.'; return; }
+    if (!opts.length) { $('cres').textContent = 'No option adds soil cover.'; return; }
     const calc = () => {
       const s = R.list.find(x => x.id === $('cs').value), c = L.credits(s, base, +$('ha').value, +$('pr').value, +$('yr').value);
       $('cres').innerHTML = '<table><tr><td>Extra soil carbon, rough</td><td class="n">' + c.tC.toFixed(2) + ' t C/ha/yr</td></tr><tr><td>Same as CO₂</td><td class="n">' + c.tCO2.toFixed(2) + ' t/ha/yr</td></tr><tr><td>Total over the agreement</td><td class="n">' + c.total.toFixed(0) + ' t CO₂</td></tr><tr><td>Possible payout</td><td class="n"><b>€' + Math.round(c.money).toLocaleString() + '</b></td></tr><tr><td>Per year, per hectare</td><td class="n">€' + (c.money / +$('yr').value / +$('ha').value).toFixed(0) + '</td></tr></table>';
@@ -260,7 +259,7 @@ code{background:#38332c;border-radius:5px;padding:1px 5px;font-size:13px}
       ['What farmers actually did', 'Farmers themselves (Your data tab)', 'Started: notes and records you can export and share', 'ok'],
       ['Field sensors', 'Farm soil moisture and weather stations', 'Idea: farmers could plug their own sensors in', 'bad']
     ];
-    $('sources').innerHTML = '<p class="mute">Data that could make the advice better, where it comes from, and how far we are with it. The farmer rows are the “decentralised” part: data comes from the people on the ground, not only from satellites.</p><div class="card scroll"><table><tr><th>What</th><th>From</th><th>Status</th></tr>'
+    $('sources').innerHTML = '<div class="card scroll"><table><tr><th>What</th><th>From</th><th>Status</th></tr>'
       + rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td class="' + r[3] + '">' + r[2] + '</td></tr>').join('') + '</table></div>';
   }
 
