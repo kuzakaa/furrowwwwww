@@ -1,7 +1,7 @@
-:root{--bg:#10261b;--panel:#173324;--panel-c:#173324;--panel2:#20412f;--line:#2f5a42;--ink:#f5faf2;--mute:#d3e6d4;--green:#b4ec8f;--warn:#ffcf7a;--bad:#ff9f8a;--blue:#9ad6ff;color-scheme:dark}
+:root{--bg:#0c2117;--panel:rgba(14,40,27,.92);--panel-c:#173324;--panel2:#20412f;--line:#2f5a42;--ink:#f5faf2;--mute:#d3e6d4;--green:#b4ec8f;--warn:#ffcf7a;--bad:#ff9f8a;--blue:#9ad6ff;color-scheme:dark}
 *{box-sizing:border-box}
-html{font-size:21px}
-@media (max-width:600px){html{font-size:19px}}
+html{font-size:17.5px}
+@media (max-width:600px){html{font-size:16.5px}}
 body{margin:0;background:var(--bg);color:var(--ink);font:1rem/1.55 Rubik,system-ui,sans-serif}
 a{color:var(--green)}
 .top{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
@@ -196,3 +196,18 @@ input[type=number]{width:110px}
 .mv .kp:hover p,.mv .lnk:hover{color:#fff}
 .mv .lnk{cursor:pointer;text-decoration:underline;text-decoration-color:rgba(240,236,220,.25);text-underline-offset:3px}
 .mv .kp{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}.mv .kp .big{white-space:nowrap}
+
+.top{gap:18px;padding:10px 18px;background:rgba(12,33,23,.96);backdrop-filter:blur(8px)}
+.top .back{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--ink);font-weight:600;border:1px solid var(--line);border-radius:999px;padding:9px 16px 9px 10px;transition:background .2s}
+.top .back:hover{background:var(--panel2)}
+.top .back svg{width:18px;height:18px}
+.top .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:1.3rem}
+.top .brand svg{width:30px}
+.top .brand span{font-weight:500;color:var(--mute);font-size:1rem;margin-left:4px}
+#fieldline{margin-left:auto;color:var(--mute);font-size:.95rem}
+#out{max-width:1100px;margin:0 auto}
+.card{background:rgba(14,40,27,.92);border-radius:18px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+nav.tabs{border-bottom:1px solid var(--line);gap:2px;padding-bottom:0}
+nav.tabs button{background:none;border:0;border-radius:0;border-bottom:3px solid transparent;color:var(--mute);padding:12px 14px}
+nav.tabs button.on{background:none;color:var(--ink);border-bottom-color:var(--green)}
+@media (max-width:700px){#fieldline{display:none}.top .brand span{display:none}}

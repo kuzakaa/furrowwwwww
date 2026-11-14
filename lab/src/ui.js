@@ -249,7 +249,7 @@
     $('sheet').innerHTML = h;
   }
 
-  const TABS = [['result', 'Result'], ['climate', 'Weather'], ['calendar', 'Calendar'], ['options', 'Options'], ['years', 'Bad years'], ['method', 'How it works']];
+  const TABS = [['result', 'Result'], ['options', 'Options'], ['climate', 'Weather'], ['calendar', 'Calendar'], ['years', 'Bad years'], ['method', 'How it works'], ['tools', 'More tools']];
   let LAST = null;
   function recompute() {
     if (!S.raw) return;
@@ -507,7 +507,7 @@
     const top = LAST.alts.concat(LAST.others).slice(0, 6), keys = Object.keys(Lab.ACCEPT).filter(k => top.some(t => t.need && k in t.need));
     if ($('acc').dataset.keys === keys.join()) return;
     $('acc').dataset.keys = keys.join();
-    $('acc').innerHTML = keys.length ? keys.map(k => { const A = Lab.ACCEPT[k], v = S.acc[k] == null ? 3 : S.acc[k], who = top.filter(t => t.need && k in t.need).map(t => t.name).slice(0, 2).join('; '); return '<div class="wrow"><div class="wh"><label for="a_' + k + '">' + A.q + '</label><span class="lvl" id="av_' + k + '">' + v + ' of 5</span></div><div class="small muted">Needed for: ' + esc(who) + '</div><input id="a_' + k + '" type="range" min="0" max="5" step="1" value="' + v + '"><div class="ends"><span>0, ' + A.lo + '</span><span>5, ' + A.hi + '</span></div></div>'; }).join('') : '<p class="muted">The best options don’t need anything new from you.</p>';
+    $('acc').innerHTML = keys.length ? keys.map(k => { const A = Lab.ACCEPT[k], v = S.acc[k] == null ? 3 : S.acc[k], who = top.filter(t => t.need && k in t.need).map(t => t.name).slice(0, 1).join(''); return '<div class="wrow"><div class="wh"><label for="a_' + k + '">' + A.q + '</label><span class="lvl" id="av_' + k + '">' + v + ' of 5</span></div><input id="a_' + k + '" type="range" min="0" max="5" step="1" value="' + v + '"><div class="ends"><span>0 ' + A.lo.toLowerCase() + '</span><span>5 ' + A.hi.toLowerCase() + '</span></div><div class="ends"><span class="clip" title="' + esc(who) + '">For: ' + esc(who) + '</span></div></div>'; }).join('') : '<p class="muted">The best options don’t need anything new from you.</p>';
     keys.forEach(k => { $('a_' + k).oninput = e => { S.acc[k] = +e.target.value; $('av_' + k).textContent = e.target.value + ' of 5'; clearTimeout(drawAcc.t); drawAcc.t = setTimeout(recompute, 300); }; });
   }
   function askExp(done) {
@@ -519,7 +519,7 @@
   }
   function wizard(i) {
     if (WIZ[i][0] === 'acc') { $('acc').dataset.keys = ''; drawAcc(); }
-    S.wiz = i; document.body.classList.add('wiz');
+    S.wiz = i; document.body.classList.add('wiz'); document.body.classList.toggle('wacc', WIZ[i][0] === 'acc'); document.body.classList.toggle('wpri', WIZ[i][0] === 'pri');
     document.querySelectorAll('[data-wiz]').forEach(b => { const on = b.dataset.wiz === WIZ[i][0]; b.classList.toggle('cur', on); if (on) b.open = true; });
     $('wizn').textContent = 'Step ' + (i + 1) + ' of ' + WIZ.length; $('wizplace').textContent = S.name;
     $('wizt').textContent = WIZ[i][1]; $('wizd').textContent = WIZ[i][2]; $('wizbar').style.width = (i + 1) / WIZ.length * 100 + '%';
@@ -528,7 +528,7 @@
   }
   function wizEnd() {
     S.wiz = null; document.body.classList.remove('wiz'); save();
-    document.querySelectorAll('[data-wiz]').forEach(b => { b.classList.remove('cur'); b.open = b.dataset.wiz === 'rot' || b.dataset.wiz === 'pri'; });
+    document.querySelectorAll('[data-wiz]').forEach(b => { b.classList.remove('cur'); b.open = b.dataset.wiz === 'rot'; }); document.querySelectorAll('.setup details.box:not([data-wiz])').forEach(b => b.open = false); document.body.classList.remove('wacc', 'wpri');
     setTab('result'); if (map) goStep(0, true); moveInk();
   }
   let introPick = null;
@@ -630,7 +630,7 @@
     $('tabs').innerHTML = TABS.map(t => '<button data-tab-btn="' + t[0] + '">' + t[1] + '</button>').join('') + '<span class="ink"></span>';
     $('tabs').querySelectorAll('button').forEach(b => { if (EV.indexOf(b.dataset.tabBtn) >= 0) b.className = 'ev'; });
     $('dock').innerHTML = [['field', 'Field'], ['result', 'Result'], ['options', 'Options'], ['evidence', 'Evidence']].map(t => '<button data-tab-btn="' + t[0] + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[t[0]] + '</svg>' + t[1] + '</button>').join('') + '<span class="ink"></span>';
-    document.querySelectorAll('[data-tab-btn]').forEach(b => b.onclick = () => setTab(b.dataset.tabBtn));
+    document.querySelectorAll('[data-tab-btn]').forEach(b => b.onclick = () => b.dataset.tabBtn === 'tools' ? window.goTools() : setTab(b.dataset.tabBtn));
     const tip = document.createElement('div'); tip.id = 'tip'; document.body.appendChild(tip);
     document.addEventListener('click', e => {
       let el = e.target.closest ? e.target.closest('[data-tip]') : null, text = el ? el.getAttribute('data-tip') : '';
@@ -660,8 +660,9 @@
     let ft = null;
     $('free').oninput = e => { S.text = e.target.value; showUnd(); clearTimeout(ft); ft = setTimeout(recompute, 600); };
     document.addEventListener('click', e => { const b = e.target.closest('.why'); if (b) { const x = $('x_' + b.dataset.x); if (x) x.classList.toggle('on'); } });
-    $('hideset').onclick = () => { document.body.classList.toggle('noset'); $('hideset').textContent = document.body.classList.contains('noset') ? 'Show settings' : 'Hide settings'; if (map) setTimeout(() => map.invalidateSize(), 50); };
-    $('tools').onclick = () => {
+    document.querySelectorAll('.setup details.box').forEach(d => d.addEventListener('toggle', () => { if (d.open && S.wiz == null) document.querySelectorAll('.setup details.box').forEach(o => { if (o !== d) o.open = false; }); }));
+    $('handle').onclick = () => { const off = document.body.classList.toggle('noset'); $('handle').setAttribute('aria-expanded', String(!off)); $('handle').setAttribute('aria-label', off ? 'Show settings' : 'Hide settings'); if (map) setTimeout(() => map.invalidateSize(), 350); };
+    window.goTools = () => {
       const t = { field: S.demo || 'custom', lat: S.lat, lon: S.lon, rot: S.rot.map(r => r.c), soil: S.soil, till: S.till, slope: S.slopePct, w: S.weights, later: S.later, w2: S.w2, years: S.years, acc: S.acc, text: S.text, exp: S.exp };
       try { localStorage.setItem('furrowlab:setup', JSON.stringify(t)); } catch (e) {}
       location.href = 'tools/';

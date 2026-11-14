@@ -7,26 +7,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="lab.css?v=9">
+<link rel="stylesheet" href="lab.css?v=11">
 </head>
 <body>
 <div class="top">
-  <button id="toggle" class="big" aria-expanded="true">Hide setup</button>
-  <h1>Furrow lab</h1>
+  <a class="back" href="../"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Back to results</a>
+  <div class="brand"><svg viewBox="0 0 34 22" aria-hidden="true"><path d="M1 5c5-4 9 4 16 0s11 4 16 0M1 11c5-4 9 4 16 0s11 4 16 0M1 17c5-4 9 4 16 0s11 4 16 0" fill="none" stroke="#a8e08a" stroke-width="3" stroke-linecap="round"/></svg>Furrow <span>More tools</span></div>
+  <div id="fieldline"></div>
 </div>
-<div class="wrap" id="wrap">
+<div class="wrap closed" id="wrap">
   <aside id="setup"></aside>
   <div id="out">
     <div id="status" class="mute"></div>
     <div id="extras" class="mute"></div>
     <nav class="tabs" id="tabs">
-      <button data-t="strat" class="on">Your options</button>
-      <button data-t="summary">Summary</button>
-      <button data-t="mapt">Map</button>
-      <button data-t="weather">Weather</button>
-      <button data-t="calendar">Calendar</button>
-      <button data-t="years">Bad years</button>
-      <button data-t="stress">Future climate</button>
+      <button data-t="stress" class="on">Future climate</button>
       <button data-t="veg">Rain and plant stress</button>
       <button data-t="crops">Crop facts</button>
       <button data-t="params">All numbers</button>
@@ -36,13 +31,13 @@
       <button data-t="method">How it works</button>
       <button data-t="sources">More data</button>
     </nav>
-    <section id="strat" class="on"></section>
+    <section id="strat"></section>
     <section id="summary" class="mv"></section>
     <section id="mapt"><div class="bar"><select id="layer"><option value="">Satellite photo</option><option value="ndvi">Greenness (MODIS NDVI, 8 days)</option><option value="smap">Root-zone soil moisture (SMAP)</option><option value="imerg">Rain rate (IMERG)</option></select><input type="date" id="ldate"></div><div id="map2"></div><p class="mute">Tap the map to move the field. Dashed box: the NASA POWER weather cell, about 50 km.</p></section>
     <section id="weather" class="mv"></section>
     <section id="calendar" class="mv"></section>
     <section id="years" class="mv"></section>
-    <section id="stress"></section>
+    <section id="stress" class="on"></section>
     <section id="veg"></section>
     <section id="crops"></section>
     <section id="params"></section>
@@ -57,10 +52,10 @@
 <div id="tip"></div>
 <div class="modal" id="modal"><div class="box" id="mbox"></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="../../src/engine.js?v=9"></script>
-<script src="views.js?v=9"></script>
-<script src="../lab.js?v=9"></script>
-<script src="../contract/compiled.js?v=9"></script>
-<script src="ui.js?v=9"></script>
+<script src="../../src/engine.js?v=11"></script>
+<script src="views.js?v=11"></script>
+<script src="../lab.js?v=11"></script>
+<script src="../contract/compiled.js?v=11"></script>
+<script src="ui.js?v=11"></script>
 </body>
 </html>

@@ -41,8 +41,6 @@
   <div class="brand"><svg viewBox="0 0 34 22" aria-hidden="true"><path d="M1 5c5-4 9 4 16 0s11 4 16 0M1 11c5-4 9 4 16 0s11 4 16 0M1 17c5-4 9 4 16 0s11 4 16 0" fill="none" stroke="#8FD694" stroke-width="3" stroke-linecap="round"/></svg>Furrow</div>
   <select id="demo" aria-label="Example fields"></select>
   <div class="src" id="srcline">NASA POWER daily record, 2001 to 2025</div>
-  <button class="btn ghost" id="hideset">Hide settings</button>
-  <button class="btn ghost" id="tools">More tools</button>
 </header>
 <div class="mapbox glass">
   <div class="field"><label for="layer">NASA map layer</label>
@@ -55,6 +53,7 @@
   <div class="field dt"><label for="ldate">Date</label><input id="ldate" type="date" value="2025-07-12" min="2015-04-01"></div>
   <button class="btn ghost" id="play" aria-pressed="true">Pause tour</button>
 </div>
+<button class="handle" id="handle" aria-label="Hide settings" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Settings</span></button>
 <aside class="setup glass" id="setup">
   <div class="wizhead"><div class="wp"><i id="wizbar"></i></div><div class="wn"><span id="wizn"></span><span id="wizplace"></span></div><h2 id="wizt"></h2><p id="wizd"></p></div>
   <details class="box" open><summary>Field</summary>

@@ -203,7 +203,7 @@
       D.raw = await cached('furrow1:' + fieldKey, async () => E.parsePower(await getJSON('https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,GWETROOT&community=AG&longitude=' + lon + '&latitude=' + lat + '&start=20010101&end=20251231&format=JSON', 60000)));
       if (id !== runId) return;
       compute();
-      if (!quiet) setTab('strat');
+      if (!quiet) setTab('stress');
       if (!quiet) { if (innerWidth <= 900) { $('wrap').classList.add('closed'); syncToggle(); } $('out').scrollIntoView({ behavior: 'smooth' }); }
       if (quiet && step === 4) drawSetup();
       loadExtras(id, lat, lon);
@@ -590,13 +590,17 @@
   function setTab(t) { if (t === 'mapt') setTimeout(bigMap, 30);
     setTab0(t); }
   function setTab0(t) { document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.t === t)); document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === t)); }
-  function syncToggle() { const c = $('wrap').classList.contains('closed'); $('toggle').textContent = c ? 'Show setup' : 'Hide setup'; $('toggle').setAttribute('aria-expanded', String(!c)); }
-  $('toggle').onclick = () => { $('wrap').classList.toggle('closed'); syncToggle(); };
+  function syncToggle() { return; const c = $('wrap').classList.contains('closed'); $('toggle').textContent = c ? 'Show setup' : 'Hide setup'; $('toggle').setAttribute('aria-expanded', String(!c)); }
+
   $('tabs').onclick = e => { const b = e.target.closest('button'); if (b) setTab(b.dataset.t); };
   const m = /#n=([\w-]+)/.exec(location.hash); if (m) { try { merge(L.unpack(m[1])); history.replaceState(null, '', location.pathname); } catch (e) {} }
   const sm = /#s=([\w-]+)/.exec(location.hash); if (sm) { try { Object.assign(S, L.unpack(sm[1])); save(); history.replaceState(null, '', location.pathname); } catch (e) {} }
   D.shared = store.get('furrowlab:shared', []);
   drawSetup(); sources(); method();
+  const nm = (FIELDS.find(f => f.id === S.field) || { name: 'Your field' }).name;
+  $('fieldline').textContent = nm + ', ' + S.rot.map(c => C[c].short).join(', then ');
+  if (S.exp == null) S.exp = false;
+  go();
   ['summary', 'weather', 'calendar', 'years', 'strat', 'stress', 'veg', 'crops', 'params', 'farm', 'shared', 'care'].forEach(id => $(id).innerHTML = '<p class="mute">Complete the setup first.</p>');
   crops();
 })();
