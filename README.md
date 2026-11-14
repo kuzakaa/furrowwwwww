@@ -61,8 +61,4 @@ Farmers picking a crop rotation are betting on weather they can't see coming. Wi
 
 It's one file. Open `index.html` in a browser with an internet connection, or host the folder anywhere static. `src/` holds the parts and `python3 build.py` joins them into `index.html`.
 
-## Use of AI
-
-See [AI_DISCLOSURE.md](AI_DISCLOSURE.md).
-
 NASA does not endorse this tool.
