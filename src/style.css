@@ -316,3 +316,4 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
 #sug b{color:var(--ink)}
 #croptab td,#croptab th{white-space:nowrap;padding-right:14px}
 @media (max-width:900px){.terr{grid-template-columns:1fr}.terr svg{max-width:240px}}
+.dumb{display:block;width:100%;height:auto;max-width:620px;margin:4px 0 2px;font-family:Figtree,sans-serif}

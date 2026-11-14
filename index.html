@@ -327,6 +327,7 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
 #sug b{color:var(--ink)}
 #croptab td,#croptab th{white-space:nowrap;padding-right:14px}
 @media (max-width:900px){.terr{grid-template-columns:1fr}.terr svg{max-width:240px}}
+.dumb{display:block;width:100%;height:auto;max-width:620px;margin:4px 0 2px;font-family:Figtree,sans-serif}
 
 </style>
 </head>
@@ -438,6 +439,7 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
           <li>Replays every rotation through all 25 years with a daily soil-water account, then scores water, soil, storm exposure, market fit and resilience.</li>
           <li>Groups the 25 seasons into kinds of year two ways, with k-means clustering and with a simple thirds rule, and reports how far they agree.</li>
           <li>Reshuffles the 25 years 300 times (a bootstrap) to see how often each alternative still outscores your current rotation.</li>
+          <li>Reads two years of MODIS greenness (NDVI) for a 250 m square at your point and compares it with the modelled crop calendar, as a field-scale check on the model.</li>
           <li>Reads a 90 m elevation model on a 5 by 5 grid around your point to find steep ground and frost-prone hollows, and reads SoilGrids for a soil texture suggestion.</li>
         </ul></div>
         <div class="box"><h3>What it cannot see</h3><ul>
@@ -460,7 +462,7 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
       </div>
       <details class="more"><summary>Every crop value the model uses</summary><div class="scroll" id="croptab"></div></details>
       <footer>
-      Data: <a href="https://power.larc.nasa.gov/">NASA POWER</a> daily agroclimatology (T2M_MAX, T2M_MIN, PRECTOTCORR, GWETROOT, ALLSKY_SFC_SW_DWN, WS2M, RH2M). Elevation: Copernicus DEM (ESA) through <a href="https://open-meteo.com/">Open-Meteo</a>. Soil texture: <a href="https://soilgrids.org">SoilGrids</a> (ISRIC). Map layers: <a href="https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api">NASA GIBS</a> (MODIS, SMAP, GPM IMERG). Satellite base map: Esri World Imagery. Crop coefficients follow FAO Irrigation and Drainage Paper 56; reference evapotranspiration uses the FAO Penman-Monteith equation, with Hargreaves as a fallback. Built for the 2026 NASA Space Apps Challenge. NASA does not endorse this tool.
+      Data: <a href="https://power.larc.nasa.gov/">NASA POWER</a> daily agroclimatology (T2M_MAX, T2M_MIN, PRECTOTCORR, GWETROOT, ALLSKY_SFC_SW_DWN, WS2M, RH2M). Field greenness: MODIS MOD13Q1 through the <a href="https://modis.ornl.gov/">ORNL DAAC</a> subset service. Elevation: Copernicus DEM (ESA) through <a href="https://open-meteo.com/">Open-Meteo</a>. Soil texture: <a href="https://soilgrids.org">SoilGrids</a> (ISRIC). Map layers: <a href="https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api">NASA GIBS</a> (MODIS, SMAP, GPM IMERG). Satellite base map: Esri World Imagery. Crop coefficients follow FAO Irrigation and Drainage Paper 56; reference evapotranspiration uses the FAO Penman-Monteith equation, with Hargreaves as a fallback. Built for the 2026 NASA Space Apps Challenge. NASA does not endorse this tool.
     </footer>
     </div>
   </div>
@@ -479,13 +481,13 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
   const quant = (a, q) => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y); const p = (s.length - 1) * q, i = Math.floor(p); return s[i] + (s[Math.min(i + 1, s.length - 1)] - s[i]) * (p - i); };
 
   const CROPS = {
-    corn: { name: 'Corn (maize)', short: 'Corn', fam: 'Grass', kind: 'summer', base: 10, gdd: 1400, off: 10, dry: 25, kc: [0.3, 1.2, 0.5], heatT: 35, heatW: [0.45, 0.65], nfix: 0, res: 5, deep: 0, dt: 2, margin: 4, market: 5, forage: 0 },
-    soy: { name: 'Soybean', short: 'Soybean', fam: 'Legume', kind: 'summer', base: 10, gdd: 1250, off: 20, dry: 12, kc: [0.4, 1.15, 0.5], heatT: 36, heatW: [0.5, 0.8], nfix: 45, res: 2, deep: 0, dt: 3, margin: 4, market: 5, forage: 0 },
+    corn: { name: 'Corn (maize)', short: 'Corn', fam: 'Grass', kind: 'summer', base: 10, gdd: 1500, off: 10, dry: 28, kc: [0.3, 1.2, 0.5], heatT: 35, heatW: [0.45, 0.65], nfix: 0, res: 5, deep: 0, dt: 2, margin: 4, market: 5, forage: 0 },
+    soy: { name: 'Soybean', short: 'Soybean', fam: 'Legume', kind: 'summer', base: 10, gdd: 1450, off: 20, dry: 14, kc: [0.4, 1.15, 0.5], heatT: 36, heatW: [0.5, 0.8], nfix: 45, res: 2, deep: 0, dt: 3, margin: 4, market: 5, forage: 0 },
     sorghum: { name: 'Grain sorghum', short: 'Sorghum', fam: 'Grass', kind: 'summer', base: 10, gdd: 1250, off: 30, dry: 20, kc: [0.3, 1.05, 0.55], heatT: 38, heatW: [0.45, 0.65], nfix: 0, res: 4, deep: 1, dt: 5, margin: 3, market: 3, forage: 1 },
     sunflower: { name: 'Sunflower', short: 'Sunflower', fam: 'Aster', kind: 'summer', base: 6.7, gdd: 1650, off: 15, dry: 20, kc: [0.35, 1.1, 0.35], heatT: 34, heatW: [0.45, 0.65], nfix: 0, res: 2, deep: 1, dt: 4, margin: 3, market: 3, forage: 0 },
     oats: { name: 'Spring oats', short: 'Oats', fam: 'Grass', kind: 'summer', base: 0, gdd: 1400, off: -25, dry: 7, kc: [0.3, 1.15, 0.25], heatT: 30, heatW: [0.6, 0.9], nfix: 0, res: 3, deep: 0, dt: 2, margin: 2, market: 3, forage: 1 },
     pea: { name: 'Field pea', short: 'Field pea', fam: 'Legume', kind: 'summer', base: 4.4, gdd: 1000, off: -20, dry: 7, kc: [0.4, 1.15, 0.3], heatT: 28, heatW: [0.5, 0.8], nfix: 60, res: 2, deep: 0, dt: 3, margin: 3, market: 3, forage: 0 },
-    wheat: { name: 'Winter wheat', short: 'Winter wheat', fam: 'Grass', kind: 'winter', gdd: 1550, lead: 18, kc: [0.45, 1.15, 0.3], heatT: 32, nfix: 0, res: 4, deep: 0, dt: 4, margin: 3, market: 5, forage: 0, kill: -30 },
+    wheat: { name: 'Winter wheat', short: 'Winter wheat', fam: 'Grass', kind: 'winter', gdd: 1650, lead: 18, kc: [0.45, 1.15, 0.3], heatT: 32, nfix: 0, res: 4, deep: 0, dt: 4, margin: 3, market: 5, forage: 0, kill: -30 },
     canola: { name: 'Winter canola', short: 'Canola', fam: 'Brassica', kind: 'winter', gdd: 1450, lead: 40, kc: [0.45, 1.1, 0.35], heatT: 30, nfix: 0, res: 2, deep: 1, dt: 3, margin: 3, market: 3, forage: 0, kill: -20 },
     alfalfa: { name: 'Alfalfa', short: 'Alfalfa', fam: 'Legume', kind: 'perennial', kc: [0.4, 0.95, 0.9], nfix: 60, res: 3, deep: 1, dt: 4, margin: 3, market: 3, forage: 1, kill: -32 },
     fallow: { name: 'Fallow (no crop)', short: 'Fallow', fam: '-', kind: 'fallow', nfix: 0, res: 0, deep: 0, dt: 3, margin: 0, market: 5, forage: 0 }
@@ -912,7 +914,7 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
   }
   async function getJSON(url, ms) {
     const c = new AbortController(), t = setTimeout(() => c.abort(), ms || 9000);
-    try { const r = await fetch(url, { signal: c.signal }); if (!r.ok) throw new Error('status ' + r.status); return await r.json(); } finally { clearTimeout(t); }
+    try { const r = await fetch(url, { signal: c.signal, headers: { Accept: 'application/json' } }); if (!r.ok) throw new Error('status ' + r.status); return await r.json(); } finally { clearTimeout(t); }
   }
   const cget = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
   const cset = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
@@ -924,6 +926,18 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
         if (!ex) { ex = E.parseExtra(await getJSON('https://power.larc.nasa.gov/api/temporal/daily/point?parameters=ALLSKY_SFC_SW_DWN,WS2M,RH2M&community=AG&longitude=' + lon + '&latitude=' + lat + '&start=20010101&end=20251231&format=JSON', 30000)); cset('furrowx1:' + k, ex); }
         if (id !== req || !S.raw || !ex || !(ex.n >= S.raw.n)) return;
         S.raw.ex = ex; const keep = S.sel; recompute(); if (keep < 1 + LAST.alts.length) { S.sel = keep; render(); }
+      } catch (e) {}
+    })();
+    (async () => {
+      try {
+        let nd = cget('furrown1:' + k);
+        if (!nd) {
+          const yrs = [2024, 2025], parts = [['001', '145'], ['161', '305'], ['321', '365']], sum = new Array(23).fill(0), cnt = new Array(23).fill(0);
+          const got = await Promise.all(yrs.reduce((a, y) => a.concat(parts.map(q => getJSON('https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=' + lat + '&longitude=' + lon + '&band=250m_16_days_NDVI&startDate=A' + y + q[0] + '&endDate=A' + y + q[1] + '&kmAboveBelow=0&kmLeftRight=0', 25000))), []));
+          got.forEach(j => (j.subset || []).forEach(r => { const d = +String(r.modis_date).slice(5), i = Math.round((d - 1) / 16), v = Array.isArray(r.data) ? +r.data[0] : NaN; if (i >= 0 && i < 23 && v > -2000 && v <= 10000) { sum[i] += v * 0.0001; cnt[i]++; } }));
+          if (cnt.filter(Boolean).length < 15) return; nd = { yrs, v: sum.map((x, i) => cnt[i] ? Math.round(x / cnt[i] * 1000) / 1000 : null) }; cset('furrown1:' + k, nd);
+        }
+        if (id !== req) return; S.ndvi = nd; render();
       } catch (e) {}
     })();
     (async () => {
@@ -1104,7 +1118,7 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
         kp(r0(cm.exposed), r0(bm2.exposed), '', 'mm of heavy rain a year landing on poorly covered soil', 'Out of ' + r0(cl.erosTotal) + ' mm that falls on days of 12.7 mm or more') +
         kp(Math.round(rh(A.current) * 100), Math.round(rh(best) * 100), '%', 'of crop water demand left unmet ' + (hot ? 'in hot, dry years' : 'on average'), hot ? hot.count + ' of the ' + cl.n + ' years were hot and dry' : 'Averaged over ' + cl.n + ' years') +
         '</div><h2 class="second">Scores by priority, now → alternative</h2>';
-      for (const d of DIMS) { const a = A.current.sc[d[0]], b = best.sc[d[0]], dl = b - a; R += '<div class="drow"><span>' + d[1] + ' <span class="muted small">weight ' + S.weights[d[0]] + '</span></span><span class="mv">' + a + ' → ' + b + '</span><span class="dv ' + (dl > 2 ? 'up' : dl < -2 ? 'dn' : '') + '">' + (dl > 0 ? '+' : '') + dl + '</span></div>'; }
+      R += dumbbell(A.current, best);
       const bt = best.boot, w = Math.round(bt.win * 100);
       R += '<p class="conf"><b>' + w + ' in 100.</b> When the ' + cl.n + ' years are reshuffled ' + bt.runs + ' times, this rotation still outscores your current one in ' + w + '% of them' + (bt.win >= 0.9 ? ', so the lead does not hinge on a few unusual years.' : bt.win >= 0.7 ? '. The lead is likely but not certain.' : '. Treat the two as roughly equal.') + ' The gap ranges from ' + (bt.lo > 0 ? '+' : '') + bt.lo.toFixed(1) + ' to ' + (bt.hi > 0 ? '+' : '') + bt.hi.toFixed(1) + ' points in 8 runs out of 10.</p>';
       R += '<p class="why">' + explain(best, A).why + '</p><button class="link" data-go="options">Compare all four rotations</button>';
@@ -1124,7 +1138,7 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
       Cm += '<h2>Soil moisture: which months and years ran dry</h2><p class="sub">Each square compares root-zone soil wetness with what is normal for that month here. Amber is drier than usual, blue is wetter. Driest years: <b>' + dry.slice(0, 3).map(d => d[1]).join(', ') + '</b>. Wettest: <b>' + dry.slice(-3).reverse().map(d => d[1]).join(', ') + '</b>. If you farmed here then, check this against your memory.</p><div class="fig">' + anomFigure(cl) + '</div><p class="fine">Source: NASA POWER root-zone soil wetness (GWETROOT), a model estimate for the grid cell.</p>';
     }
 
-    const K = '<h2>When the rain falls, and what is on the field when it does</h2><p class="sub">Top: an average year of rain against evaporative demand. Below: each rotation, year by year. Amber is bare soil. Where amber sits under tall bright-blue bars, heavy rain is landing on unprotected ground.</p><div class="legend"><span><i style="background:' + COL.waterSoft + '"></i>Rain</span><span><i style="background:' + COL.water + '"></i>on heavy-rain days</span><span><i style="background:' + COL.et + ';border-radius:50%"></i>Evaporative demand</span><span><i style="background:' + COL.crop + '"></i>Cash crop</span><span><i style="background:' + COL.cover + '"></i>Cover crop</span><span><i style="background:' + COL.peren + '"></i>Perennial</span><span><i style="background:' + COL.straw + '"></i>Residue</span><span><i style="background:' + COL.bare + '"></i>Bare soil</span></div><div class="fig">' + yearFigure(cl, all) + '</div>';
+    const K = '<h2>When the rain falls, and what is on the field when it does</h2><p class="sub">Top: an average year of rain against evaporative demand. Below: each rotation, year by year. Amber is bare soil. Where amber sits under tall bright-blue bars, heavy rain is landing on unprotected ground.</p><div class="legend"><span><i style="background:' + COL.waterSoft + '"></i>Rain</span><span><i style="background:' + COL.water + '"></i>on heavy-rain days</span><span><i style="background:' + COL.et + ';border-radius:50%"></i>Evaporative demand</span><span><i style="background:' + COL.crop + '"></i>Cash crop</span><span><i style="background:' + COL.cover + '"></i>Cover crop</span><span><i style="background:' + COL.peren + '"></i>Perennial</span><span><i style="background:' + COL.straw + '"></i>Residue</span><span><i style="background:' + COL.bare + '"></i>Bare soil</span></div><div class="fig">' + yearFigure(cl, all) + '</div>' + ndviNote(A);
 
     if (S.sel >= all.length) S.sel = 0;
     let O = '<h2>Your rotation and ' + A.alts.length + ' alternatives</h2><p class="sub">Ranked by match score under your priorities. Pick one to read its evidence.</p><div class="rank">';
@@ -1159,6 +1173,23 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
     story();
   }
 
+  function ndviNote(A) {
+    if (!S.ndvi) return ''; const cl = A.cl, tl = A.current.tl; let n = 0, ok = 0;
+    S.ndvi.v.forEach((v, i) => { if (v === null) return; const d = ((i * 16 + 8 - cl.off) % 365 + 365) % 365; let c = 0; for (let r = 0; r < tl.N; r++) c += tl.cov[r * 365 + d] / tl.N; n++; if ((v > 0.4) === (c > 0.5)) ok++; });
+    return '<p class="fine"><b style="color:#fff">Satellite check.</b> The top strip is greenness measured by NASA\'s MODIS instrument on a 250 m square at your point, averaged over ' + S.ndvi.yrs.join(' and ') + '. In ' + ok + ' of ' + n + ' sixteen-day windows it agrees with the modelled calendar for your current rotation on whether the ground is green or not. Mismatches can mean the model\'s dates are off for your area, that a different crop was grown in those years, or that the square mixes several fields.</p>';
+  }
+  function dumbbell(cur, best) {
+    const W = 560, L = 168, R = 44, pw = W - L - R, X = v => L + v / 100 * pw; let g = '', y = 26;
+    [0, 25, 50, 75, 100].forEach(v => { g += '<line x1="' + X(v) + '" x2="' + X(v) + '" y1="16" y2="' + (26 + DIMS.length * 34 - 12) + '" stroke="' + COL.line + '"/><text x="' + X(v) + '" y="10" text-anchor="middle" font-size="10.5" fill="' + COL.muted + '">' + v + '</text>'; });
+    for (const d of DIMS) {
+      const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, c = dl > 2 ? '#8FD694' : dl < -2 ? '#F2907E' : '#A8A89C';
+      g += '<text x="0" y="' + (y + 4) + '" font-size="13" fill="' + COL.ink + '">' + d[1] + '</text><text x="0" y="' + (y + 17) + '" font-size="10.5" fill="' + COL.muted + '">weight ' + S.weights[d[0]] + '</text>';
+      g += '<line x1="' + X(a) + '" x2="' + X(b) + '" y1="' + y + '" y2="' + y + '" stroke="' + c + '" stroke-width="4" stroke-linecap="round" opacity=".55"/><circle cx="' + X(a) + '" cy="' + y + '" r="5.5" fill="' + COL.panel + '" stroke="#A8A89C" stroke-width="2"><title>Now: ' + a + '</title></circle><circle cx="' + X(b) + '" cy="' + y + '" r="7" fill="' + c + '"><title>Alternative: ' + b + '</title></circle>';
+      g += '<text x="' + (W - 2) + '" y="' + (y + 4.5) + '" text-anchor="end" font-size="13" font-weight="700" fill="' + c + '">' + (dl > 0 ? '+' : '') + dl + '</text>';
+      y += 34;
+    }
+    return '<div class="legend" style="margin-bottom:2px"><span><i style="background:none;box-shadow:inset 0 0 0 2px #A8A89C;border-radius:50%"></i>your rotation now</span><span><i style="background:#8FD694;border-radius:50%"></i>the alternative</span></div><svg class="dumb" viewBox="0 0 ' + W + ' ' + (26 + DIMS.length * 34 - 6) + '" role="img" aria-label="Scores for each priority, current rotation against the alternative">' + g + '</svg>';
+  }
   function terrainHTML(T) {
     const c = 46, col = v => v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#3E8E5A'; let g = '';
     T.slopes.forEach((v, i) => { const x = (i % T.n) * c, y = Math.floor(i / T.n) * c; g += '<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (c - 2) + '" height="' + (c - 2) + '" rx="3" fill="' + col(v) + '"' + (T.low[i] ? ' stroke="#7CC6E8" stroke-width="3"' : '') + '><title>' + r0(T.z[i]) + ' m, slope ' + v.toFixed(1) + '%' + (T.low[i] ? ', low spot' : '') + '</title></rect><text x="' + (x + c / 2) + '" y="' + (y + c / 2 + 4) + '" text-anchor="middle" font-size="11" fill="#10231A">' + r0(T.z[i]) + '</text>'; });
@@ -1168,50 +1199,59 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
     const v = i.series, n = v.length, W = 200, H = 44, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), sp = (hi - lo) || 1;
     const X = k => 3 + k / (n - 1) * (W - 6), Y = y => H - 5 - (y - lo) / sp * (H - 10);
     const sl = i.trend.perDecade / 10, b = E.median(v.map((y, k) => y - sl * k));
-    const cl2 = i.trend.label === 'clear trend' ? '#F2907E' : i.trend.label === 'possible trend' ? '#F2A541' : '#86867A';
-    return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(i.name) + ', each year from ' + cl.years[0].label + ' to ' + cl.years[n - 1].label + ', with trend line"><polyline points="' + v.map((y, k) => X(k).toFixed(1) + ',' + Y(y).toFixed(1)).join(' ') + '" fill="none" stroke="#A8A89C" stroke-width="1.3" stroke-linejoin="round"/><line x1="' + X(0) + '" y1="' + Y(Math.min(hi, Math.max(lo, b))).toFixed(1) + '" x2="' + X(n - 1) + '" y2="' + Y(Math.min(hi, Math.max(lo, b + sl * (n - 1)))).toFixed(1) + '" stroke="' + cl2 + '" stroke-width="2" stroke-dasharray="5 3"/><circle cx="' + X(n - 1) + '" cy="' + Y(v[n - 1]).toFixed(1) + '" r="2.8" fill="#EEF2E6"/></svg><div class="sparkax"><span>' + cl.years[0].label + '</span><span>' + cl.years[n - 1].label + '</span></div>';
+    const c2 = i.trend.label === 'clear trend' ? '#F2907E' : i.trend.label === 'possible trend' ? '#F2A541' : '#86867A';
+    const pts = v.map((y, k) => X(k).toFixed(1) + ',' + Y(y).toFixed(1)).join(' '), id = 'sg' + i.key;
+    return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(i.name) + ', each year from ' + cl.years[0].label + ' to ' + cl.years[n - 1].label + ', with trend line"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A8A89C" stop-opacity=".28"/><stop offset="1" stop-color="#A8A89C" stop-opacity="0"/></linearGradient></defs><rect x="3" y="' + Y(Math.min(hi, i.hi)).toFixed(1) + '" width="' + (W - 6) + '" height="' + Math.max(1, Y(Math.max(lo, i.lo)) - Y(Math.min(hi, i.hi))).toFixed(1) + '" fill="rgba(255,255,255,.045)"/><polygon points="3,' + H + ' ' + pts + ' ' + (W - 3) + ',' + H + '" fill="url(#' + id + ')"/><polyline points="' + pts + '" fill="none" stroke="#C9C7BA" stroke-width="1.4" stroke-linejoin="round"/><line x1="' + X(0) + '" y1="' + Y(Math.min(hi, Math.max(lo, b))).toFixed(1) + '" x2="' + X(n - 1) + '" y2="' + Y(Math.min(hi, Math.max(lo, b + sl * (n - 1)))).toFixed(1) + '" stroke="' + c2 + '" stroke-width="2" stroke-dasharray="5 3"/><circle cx="' + X(n - 1) + '" cy="' + Y(v[n - 1]).toFixed(1) + '" r="3" fill="#EEF2E6"/></svg><div class="sparkax"><span>' + cl.years[0].label + '</span><span>' + cl.years[n - 1].label + '</span></div>';
   }
   function yearFigure(cl, list) {
     const W = 960, L = 150, PW = 790, X = d => L + d / 365 * PW;
-    const top = 30, CH = 150, mx = Math.max.apply(null, cl.mRain.concat(cl.mEt0));
+    const top = 30, CH = 160, mx = Math.max.apply(null, cl.mRain.concat(cl.mEt0));
     const step = mx > 200 ? 50 : mx > 80 ? 25 : 10, ymax = Math.ceil(mx / step) * step, Yv = v => top + CH - v / ymax * CH;
-    let s = '', y = top;
+    let s = '<defs><linearGradient id="gRain" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3B7186"/><stop offset="1" stop-color="#234652"/></linearGradient><linearGradient id="gHeavy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9AD8F2"/><stop offset="1" stop-color="#5AAED3"/></linearGradient><linearGradient id="gEt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2907E" stop-opacity=".22"/><stop offset="1" stop-color="#F2907E" stop-opacity="0"/></linearGradient></defs>', y = top;
     for (let v = 0; v <= ymax; v += step) s += '<line x1="' + L + '" x2="' + (L + PW) + '" y1="' + Yv(v) + '" y2="' + Yv(v) + '" stroke="' + COL.line + '" stroke-width="1"/><text x="' + (L - 8) + '" y="' + (Yv(v) + 4) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">' + v + '</text>';
     s += '<text x="' + (L - 8) + '" y="' + (top - 16) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">mm a month</text>';
-    let pts = '';
+    const pt = [];
     for (let m = 0; m < 12; m++) {
-      const x0 = X(E.CUM[m]) + 5, w = X(E.CUM[m + 1]) - X(E.CUM[m]) - 10, cx = x0 + w / 2;
-      s += '<rect x="' + x0 + '" y="' + Yv(cl.mRain[m]) + '" width="' + w + '" height="' + (top + CH - Yv(cl.mRain[m])) + '" fill="' + COL.waterSoft + '" rx="2"><title>' + cl.monthName(m) + ': ' + r0(cl.mRain[m]) + ' mm rain</title></rect>';
-      s += '<rect x="' + x0 + '" y="' + Yv(cl.mEros[m]) + '" width="' + w + '" height="' + (top + CH - Yv(cl.mEros[m])) + '" fill="' + COL.water + '" rx="2"><title>' + cl.monthName(m) + ': ' + r0(cl.mEros[m]) + ' mm on days of 12.7 mm or more</title></rect>';
-      pts += (m ? ' ' : '') + cx + ',' + Yv(cl.mEt0[m]);
-      s += '<text x="' + cx + '" y="' + (top + CH + 16) + '" text-anchor="middle" font-size="12" fill="' + COL.ink + '">' + cl.monthName(m) + '</text>';
+      const x0 = X(E.CUM[m]) + 6, w = X(E.CUM[m + 1]) - X(E.CUM[m]) - 12, cx = x0 + w / 2;
+      s += '<rect x="' + x0 + '" y="' + Yv(cl.mRain[m]) + '" width="' + w + '" height="' + (top + CH - Yv(cl.mRain[m])) + '" fill="url(#gRain)" rx="4"><title>' + cl.monthName(m) + ': ' + r0(cl.mRain[m]) + ' mm rain</title></rect>';
+      s += '<rect x="' + (x0 + w * 0.18) + '" y="' + Yv(cl.mEros[m]) + '" width="' + w * 0.64 + '" height="' + (top + CH - Yv(cl.mEros[m])) + '" fill="url(#gHeavy)" rx="3"><title>' + cl.monthName(m) + ': ' + r0(cl.mEros[m]) + ' mm on days of 12.7 mm or more</title></rect>';
+      pt.push([cx, Yv(cl.mEt0[m])]);
+      s += '<text x="' + cx + '" y="' + (top + CH + 17) + '" text-anchor="middle" font-size="12" fill="' + COL.ink + '">' + cl.monthName(m) + '</text>';
     }
-    s += '<polyline points="' + pts + '" fill="none" stroke="' + COL.et + '" stroke-width="2"/>';
-    pts.split(' ').forEach((p, m) => { const q = p.split(','); s += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="3.5" fill="' + COL.et + '" stroke="' + COL.panel + '" stroke-width="1.5"><title>' + cl.monthName(m) + ': ' + r0(cl.mEt0[m]) + ' mm evaporative demand</title></circle>'; });
-    y = top + CH + 30;
+    const line = pt.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    s += '<polygon points="' + pt[0][0] + ',' + (top + CH) + ' ' + line + ' ' + pt[11][0] + ',' + (top + CH) + '" fill="url(#gEt)"/><polyline points="' + line + '" fill="none" stroke="' + COL.et + '" stroke-width="2.2" stroke-linejoin="round"/>';
+    pt.forEach((p, m) => { s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3.6" fill="' + COL.et + '" stroke="' + COL.panel + '" stroke-width="1.5"><title>' + cl.monthName(m) + ': ' + r0(cl.mEt0[m]) + ' mm evaporative demand</title></circle>'; });
+    y = top + CH + 34;
+    const y0 = y;
+    if (S.ndvi) {
+      const mixc = (a, b, t) => 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')', nc = v => v < 0.3 ? mixc([120, 92, 60], [196, 168, 110], Math.max(0, v) / 0.3) : mixc([196, 168, 110], [62, 160, 84], Math.min(1, (v - 0.3) / 0.5));
+      s += '<text x="0" y="' + (y + 12) + '" font-size="13" font-weight="600" fill="' + COL.ink + '">What the satellite saw</text>'; y += 20;
+      s += '<text x="' + (L - 8) + '" y="' + (y + 12) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">MODIS ' + S.ndvi.yrs.join(', ') + '</text><clipPath id="cN"><rect x="' + L + '" y="' + y + '" width="' + PW + '" height="16" rx="4"/></clipPath><g clip-path="url(#cN)">';
+      S.ndvi.v.forEach((v, i) => { if (v === null) return; const d0 = ((i * 16 - cl.off) % 365 + 365) % 365, x0 = X(d0), w = X(Math.min(365, d0 + 16)) - x0; s += '<rect x="' + x0 + '" y="' + y + '" width="' + (w + 0.5) + '" height="16" fill="' + nc(v) + '"><title>Greenness (NDVI) ' + v.toFixed(2) + ' around ' + cl.fmtDay(d0 + 8) + '</title></rect>'; if (d0 + 16 > 365) s += '<rect x="' + X(0) + '" y="' + y + '" width="' + (X(d0 + 16 - 365) - X(0)) + '" height="16" fill="' + nc(v) + '"/>'; });
+      s += '</g>'; y += 27;
+    }
     const fill = { 0: COL.bare, 1: COL.straw, 2: COL.crop, 3: COL.cover, 4: COL.peren };
-    list.forEach(st => {
+    list.forEach((st, si) => {
       s += '<text x="0" y="' + (y + 12) + '" font-size="13" font-weight="600" fill="' + COL.ink + '">' + esc(st.name) + '</text>'; y += 20;
       const tl = st.tl;
       for (let i = 0; i < tl.N; i++) {
-        s += '<text x="' + (L - 8) + '" y="' + (y + 12) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">Year ' + (i + 1) + '</text>';
+        s += '<text x="' + (L - 8) + '" y="' + (y + 12) + '" text-anchor="end" font-size="11" fill="' + COL.muted + '">Year ' + (i + 1) + '</text><clipPath id="c' + si + '_' + i + '"><rect x="' + L + '" y="' + y + '" width="' + PW + '" height="16" rx="4"/></clipPath><g clip-path="url(#c' + si + '_' + i + ')">';
         let a = 0;
         while (a < 365) {
           const t0 = i * 365 + a, k = tl.st[t0], who = tl.ci[t0]; let b = a;
           while (b < 365 && tl.st[i * 365 + b] === k && tl.ci[i * 365 + b] === who) b++;
-          const x0 = X(a), w = X(b) - x0;
-          let lab = k === 0 ? 'Bare soil' : k === 1 ? 'Residue' : k === 3 ? 'Cover crop' : C[st.rot[who].c].short;
-          s += '<rect x="' + x0 + '" y="' + y + '" width="' + Math.max(0.5, w) + '" height="16" fill="' + fill[k] + '"><title>' + lab + ': ' + cl.fmtDay(a) + ' to ' + cl.fmtDay(b - 1) + '</title></rect>';
-          if (w > lab.length * 6.5 + 8) s += '<text x="' + (x0 + w / 2) + '" y="' + (y + 12) + '" text-anchor="middle" font-size="10.5" fill="' + (k === 4 ? '#fff' : '#10231A') + '" pointer-events="none">' + lab + '</text>';
+          const x0 = X(a), w = X(b) - x0, lab = k === 0 ? 'Bare soil' : k === 1 ? 'Residue' : k === 3 ? 'Cover crop' : C[st.rot[who].c].short;
+          s += '<rect x="' + x0 + '" y="' + y + '" width="' + Math.max(0.5, w - 1) + '" height="16" fill="' + fill[k] + '"><title>' + lab + ': ' + cl.fmtDay(a) + ' to ' + cl.fmtDay(b - 1) + '</title></rect>';
+          if (w > lab.length * 6.5 + 8) s += '<text x="' + (x0 + w / 2) + '" y="' + (y + 12) + '" text-anchor="middle" font-size="10.5" font-weight="600" fill="' + (k === 4 ? '#fff' : '#10231A') + '" pointer-events="none">' + lab + '</text>';
           a = b;
         }
-        y += 19;
+        s += '</g>'; y += 20;
       }
       y += 8;
     });
-    return '<svg viewBox="0 0 ' + W + ' ' + y + '" role="img" aria-label="Monthly rain and evaporative demand above a calendar of ground cover for each rotation">' + s + '</svg>';
+    let grid = ''; for (let m = 1; m < 12; m++) grid += '<line x1="' + X(E.CUM[m]) + '" x2="' + X(E.CUM[m]) + '" y1="' + (y0 - 6) + '" y2="' + (y - 8) + '" stroke="rgba(240,236,220,.09)" stroke-dasharray="2 4"/>';
+    return '<svg viewBox="0 0 ' + W + ' ' + y + '" role="img" aria-label="Monthly rain and evaporative demand above a calendar of ground cover for each rotation">' + grid + s + '</svg>';
   }
-
   function anomFigure(cl) {
     const L = 58, cw = 34, chh = 13, W = L + 12 * cw + 6, H = 22 + cl.n * chh + 34;
     const mix = (a, b, t) => 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')';
@@ -1221,7 +1261,7 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
     cl.gwAnom.forEach((row, i) => {
       const y = 22 + i * chh;
       s += '<text x="' + (L - 6) + '" y="' + (y + 10) + '" text-anchor="end" font-size="10" fill="' + COL.muted + '">' + cl.years[i].label + '</text>';
-      row.forEach((z, m) => { s += '<rect x="' + (L + m * cw) + '" y="' + y + '" width="' + (cw - 1) + '" height="' + (chh - 1) + '" fill="' + col(z) + '"><title>' + cl.monthName(m) + ' ' + cl.years[i].label + ': ' + (z > 0 ? '+' : '') + z.toFixed(1) + ' standard deviations</title></rect>'; });
+      row.forEach((z, m) => { s += '<rect x="' + (L + m * cw) + '" y="' + y + '" width="' + (cw - 2) + '" height="' + (chh - 2) + '" rx="2.5" fill="' + col(z) + '"><title>' + cl.monthName(m) + ' ' + cl.years[i].label + ': ' + (z > 0 ? '+' : '') + z.toFixed(1) + ' standard deviations</title></rect>'; });
     });
     const ly = 22 + cl.n * chh + 10;
     for (let j = 0; j <= 8; j++) s += '<rect x="' + (L + j * 22) + '" y="' + ly + '" width="22" height="9" fill="' + col(-2 + j * 0.5) + '"/>';
@@ -1359,7 +1399,7 @@ body.wiz .wizfoot{display:flex;justify-content:space-between;gap:10px;margin-top
     S.name = demo ? demo.name : 'Your field';
     if (demo && !keep) { S.rot = demo.rot.map(r => ({ c: r.c, cv: r.cv || null })); S.soil = demo.soil; S.slope = demo.slope; S.till = demo.till; $('soil').value = S.soil; $('slope').value = S.slope; $('till').value = S.till; renderRot(); }
     $('lat').value = S.lat; $('lon').value = S.lon; $('demo').value = S.demo || '';
-    S.terrain = null; S.soilSug = null; S.touched = {}; $('sug').innerHTML = ''; drawZones();
+    S.terrain = null; S.soilSug = null; S.ndvi = null; S.touched = {}; $('sug').innerHTML = ''; drawZones();
     if (map) { marker.setLatLng([S.lat, S.lon]); cell.setBounds(cellBounds()); goStep(0, true); }
     load();
   }
