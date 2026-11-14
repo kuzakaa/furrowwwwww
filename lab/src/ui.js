@@ -613,12 +613,12 @@
     document.querySelectorAll('[data-wiz]').forEach(b => { const on = b.dataset.wiz === WIZ[i][0]; b.classList.toggle('cur', on); if (on) b.open = true; });
     $('wizn').textContent = 'Step ' + (i + 1) + ' of ' + WIZ.length; $('wizplace').textContent = S.name;
     $('wizt').textContent = WIZ[i][1]; $('wizd').textContent = WIZ[i][2]; $('wizbar').style.width = (i + 1) / WIZ.length * 100 + '%';
-    $('wizback').style.visibility = i ? 'visible' : 'hidden'; $('wiznext').textContent = i === WIZ.length - 1 ? 'Show me the results' : 'Next';
+    document.body.classList.toggle('wfield', i === 0); $('wizback').style.visibility = i ? 'visible' : 'hidden'; $('wiznext').textContent = i === WIZ.length - 1 ? 'Show me the results' : 'Next';
     $('setup').scrollTop = 0;
   }
   function wizEnd() {
     S.wiz = null; document.body.classList.remove('wiz'); document.body.classList.add('noset'); save();
-    document.querySelectorAll('[data-wiz]').forEach(b => { b.classList.remove('cur'); b.open = b.dataset.wiz === 'rot'; }); document.querySelectorAll('.setup details.box:not([data-wiz])').forEach(b => b.open = false); document.body.classList.remove('wacc', 'wpri', 'wfree');
+    document.querySelectorAll('[data-wiz]').forEach(b => { b.classList.remove('cur'); b.open = b.dataset.wiz === 'rot'; }); document.querySelectorAll('.setup details.box:not([data-wiz])').forEach(b => b.open = false); document.body.classList.remove('wacc', 'wpri', 'wfree', 'wfield');
     setTab('result'); if (map) goStep(0, true); moveInk();
   }
   let introPick = null, mask = null;
