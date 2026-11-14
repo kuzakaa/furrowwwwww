@@ -38,7 +38,7 @@
     rot: [['Crop rotation (Wikipedia)', 'https://en.wikipedia.org/wiki/Crop_rotation'], ['Cover crops (Wikipedia)', 'https://en.wikipedia.org/wiki/Cover_crop']]
   };
   const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
-  const D = { raw: null, proj: null, soil: null, nd: null, tex: null, shared: [], patch: null, qcDrop: [] };
+  const D = { raw: null, proj: null, soil: null, nd: null, tex: null, terrain: null, ex: null, shared: [], patch: null, qcDrop: [] };
   let R = null, inp = null, fieldKey = '', runId = 0, step = 0;
   const S = Object.assign({ field: 'odesa', lat: 46.85, lon: 30.6, rot: ['wheat', 'sunflower'], soil: 'clay_loam', till: 'conv', slope: 2, w: { income: 4, water: 3, soil: 3, erosion: 3, resilience: 3 }, later: false, w2: { income: 2, water: 3, soil: 5, erosion: 4, resilience: 3 }, years: 3, acc: {}, text: '', exp: null }, store.get('furrowlab:setup', {}));
   const save = () => store.set('furrowlab:setup', S);
@@ -55,7 +55,8 @@
     () => '<h2>Where is your field?</h2><p class="mute">Choose an example field or enter coordinates.</p>'
       + FIELDS.map(f => '<button class="opt' + (S.field === f.id ? ' on' : '') + '" data-field="' + f.id + '"><b>' + esc(f.name) + '</b><span class="mute">' + f.rot.map(c => C[c].short).join(', then ') + '</span></button>').join('')
       + '<button class="opt' + (S.field === 'custom' ? ' on' : '') + '" data-field="custom"><b>My own field</b><span class="mute">Type latitude and longitude</span></button>'
-      + (S.field === 'custom' ? '<div class="bar"><input id="lat" type="number" step="0.01" placeholder="Latitude" value="' + S.lat + '"><input id="lon" type="number" step="0.01" placeholder="Longitude" value="' + S.lon + '"></div><p class="mute"></p>' : ''),
+      + '<div id="map"></div><p class="mute">Or tap your field on the map.</p>'
+      + (S.field === 'custom' ? '<div class="bar"><input id="lat" type="number" step="0.01" placeholder="Latitude" value="' + S.lat + '"><input id="lon" type="number" step="0.01" placeholder="Longitude" value="' + S.lon + '"></div>' : ''),
     () => '<h2>What do you grow now?</h2><p class="mute">Add crops in rotation order.</p>'
       + '<div class="rotnow"><div class="lab">What you grow now</div><div class="crops">' + (S.rot.length ? S.rot.map(c => esc(C[c].short)).join(', then ') : 'No crops added') + '</div>'
       + (S.rot.length ? '<div class="seq">' + S.rot.map((c, i) => '<button data-del="' + i + '">Remove ' + esc(C[c].short) + '</button>').join('') + '</div>' : '') + '</div>'
@@ -65,6 +66,7 @@
     () => '<h2>Soil and slope</h2><p class="mute">Closest texture class. ' + why('soil', 'Texture sets the water-holding capacity of the root zone, which drives drought stress in the model.', READ.soil) + '</p>'
       + (D.tex ? '<div class="row">SoilGrids: <b>' + esc(E.SOILS[D.tex].name) + '</b> <button class="big" data-soil="' + D.tex + '" style="margin-left:8px">Use this</button></div>' : '<button class="big" id="guess" style="margin:6px 0">Get texture from the SoilGrids map</button><div id="guessmsg" class="mute"></div>')
       + Object.keys(E.SOILS).map(k => '<button class="opt' + (S.soil === k ? ' on' : '') + '" data-soil="' + k + '"><b>' + esc(E.SOILS[k].name) + '</b><span class="mute">' + (SOILTXT[k] || '') + '</span></button>').join('')
+      + (D.terrain ? '<div class="row">Elevation data: typical slope <b>' + D.terrain.typical.toFixed(1) + '%</b>, steepest ' + D.terrain.steepest.toFixed(1) + '%. <button class="big" id="useslope" style="margin-left:8px">Use this</button></div>' : '')
       + '<div class="row"><div class="head"><h3 style="margin:0">Slope ' + why('slope', 'Slope scales runoff and erosion. 5% means a 5 m rise over 100 m. Erosion risk rises sharply above about 6%.', READ.slope) + '</h3><span class="val" id="slopev">' + S.slope + '%, ' + slopeWords(S.slope) + '</span></div><input type="range" id="slope" min="0" max="20" step="0.5" value="' + S.slope + '"><div class="scale"><span>0% flat</span><span>20% steep</span></div></div>',
     () => '<h2>What matters most to you right now?</h2><p class="mute">Set how important each goal is for the coming seasons.</p>'
       + PRI.map(p => '<div class="row"><div class="head"><b>' + p.name + ' ' + why('p_' + p.k, p.ex) + '</b><span class="val" id="v_' + p.k + '">' + LEVEL[S.w[p.k]] + '</span></div><input type="range" min="0" max="5" step="1" value="' + S.w[p.k] + '" data-w="' + p.k + '"><div class="scale"><span>Not a focus</span><span>Top priority</span></div></div>').join('')
@@ -106,6 +108,8 @@
     if ($('lat')) { $('lat').oninput = e => { S.lat = +e.target.value; save(); }; $('lon').oninput = e => { S.lon = +e.target.value; save(); }; }
     if ($('free')) { $('free').oninput = e => { S.text = e.target.value; save(); understood(); }; understood(); }
     if ($('guess')) $('guess').onclick = guessSoil;
+    if ($('useslope')) $('useslope').onclick = () => { S.slope = Math.round(D.terrain.typical * 2) / 2; save(); drawSetup(); };
+    if ($('map')) pickMap();
     if ($('back')) $('back').onclick = () => { step--; drawSetup(); $('setup').scrollTop = 0; };
     $('next').onclick = () => {
       if (step === 0 && (!isFinite(S.lat) || !isFinite(S.lon) || Math.abs(S.lat) > 70)) { alertBox('Check the coordinates', 'Latitude must be between -70 and 70.'); return; }
@@ -132,6 +136,57 @@
     $('mbox').querySelector('button').focus();
   }
   function alertBox(t, m) { modal('<h2>' + esc(t) + '</h2><p>' + esc(m) + '</p>', [{ t: 'OK', go: true }]); }
+  let map1 = null, map2 = null, mk2 = null, cell2 = null, ovl = null;
+  const SAT = () => window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 17, attribution: 'Imagery © Esri, Maxar, Earthstar Geographics' });
+  const pinIcon = () => window.L.divIcon({ className: 'pin', iconSize: [0, 0] });
+  function pickMap() {
+    if (!window.L) { $('map').remove(); return; }
+    if (map1) { map1.remove(); map1 = null; }
+    map1 = window.L.map('map', { zoomSnap: 0.5 }).setView([S.lat, S.lon], 11); SAT().addTo(map1);
+    const mk = window.L.marker([S.lat, S.lon], { icon: pinIcon(), interactive: false }).addTo(map1);
+    map1.on('click', e => { S.field = 'custom'; S.lat = Math.round(e.latlng.lat * 1e4) / 1e4; S.lon = Math.round(e.latlng.lng * 1e4) / 1e4; mk.setLatLng(e.latlng); D.tex = null; D.terrain = null; save(); if ($('lat')) { $('lat').value = S.lat; $('lon').value = S.lon; } else drawSetup(); });
+  }
+  const GIBS = { ndvi: ['MODIS_Terra_NDVI_8Day', 'GoogleMapsCompatible_Level9', 'png', 9], smap: ['SMAP_L4_Analyzed_Root_Zone_Soil_Moisture', 'GoogleMapsCompatible_Level6', 'png', 6], imerg: ['IMERG_Precipitation_Rate', 'GoogleMapsCompatible_Level6', 'png', 6] };
+  function bigMap() {
+    if (!window.L) return;
+    if (!map2) {
+      map2 = window.L.map('map2', { zoomSnap: 0.5 }).setView([S.lat, S.lon], 9); SAT().addTo(map2);
+      mk2 = window.L.marker([S.lat, S.lon], { icon: pinIcon(), interactive: false }).addTo(map2);
+      cell2 = window.L.rectangle([[0, 0], [1, 1]], { color: '#f5faf2', weight: 1.5, fillOpacity: 0.03, dashArray: '6 5', interactive: false }).addTo(map2);
+      map2.on('click', e => { S.field = 'custom'; S.lat = Math.round(e.latlng.lat * 1e4) / 1e4; S.lon = Math.round(e.latlng.lng * 1e4) / 1e4; D.tex = null; D.terrain = null; save(); drawSetup(); go(true); });
+      const d = new Date(Date.now() - 4 * 864e5).toISOString().slice(0, 10); $('ldate').value = d; $('ldate').max = d;
+      $('layer').onchange = $('ldate').onchange = layer;
+    }
+    setTimeout(() => map2.invalidateSize(), 50);
+    mk2.setLatLng([S.lat, S.lon]); map2.setView([S.lat, S.lon], map2.getZoom());
+    const cy = Math.round(S.lat / 0.5) * 0.5, cx = Math.round(S.lon / 0.625) * 0.625; cell2.setBounds([[cy - 0.25, cx - 0.3125], [cy + 0.25, cx + 0.3125]]);
+  }
+  function layer() {
+    if (ovl) { map2.removeLayer(ovl); ovl = null; }
+    const g = GIBS[$('layer').value]; if (!g) return;
+    ovl = window.L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/' + g[0] + '/default/' + $('ldate').value + '/' + g[1] + '/{z}/{y}/{x}.' + g[2], { maxNativeZoom: g[3], maxZoom: 17, opacity: 0.75, attribution: 'NASA GIBS' }).addTo(map2);
+  }
+
+  let MV = null;
+  function mainViews() {
+    try {
+      const raw = D.ex ? Object.assign({}, D.raw, { ex: D.ex }) : D.raw;
+      const Sm = { lat: inp.lat, lon: inp.lon, name: (FIELDS.find(f => f.id === S.field) || { name: 'Your field' }).name, rot: inp.rot.map(r => ({ c: r.c, cv: null })), soil: inp.soil, slope: 'custom', till: inp.till, irrigated: false, livestock: inp.livestock, exclude: new Set((inp.avoid || []).filter(c => !S.rot.includes(c))), weights: inp.weights, scen: { rain: 0, temp: 0 }, terrain: D.terrain, ndvi: D.nd && D.nd.by[2024] && D.nd.by[2025] ? { yrs: [2024, 2025], by: { 2024: D.nd.by[2024], 2025: D.nd.by[2025] } } : null, sel: 1, map: null };
+      const A = L.withPatch(D.patch, () => E.analyse(raw, Sm));
+      MV = window.MainViews(Sm); const v = MV.views(A);
+      $('summary').innerHTML = v.result; $('weather').innerHTML = v.climate; $('calendar').innerHTML = v.calendar; $('years').innerHTML = v.years;
+    } catch (e) { $('summary').innerHTML = '<p class="bad">' + esc(e.message) + '</p>'; }
+  }
+  const GO = { result: 'summary', climate: 'weather', calendar: 'calendar', years: 'years', options: 'strat', method: 'method' };
+  document.addEventListener('click', e => {
+    const g = e.target.closest('.mv [data-go]'); if (g) { setTab(GO[g.dataset.go] || 'summary'); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    const a = e.target.closest('.mv [data-act]');
+    if (a && a.dataset.act === 'print') { window.print(); return; }
+    if (a && a.dataset.act === 'share') { const u = location.href.split('#')[0] + '#s=' + L.pack(S); navigator.clipboard.writeText(u).then(() => { a.textContent = 'Link copied'; }, () => { a.textContent = u; }); return; }
+    const t = e.target.closest('.mv [data-tip]'), tip = $('tip');
+    if (t) { tip.textContent = t.getAttribute('data-tip'); tip.style.display = 'block'; const r = t.getBoundingClientRect(); tip.style.left = Math.min(innerWidth - 330, Math.max(8, r.left)) + 'px'; tip.style.top = Math.min(innerHeight - 120, r.bottom + 8) + 'px'; } else tip.style.display = 'none';
+  });
+
   function askExperimental() {
     modal('<h2>Include experimental strategies?</h2><p>Some practices are still in trials or disputed in the literature, and may not have been tried in your region. Evidence is weaker.</p><p class="mute">They are marked separately.</p>',
       [{ t: 'Include them', go: true, f: () => { S.exp = true; save(); go(); } }, { t: 'Established only', f: () => { S.exp = false; save(); go(); } }]);
@@ -142,13 +197,13 @@
   async function go(quiet) {
     const lat = +S.lat, lon = +S.lon, id = ++runId;
     $('status').innerHTML = 'Loading NASA POWER 2001-2025…';
-    fieldKey = lat.toFixed(2) + ',' + lon.toFixed(2); D.proj = D.soil = D.nd = D.patch = null;
+    fieldKey = lat.toFixed(2) + ',' + lon.toFixed(2); D.proj = D.soil = D.nd = D.patch = D.ex = null;
     for (const k in extrasState) delete extrasState[k];
     try {
       D.raw = await cached('furrow1:' + fieldKey, async () => E.parsePower(await getJSON('https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,GWETROOT&community=AG&longitude=' + lon + '&latitude=' + lat + '&start=20010101&end=20251231&format=JSON', 60000)));
       if (id !== runId) return;
       compute();
-      if (!quiet && innerWidth > 900) setTab('strat');
+      if (!quiet) setTab('strat');
       if (!quiet) { if (innerWidth <= 900) { $('wrap').classList.add('closed'); syncToggle(); } $('out').scrollIntoView({ behavior: 'smooth' }); }
       if (quiet && step === 4) drawSetup();
       loadExtras(id, lat, lon);
@@ -183,9 +238,18 @@
     if (S.later) { const ok = R.list.filter(s => !s.adj.blocked.length && s.id !== 'mono'), best = w => ok.slice().sort((a, b) => (E.match(b.sc, w) - b.adj.pen) - (E.match(a.sc, w) - a.adj.pen))[0], f = best(inp.weights), t = best(S.w2); R.plan = { first: f, then: t, switchAfter: S.years, same: f.id === t.id }; } else R.plan = null;
     $('status').innerHTML = '<span class="ok">Ready.</span> ' + R.list.length + ' options, ' + R.cl.n + ' years of weather' + (D.patch ? ', crop dates calibrated on farm records' : '') + '.';
     render();
+    mainViews();
   }
 
   function loadExtras(id, lat, lon) {
+    cached('furrowx1:' + fieldKey, async () => E.parseExtra(await getJSON('https://power.larc.nasa.gov/api/temporal/daily/point?parameters=ALLSKY_SFC_SW_DWN,WS2M,RH2M&community=AG&longitude=' + lon + '&latitude=' + lat + '&start=20010101&end=20251231&format=JSON', 60000)))
+      .then(x => { if (id !== runId || !x || !(x.n >= D.raw.n)) return; D.ex = x; note('Penman-Monteith inputs', 'loaded'); mainViews(); }).catch(() => {});
+    cached('furrowz1:' + fieldKey, async () => {
+      const dl = 250 / 111320, dn = 250 / (111320 * Math.cos(lat * Math.PI / 180)), la = [], lo = [];
+      for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) { la.push((lat + (2 - r) * dl).toFixed(5)); lo.push((lon + (c - 2) * dn).toFixed(5)); }
+      const z = (await getJSON('https://api.open-meteo.com/v1/elevation?latitude=' + la.join(',') + '&longitude=' + lo.join(','), 15000)).elevation;
+      return Array.isArray(z) && z.length === 25 && z.every(isFinite) ? z : null;
+    }).then(z => { if (id !== runId || !z) return; D.terrain = E.terrain(z, 250); note('Terrain', 'typical slope ' + D.terrain.typical.toFixed(1) + '%'); mainViews(); if (step === 2) drawSetup(); }).catch(() => {});
     note('Climate models', 'loading');
     cached('furrowlabp1:' + fieldKey, async () => getJSON('https://climate-api.open-meteo.com/v1/climate?latitude=' + lat + '&longitude=' + lon + '&start_date=2001-01-01&end_date=2050-12-31&models=' + L.MODELS.join(',') + '&daily=temperature_2m_mean,precipitation_sum', 60000).then(L.projections))
       .then(p => { if (id !== runId) return; D.proj = p && p.length ? p : null; note('Climate models', D.proj ? (D.proj.length - 1) + ' loaded' : 'none'); compute(); })
@@ -204,7 +268,7 @@
       const parts = [['001', '145'], ['161', '305'], ['321', '365']], by = {}, main = store.get('furrown2:' + fieldKey, null);
       if (main) main.yrs.forEach(y => { by[y] = main.by[y]; store.set('furrowlabny1:' + fieldKey + ':' + y, main.by[y]); });
       const good = () => Object.keys(by).map(Number).filter(y => by[y] && by[y].filter(v => v != null).length >= 15).sort();
-      const publish = () => { if (id !== runId) return; const g = good(); note('Satellite 2015-2025', g.length + ' of 11 years'); if (g.length >= 3) { D.nd = { yrs: g, by }; render(); } };
+      const publish = () => { if (id !== runId) return; const g = good(); note('Satellite 2015-2025', g.length + ' of 11 years'); if (g.length >= 2) { D.nd = { yrs: g, by }; render(); mainViews(); } };
       yrs.forEach(y => { const c = store.get('furrowlabny1:' + fieldKey + ':' + y, null); if (c) by[y] = c; });
       publish();
       const todo = yrs.filter(y => !by[y]);
@@ -255,14 +319,18 @@
       h += '<div class="card"><h3>Phased plan</h3>' + (P.same ? '<p>Same option fits both phases: <b>' + esc(P.first.name) + '</b>. </p>'
         : '<div class="plan"><div><div class="mute">Years 1 to ' + P.switchAfter + '</div><b>' + esc(P.first.name) + '</b><div class="mute">' + esc(rotTxt(P.first)) + '</div></div><div><div class="mute">From year ' + (P.switchAfter + 1) + '</div><b>' + esc(P.then.name) + '</b><div class="mute">' + esc(rotTxt(P.then)) + '</div></div></div><p class="mute" style="margin-top:10px">Switch when priorities change. See Land care rewards for how a soil agreement could fund the second phase.</p>') + '</div>';
     }
-    R.list.forEach((s, i) => {
+    const pre = h; h = '';
+    const bestIdx = Math.max(0, R.list.findIndex(s => s.id !== 'current' && s.id !== 'mono' && !s.adj.blocked.length));
+    const order = [R.list[bestIdx]].concat(R.list.filter((_, i) => i !== bestIdx));
+    order.forEach((s, i) => {
+      if (i === 1) h += pre + '<button class="go" id="more" style="width:100%;margin:6px 0 4px">' + (D.showAll ? 'Hide other options' : 'See other options (' + (order.length - 1) + ')') + '</button><div id="others"' + (D.showAll ? '' : ' hidden') + '>';
       const I = INFO(s.id) || {}, f = mine[s.id] || {}, v = sum[s.id], c = carbon(s), isNow = s.id === 'current', blocked = s.adj.blocked.length;
-      const badges = (isNow ? '<span class="badge now">What you grow now</span>' : '') + (i === 0 && !isNow && !blocked && s.id !== 'mono' ? '<span class="badge best">Best fit for you</span>' : '') + (s.id === 'mono' ? '<span class="badge no">For comparison only, not advice</span>' : '') + (s.exp ? '<span class="badge exp">New, less tested</span>' : '') + (blocked ? '<span class="badge no">Needs something you said isn’t possible</span>' : '');
+      const badges = (isNow ? '<span class="badge now">What you grow now</span>' : '') + (i === 0 && !isNow && !blocked ? '<span class="badge best">Your best match</span>' : '') + (s.id === 'mono' ? '<span class="badge no">For comparison only, not advice</span>' : '') + (s.exp ? '<span class="badge exp">New, less tested</span>' : '') + (blocked ? '<span class="badge no">Needs something you said isn’t possible</span>' : '');
       const sc = Math.max(0, Math.round(s.adj.final));
       h += '<div class="card' + (isNow ? ' now' : '') + '">' + badges + '<div class="cropline">' + esc(rotTxt(s)) + '</div><div class="mute">' + esc(s.name) + '</div>'
         + '<div class="score"><b>' + sc + '</b><span class="mute">/ 100, weighted by your priorities</span><div class="meter"><i style="width:' + Math.max(2, sc) + '%"></i></div></div>'
         + (!isNow ? '<div class="mute">' + (sc > Math.round(cur.adj.final) ? '+' : '') + (sc - Math.round(cur.adj.final)) + ' vs current rotation</div>' : '')
-        + '<details' + (i < 2 ? ' open' : '') + '><summary>Details</summary><dl>'
+        + '<details' + (i === 0 ? ' open' : '') + '><summary>Details</summary><dl>'
         + '<dt>Why it’s here</dt><dd>' + esc(I.why) + '</dd><dt>What backs it up</dt><dd>' + esc(I.ev) + '</dd>' + (I.ben ? '<dt>Expected benefit</dt><dd>' + esc(I.ben) + '</dd>' : '')
         + '<dt>Requirements</dt><dd>' + needText(s) + '</dd>'
         + (s.conf ? '<dt>Confidence</dt><dd>' + confText(s) + '</dd>' : '')
@@ -275,7 +343,9 @@
         + ['works', 'no', 'tried'].map(k => '<button data-k="' + k + '" class="big' + (f.v === k ? ' on' : '') + '">' + { works: 'Would work here', no: 'Wouldn’t work here', tried: 'We tried this' }[k] + '</button>').join('')
         + '<input placeholder="Note (optional, shared with other farms)" value="' + esc(f.note || '') + '" style="flex:1;min-width:220px"></div></details></div>';
     });
+    if (order.length > 1) h += '</div>'; else h += pre;
     $('strat').innerHTML = h;
+    if ($('more')) $('more').onclick = () => { D.showAll = !D.showAll; $('others').hidden = !D.showAll; $('more').textContent = D.showAll ? 'Hide other options' : 'See other options (' + (order.length - 1) + ')'; };
     $('strat').querySelectorAll('.fb').forEach(el => {
       const id = el.dataset.s, put = patch => { const all = store.get('furrowlab:fb', {}); all[fieldKey] = all[fieldKey] || {}; all[fieldKey][id] = Object.assign(all[fieldKey][id] || {}, patch, { at: new Date().toISOString() }); store.set('furrowlab:fb', all); };
       el.querySelectorAll('button').forEach(b => b.onclick = () => { el.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); put({ v: b.dataset.k }); });
@@ -517,13 +587,16 @@
     ];
     $('sources').innerHTML = '<div class="card scroll"><table><tr><th>What</th><th>From</th><th>Status</th></tr>' + rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>').join('') + '</table></div>';
   }
-  function setTab(t) { document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.t === t)); document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === t)); }
+  function setTab(t) { if (t === 'mapt') setTimeout(bigMap, 30);
+    setTab0(t); }
+  function setTab0(t) { document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.t === t)); document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === t)); }
   function syncToggle() { const c = $('wrap').classList.contains('closed'); $('toggle').textContent = c ? 'Show setup' : 'Hide setup'; $('toggle').setAttribute('aria-expanded', String(!c)); }
   $('toggle').onclick = () => { $('wrap').classList.toggle('closed'); syncToggle(); };
   $('tabs').onclick = e => { const b = e.target.closest('button'); if (b) setTab(b.dataset.t); };
   const m = /#n=([\w-]+)/.exec(location.hash); if (m) { try { merge(L.unpack(m[1])); history.replaceState(null, '', location.pathname); } catch (e) {} }
+  const sm = /#s=([\w-]+)/.exec(location.hash); if (sm) { try { Object.assign(S, L.unpack(sm[1])); save(); history.replaceState(null, '', location.pathname); } catch (e) {} }
   D.shared = store.get('furrowlab:shared', []);
   drawSetup(); sources(); method();
-  ['strat', 'stress', 'veg', 'crops', 'params', 'farm', 'shared', 'care'].forEach(id => $(id).innerHTML = '<p class="mute">Complete the setup first.</p>');
+  ['summary', 'weather', 'calendar', 'years', 'strat', 'stress', 'veg', 'crops', 'params', 'farm', 'shared', 'care'].forEach(id => $(id).innerHTML = '<p class="mute">Complete the setup first.</p>');
   crops();
 })();
