@@ -512,6 +512,16 @@ body.wiz [data-wiz=field] #reset{display:none}
 @media (prefers-reduced-motion:reduce){.anim *,.mbox .step{animation:none!important;opacity:1!important;stroke-dashoffset:0!important}}
 .mbox .step{margin:0 0 10px}
 
+#limchips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
+#limchips .chip{font-size:15px;padding:9px 14px;border-radius:999px;transition:background .2s ease,color .2s ease,border-color .2s ease}
+#limchips .chip[aria-pressed=true]{background:var(--em);color:#0c2117;border-color:var(--em)}
+#und{margin-top:10px;font-size:15.5px}
+#und ul{margin:6px 0 0;padding-left:20px}#und li{margin:3px 0}
+body.wiz.wfree .setup{width:min(820px,calc(100vw - 24px))}
+#limchips .chip[aria-pressed=true]{text-decoration:none!important;opacity:1}
+#limchips .chip[aria-pressed=true]::before{content:'✓ ';font-weight:700}
+body.wiz.wfree #free{height:64px;min-height:0}
+
 </style>
 </head>
 <body class="intro" data-view="results" data-tab="result">
@@ -583,8 +593,12 @@ body.wiz [data-wiz=field] #reset{display:none}
   </details>
   <details class="box" data-wiz="acc"><summary>What you can take on</summary>
     <div id="acc"></div>
-    <div class="field"><label for="free">Anything else that limits you</label><textarea id="free" rows="3" placeholder="Any language. E.g. diesel shortages, no budget for machinery, pollen allergy, no buyer for peas nearby"></textarea></div>
-    <div id="und" class="small"></div>
+  </details>
+  <details class="box" data-wiz="free"><summary>Other limits</summary>
+    <p class="small muted">Common ones:</p>
+    <div class="chips" id="limchips"></div>
+    <div class="field"><label for="free">In your own words</label><textarea id="free" rows="3" placeholder="Any language. E.g. we can’t get diesel for the combine in autumn"></textarea></div>
+    <div id="und"></div>
   </details>
   <details class="box" data-wiz="soil"><summary>Soil and how you farm</summary>
     <div class="row">
@@ -1096,7 +1110,7 @@ body.wiz [data-wiz=field] #reset{display:none}
 
 </script>
 <div class="modal" id="modal"><div class="mbox glass" id="mbox"></div></div>
-<script src="lab.js?v=10"></script>
+<script src="lab.js?v=12"></script>
 <script>
 (function () {
   'use strict';
@@ -1330,7 +1344,7 @@ body.wiz [data-wiz=field] #reset{display:none}
     if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
     S.irrigated = !!v.irrigated; S.livestock = !!v.livestock; S.exclude = new Set((Array.isArray(v.exclude) ? v.exclude : []).filter(k => C[k] || CV[k]));
     DIMS.forEach(d => { const w = v.weights && v.weights[d[0]]; if (w >= 0 && w <= 5) S.weights[d[0]] = Math.round(w); $('w_' + d[0]).value = S.weights[d[0]]; $('w_v' + d[0]).textContent = LEVEL[S.weights[d[0]]]; });
-    $('soil').value = S.soil; $('till').value = S.till; $('irrig').checked = S.irrigated; $('stock').checked = S.livestock; $('later').checked = !!S.later; $('laterbox').hidden = !S.later; $('years').value = S.years; $('yearsv').textContent = S.years + ' yrs'; $('free').value = S.text || ''; showUnd(); DIMS.forEach(d => { $('w2_' + d[0]).value = S.w2[d[0]]; $('w2_v' + d[0]).textContent = LEVEL[S.w2[d[0]]]; });
+    $('soil').value = S.soil; $('till').value = S.till; $('irrig').checked = S.irrigated; $('stock').checked = S.livestock; $('later').checked = !!S.later; $('laterbox').hidden = !S.later; $('years').value = S.years; $('yearsv').textContent = S.years + ' yrs'; $('free').value = S.text || ''; showUnd(); if (window.syncChips) window.syncChips(); DIMS.forEach(d => { $('w2_' + d[0]).value = S.w2[d[0]]; $('w2_v' + d[0]).textContent = LEVEL[S.w2[d[0]]]; });
     document.querySelectorAll('#excl .chip').forEach(b => b.setAttribute('aria-pressed', S.exclude.has(b.dataset.id) ? 'true' : 'false'));
     renderRot(); return v;
   }
@@ -1608,7 +1622,7 @@ body.wiz [data-wiz=field] #reset{display:none}
   function moveInk() {
     ['tabs', 'dock'].forEach(n => { const nav = $(n), ink = nav.querySelector('.ink'), b = nav.querySelector('[aria-selected=true]'); if (!ink) return; if (!b || !b.offsetWidth) { ink.style.opacity = 0; return; } ink.style.opacity = 1; ink.style.width = b.offsetWidth + 'px'; ink.style.transform = 'translateX(' + b.offsetLeft + 'px)'; });
   }
-  const WIZ = [['field', 'Where is your field?', 'Enter coordinates, tap the map, or pick an example at the top.'], ['rot', 'What do you grow now?', 'One row per year, in rotation order. Add a cover crop if you already use one.'], ['soil', 'Soil and slope', 'Pick the closest texture class. Tap “What does this mean?” on any item for details.'], ['pri', 'What is your priority right now?', 'Set how important each goal is for the coming seasons. You can plan a change of priorities later.'], ['excl', 'Crops you can’t grow or sell', 'Tap a crop to exclude it. Skip if everything is available.'], ['acc', 'What you can take on', 'The best options for your priorities need the following. Rate how feasible each is: 0 = not possible at all, 5 = no problem.']];
+  const WIZ = [['field', 'Where is your field?', 'Enter coordinates, tap the map, or pick an example at the top.'], ['rot', 'What do you grow now?', 'One row per year, in rotation order. Add a cover crop if you already use one.'], ['soil', 'Soil and slope', 'Pick the closest texture class. Tap “What does this mean?” on any item for details.'], ['pri', 'What is your priority right now?', 'Set how important each goal is for the coming seasons. You can plan a change of priorities later.'], ['excl', 'Crops you can’t grow or sell', 'Tap a crop to exclude it. Skip if everything is available.'], ['acc', 'What you can take on', 'The best options for your priorities need the following. Rate how feasible each is: 0 = not possible at all, 5 = no problem.'], ['free', 'Anything else that limits you?', 'Tap what applies, or describe it in your own words in any language. We show exactly how each one changes the advice.']];
   function closeModal() { const m = $('modal'); if (!m.classList.contains('on')) return; m.classList.add('out'); setTimeout(() => { m.classList.remove('on', 'out', 'wide'); }, 220); }
   function openRank() {
     $('mbox').innerHTML = '<div class="mhead"><h2>All options for your field</h2><button class="btn ghost xbtn" data-close aria-label="Close">×</button></div><p class="muted">Sorted by how well they fit your priorities. Tap one to see it in full.</p><div class="rank">' + RANK + '</div>';
@@ -1660,7 +1674,7 @@ body.wiz [data-wiz=field] #reset{display:none}
   }
   function wizard(i) {
     if (WIZ[i][0] === 'acc') { $('acc').dataset.keys = ''; drawAcc(); }
-    S.wiz = i; document.body.classList.add('wiz'); document.body.classList.remove('noset'); document.body.classList.toggle('wacc', WIZ[i][0] === 'acc'); document.body.classList.toggle('wpri', WIZ[i][0] === 'pri');
+    S.wiz = i; document.body.classList.add('wiz'); document.body.classList.remove('noset'); document.body.classList.toggle('wacc', WIZ[i][0] === 'acc'); document.body.classList.toggle('wpri', WIZ[i][0] === 'pri'); document.body.classList.toggle('wfree', WIZ[i][0] === 'free');
     document.querySelectorAll('[data-wiz]').forEach(b => { const on = b.dataset.wiz === WIZ[i][0]; b.classList.toggle('cur', on); if (on) b.open = true; });
     $('wizn').textContent = 'Step ' + (i + 1) + ' of ' + WIZ.length; $('wizplace').textContent = S.name;
     $('wizt').textContent = WIZ[i][1]; $('wizd').textContent = WIZ[i][2]; $('wizbar').style.width = (i + 1) / WIZ.length * 100 + '%';
@@ -1669,7 +1683,7 @@ body.wiz [data-wiz=field] #reset{display:none}
   }
   function wizEnd() {
     S.wiz = null; document.body.classList.remove('wiz'); document.body.classList.add('noset'); save();
-    document.querySelectorAll('[data-wiz]').forEach(b => { b.classList.remove('cur'); b.open = b.dataset.wiz === 'rot'; }); document.querySelectorAll('.setup details.box:not([data-wiz])').forEach(b => b.open = false); document.body.classList.remove('wacc', 'wpri');
+    document.querySelectorAll('[data-wiz]').forEach(b => { b.classList.remove('cur'); b.open = b.dataset.wiz === 'rot'; }); document.querySelectorAll('.setup details.box:not([data-wiz])').forEach(b => b.open = false); document.body.classList.remove('wacc', 'wpri', 'wfree');
     setTab('result'); if (map) goStep(0, true); moveInk();
   }
   let introPick = null;
@@ -1798,8 +1812,17 @@ body.wiz [data-wiz=field] #reset{display:none}
     });
     $('later').onchange = e => { S.later = e.target.checked; $('laterbox').hidden = !S.later; recompute(); };
     $('years').oninput = e => { S.years = +e.target.value; $('yearsv').textContent = S.years + ' yrs'; recompute(); };
+    const LIM = ['Diesel is short or expensive', 'No money for new machinery', 'No no-till drill', 'Not enough workers or time', 'Little grain storage', 'No buyer nearby for new crops', 'Export prices or tariffs are unstable', 'Someone has a pollen allergy', 'The land is rented', 'We keep livestock', 'No irrigation, water is the worry', 'We farm organically'];
+    $('limchips').innerHTML = LIM.map(l => '<button class="chip" aria-pressed="false">' + l + '</button>').join('');
+    const syncChips = () => document.querySelectorAll('#limchips .chip').forEach(b => b.setAttribute('aria-pressed', String(S.text.toLowerCase().indexOf(b.textContent.toLowerCase()) >= 0)));
+    document.querySelectorAll('#limchips .chip').forEach(b => b.onclick = () => {
+      const l = b.textContent, on = S.text.toLowerCase().indexOf(l.toLowerCase()) >= 0;
+      S.text = on ? S.text.split(/\n|; /).filter(x => x.trim() && x.trim().toLowerCase() !== l.toLowerCase()).join('; ') : (S.text.trim() ? S.text.trim() + '; ' : '') + l;
+      $('free').value = S.text; syncChips(); showUnd(); clearTimeout(ft); ft = setTimeout(recompute, 400);
+    });
+    window.syncChips = syncChips;
     let ft = null;
-    $('free').oninput = e => { S.text = e.target.value; showUnd(); clearTimeout(ft); ft = setTimeout(recompute, 600); };
+    $('free').oninput = e => { S.text = e.target.value; syncChips(); showUnd(); clearTimeout(ft); ft = setTimeout(recompute, 600); };
     document.addEventListener('click', e => { const b = e.target.closest('.why'); if (b) { const x = $('x_' + b.dataset.x); if (x) x.classList.toggle('on'); } });
     document.querySelectorAll('.setup details.box').forEach(d => d.addEventListener('toggle', () => { if (d.open && S.wiz == null) document.querySelectorAll('.setup details.box').forEach(o => { if (o !== d) o.open = false; }); }));
     $('handle').onclick = () => { const off = document.body.classList.toggle('noset'); $('handle').setAttribute('aria-expanded', String(!off)); $('handle').setAttribute('aria-label', off ? 'Show settings' : 'Hide settings'); if (map) setTimeout(() => map.invalidateSize(), 350); };

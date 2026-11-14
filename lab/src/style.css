@@ -500,3 +500,13 @@ body.wiz [data-wiz=field] #reset{display:none}
 .mbox .step{opacity:0;animation:paneIn .5s cubic-bezier(.2,.8,.2,1) forwards;font-size:17px;line-height:1.55}
 @media (prefers-reduced-motion:reduce){.anim *,.mbox .step{animation:none!important;opacity:1!important;stroke-dashoffset:0!important}}
 .mbox .step{margin:0 0 10px}
+
+#limchips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
+#limchips .chip{font-size:15px;padding:9px 14px;border-radius:999px;transition:background .2s ease,color .2s ease,border-color .2s ease}
+#limchips .chip[aria-pressed=true]{background:var(--em);color:#0c2117;border-color:var(--em)}
+#und{margin-top:10px;font-size:15.5px}
+#und ul{margin:6px 0 0;padding-left:20px}#und li{margin:3px 0}
+body.wiz.wfree .setup{width:min(820px,calc(100vw - 24px))}
+#limchips .chip[aria-pressed=true]{text-decoration:none!important;opacity:1}
+#limchips .chip[aria-pressed=true]::before{content:'✓ ';font-weight:700}
+body.wiz.wfree #free{height:64px;min-height:0}

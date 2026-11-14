@@ -81,8 +81,12 @@
   </details>
   <details class="box" data-wiz="acc"><summary>What you can take on</summary>
     <div id="acc"></div>
-    <div class="field"><label for="free">Anything else that limits you</label><textarea id="free" rows="3" placeholder="Any language. E.g. diesel shortages, no budget for machinery, pollen allergy, no buyer for peas nearby"></textarea></div>
-    <div id="und" class="small"></div>
+  </details>
+  <details class="box" data-wiz="free"><summary>Other limits</summary>
+    <p class="small muted">Common ones:</p>
+    <div class="chips" id="limchips"></div>
+    <div class="field"><label for="free">In your own words</label><textarea id="free" rows="3" placeholder="Any language. E.g. we can’t get diesel for the combine in autumn"></textarea></div>
+    <div id="und"></div>
   </details>
   <details class="box" data-wiz="soil"><summary>Soil and how you farm</summary>
     <div class="row">
@@ -176,7 +180,7 @@
 /*__ENGINE__*/
 </script>
 <div class="modal" id="modal"><div class="mbox glass" id="mbox"></div></div>
-<script src="lab.js?v=10"></script>
+<script src="lab.js?v=12"></script>
 <script>
 /*__UI__*/
 </script>
