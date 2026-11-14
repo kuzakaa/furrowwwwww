@@ -594,11 +594,12 @@
       ['Greenness 2015-2025', 'MODIS NDVI via ORNL DAAC', on(D.nd, 'In use: plant stress, satellite check', 'Loading or failed')],
       ['Soil carbon, nitrogen, pH', 'ISRIC SoilGrids', on(D.soil, 'In use: soil info', 'Loading or failed')],
       ['Farmer records and votes', 'Farmers, through the shared list', on(D.shared.length, 'In use: ' + D.shared.length + ' notes', 'Ready, none loaded')],
-      ['Soil moisture from space', 'NASA SMAP L4', 'Needs a NASA Earthdata login and a server'],
-      ['Plant water stress', 'NASA ECOSTRESS', 'Needs a NASA Earthdata login and a server'],
-      ['Groundwater', 'NASA GRACE-FO', 'Needs a NASA Earthdata login and a server'],
-      ['Sharper field images', 'Sentinel-2', 'Needs a server'],
-      ['Crop prices', 'FAOSTAT', 'Not reachable from a browser'],
+      ['Last 30 days: rain, evaporation, topsoil moisture', 'Meteomatics, through our server', '<span class="ok">In use: field check and advice on the main page</span>'],
+      ['Deep soil moisture from space', 'NASA SMAP L4 via AppEEARS, through our server', '<span class="ok">In use: main page, arrives after NASA processes it (5-30 min)</span>'],
+      ['Field greenness, 10 m', 'Copernicus Sentinel-2, through our server', '<span class="ok">In use: latest cloud-free view on the main page</span>'],
+      ['Plant water stress', 'NASA ECOSTRESS', 'Not connected yet'],
+      ['Groundwater', 'NASA GRACE-FO', 'Not connected yet'],
+      ['Crop prices', 'FAOSTAT', 'FAO server down at the moment'],
       ['Field sensors', 'Farm stations', 'Would come in through the shared list']
     ];
     $('sources').innerHTML = '<div class="card scroll"><table><tr><th>What</th><th>From</th><th>Status</th></tr>' + rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>').join('') + '</table></div>';
