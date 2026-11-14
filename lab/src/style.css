@@ -590,3 +590,26 @@ body.nores .rhandle svg{transform:rotate(180deg)}
 .vs .nowc{background:rgba(180,236,143,.07);border:2px dashed rgba(180,236,143,.7);border-radius:16px;padding:14px 16px}
 .vs .win .n{color:#c6f5a3}
 @media (max-width:1400px){.res .tabs{flex-wrap:wrap}}
+:root{--panel:rgba(15,44,30,.97);--line:rgba(200,240,190,.22);--muted:#dbeadb}
+.glass{background:rgba(15,44,30,.97)!important;border:1px solid rgba(180,236,143,.28)!important;box-shadow:0 14px 40px rgba(0,0,0,.45)}
+.res .tabs{background:#0c2418}
+.scrollarea{background:linear-gradient(#123423,#0f2c1e)}
+.scrollarea h2,.pane h2{color:#fff;font-size:22px;margin:26px 0 8px;padding-left:12px;border-left:4px solid #b4ec8f}
+.scrollarea h1{color:#fff}
+.key,.kpi,.osec,.res .conf,.money,.plan>div,.note,.irow,.ytype,.terr,.fig{background:#1a4630!important;border:1px solid rgba(180,236,143,.25)!important;border-radius:14px}
+.irow{padding:12px 14px!important;margin:8px 0;border-top:1px solid rgba(180,236,143,.25)!important}
+.ytype{padding:12px 14px;margin:10px 0}
+.osec{margin:8px 0;padding:0 14px}
+.osec>summary{padding:12px 0}
+.kp{border-top-color:rgba(180,236,143,.25)!important}
+.key h3,.note h4{color:#c6f5a3!important}
+.optd .lead,.res p.why{color:#fff}
+.bars span:first-child{color:#fff}
+.bars .track{background:rgba(255,255,255,.14)}
+.fine,.sub,.place{color:#d3e6d4!important}
+.note{padding:12px 14px!important;margin:12px 0}
+.fig{padding:10px}
+.wrow{background:#1a4630;border:1px solid rgba(180,236,143,.22)}
+details.box{border-bottom:1px solid rgba(180,236,143,.2)}
+details.box>summary{font-size:18px;color:#fff}
+.btn.ghost{box-shadow:inset 0 0 0 1.5px rgba(180,236,143,.45)}
