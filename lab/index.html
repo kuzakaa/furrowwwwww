@@ -727,6 +727,11 @@ select:hover,select:focus{background-color:#175033!important;border-color:#a3e63
 select option{background:#0f2a1c!important;color:#F5FAF2}
 select option:checked,select option:hover{background:#1f6b3f!important;color:#fff}
 #intro.quick .ghost,#intro.quick .lock,#intro.quick .hair,#intro.quick .sk,#intro.quick .shade{display:none!important}
+.fsize{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:end;gap:8px}
+.fsize .x{padding-bottom:12px;color:var(--muted);font-weight:600}
+.fhint{margin:6px 0 10px}
+.fh{width:18px!important;height:18px!important;margin:-9px 0 0 -9px!important;border-radius:50%;background:#F5FAF2;border:3px solid #1f6b3f;box-shadow:0 1px 6px rgba(0,0,0,.5)}
+.fh-n,.fh-s{cursor:ns-resize}.fh-e,.fh-w{cursor:ew-resize}
 
 </style>
 </head>
@@ -783,7 +788,8 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
       <div class="field"><label for="lon">Longitude</label><input id="lon" type="number" step="0.01" min="-180" max="180"></div>
       <button class="btn" id="load">Load</button>
     </div>
-    <div class="field"><label for="area">Field size, hectares</label><input id="area" type="number" min="1" step="1" value="100"></div>
+    <div class="fsize"><div class="field"><label for="fw">Width, m</label><input id="fw" type="number" min="20" step="10" value="1000"></div><span class="x">×</span><div class="field"><label for="fl">Length, m</label><input id="fl" type="number" min="20" step="10" value="1000"></div><span class="x">=</span><div class="field"><label for="area">Area, ha</label><input id="area" type="number" min="0.1" step="0.1" value="100"></div></div>
+    <p class="small muted fhint">Drag the white handles on the map edges to fit your field, or type the size.</p>
     <div class="row"><button class="btn ghost" id="reloc">Change location</button><button class="btn ghost" id="reset">Start over</button></div>
     <p class="small muted">We save your choices on this device, so you won’t lose them if you reload.</p>
   </details>
@@ -1321,7 +1327,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
   };
   const DIMTIP = { water: 'How much of the water your crops wanted they actually got from rain and the soil. 100 means they never ran short.', soil: 'Estimated from days with living roots, nitrogen from legumes, leftover residue, how many crop families you grow, deep roots, and few bare days.', erosion: 'How much of the heavy rain lands on covered ground instead of bare soil. 100 means none of it hits bare soil.', income: '<b>How it is scored.</b> Each crop has a 1 to 5 rating for typical cost to grow and for how many buyers it has (see the crop table in How it works). The score combines these over the rotation and drops in years when the crop runs short of water, since yield falls. It compares options with each other; it is not a forecast in euros.<br><b>Where the data comes from.</b> The ratings are general values from extension guides, the same for every country. Furrow has no regional price, cost or yield data, so it cannot see that sunflower pays better in Odesa than in Iowa.<br><b>Reliability and volatility.</b> Prices are not modelled at all, so price swings between years do not show up. Only the weather part (water shortage) varies year to year, and that part is reliable.<br><b>What it does not include.</b> Import tariffs, export bans, closed ports and sea routes, currency moves, input prices (fertiliser, diesel), subsidies and contracts. These can outweigh everything else. Add them yourself: tap “Export prices or tariffs are unstable” in step 7, and enter your own yield, price and costs under “Help me work out my margin” in step 6.', resilience: 'How rarely crops get stressed by drought or heat, whether they ripen before frost, and how spread out your crops are across families and seasons.' };
   const TREND = { 'clear trend': 'trend, p < 0.05', 'possible trend': 'weak signal, p < 0.2', 'no clear trend': 'no clear trend' };
-  const S = { area: 100, stockOn: false, stockType: 'beef', stockN: 0, maxDrop: 15, mY: 4.5, mP: 200, mC: 550, slopePct: 3, later: false, years: 3, w2: { water: 3, soil: 5, erosion: 4, income: 2, resilience: 3 }, acc: {}, text: '', exp: null, lat: 0, lon: 0, name: '', rot: [], soil: 'loam', slope: 'custom', till: 'reduced', irrigated: false, livestock: false, exclude: new Set(), weights: { water: 3, soil: 3, erosion: 3, income: 3, resilience: 3 }, scen: { rain: 0, temp: 0 }, raw: null, demo: null, sel: 0, terrain: null, soilSug: null, touched: {} };
+  const S = { area: 100, fw: 1000, fl: 1000, stockOn: false, stockType: 'beef', stockN: 0, maxDrop: 15, mY: 4.5, mP: 200, mC: 550, slopePct: 3, later: false, years: 3, w2: { water: 3, soil: 5, erosion: 4, income: 2, resilience: 3 }, acc: {}, text: '', exp: null, lat: 0, lon: 0, name: '', rot: [], soil: 'loam', slope: 'custom', till: 'reduced', irrigated: false, livestock: false, exclude: new Set(), weights: { water: 3, soil: 3, erosion: 3, income: 3, resilience: 3 }, scen: { rain: 0, temp: 0 }, raw: null, demo: null, sel: 0, terrain: null, soilSug: null, touched: {} };
   const COL = { bare: '#F2A541', et: '#F2907E', straw: '#B7A98A', crop: '#8FD694', cover: '#D6EBAE', peren: '#3E8E5A', water: '#7CC6E8', waterSoft: '#2F5D6B', ink: '#EEF2E6', muted: '#A8A89C', line: 'rgba(240,236,220,.13)', panel: '#171816' };
 
   async function fetchPower(lat, lon) {
@@ -1520,7 +1526,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
   }
   function margin() { return Math.max(0, (S.mY || 0) * (S.mP || 0) - (S.mC || 0)); }
   function setSlope(p) { S.slopePct = Math.max(0, Math.min(20, +p || 0)); S.slope = 'custom'; E.SLOPES.custom = { name: S.slopePct + '%', f: Math.max(0.3, Math.min(3, S.slopePct / 4)) }; if ($('slopep')) { $('slopep').value = S.slopePct; $('slopev').textContent = S.slopePct + '%'; } }
-  const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights, area: S.area, stockOn: S.stockOn, stockType: S.stockType, stockN: S.stockN, maxDrop: S.maxDrop, mY: S.mY, mP: S.mP, mC: S.mC, slopePct: S.slopePct, later: S.later, years: S.years, w2: S.w2, acc: S.acc, text: S.text, exp: S.exp });
+  const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), weights: S.weights, area: S.area, fw: S.fw, fl: S.fl, stockOn: S.stockOn, stockType: S.stockType, stockN: S.stockN, maxDrop: S.maxDrop, mY: S.mY, mP: S.mP, mC: S.mC, slopePct: S.slopePct, later: S.later, years: S.years, w2: S.w2, acc: S.acc, text: S.text, exp: S.exp });
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(Object.assign(choices(), { done: !S.intro && S.wiz == null }))); } catch (e) {}
   }
@@ -1535,7 +1541,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
     let v = fromLink(); if (!v) { try { v = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
     if (!v || !v.done || !isFinite(v.lat) || !isFinite(v.lon) || Math.abs(v.lat) > 70 || Math.abs(v.lon) > 180 || !Array.isArray(v.rot) || !v.rot.length || v.rot.length > 6 || v.rot.some(r => !r || !C[r.c])) return null;
     S.rot = v.rot.map(r => ({ c: r.c, cv: CV[r.cv] ? r.cv : null }));
-    if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp', 'area', 'stockOn', 'stockType', 'stockN', 'maxDrop', 'mY', 'mP', 'mC'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
+    if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp', 'area', 'fw', 'fl', 'stockOn', 'stockType', 'stockN', 'maxDrop', 'mY', 'mP', 'mC'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
     S.irrigated = !!v.irrigated; S.livestock = !!v.livestock; S.exclude = new Set((Array.isArray(v.exclude) ? v.exclude : []).filter(k => C[k] || CV[k]));
     DIMS.forEach(d => { const w = v.weights && v.weights[d[0]]; if (w >= 0 && w <= 5) S.weights[d[0]] = Math.round(w); $('w_' + d[0]).value = S.weights[d[0]]; $('w_v' + d[0]).textContent = LEVEL[S.weights[d[0]]]; });
     $('soil').value = S.soil; $('till').value = S.till; $('irrig').checked = S.irrigated; if (window.syncExtra) window.syncExtra(); $('later').checked = !!S.later; $('laterbox').hidden = !S.later; $('years').value = S.years; $('yearsv').textContent = S.years + ' yrs'; $('free').value = S.text || ''; showUnd(); if (window.syncChips) window.syncChips(); DIMS.forEach(d => { $('w2_' + d[0]).value = S.w2[d[0]]; $('w2_v' + d[0]).textContent = LEVEL[S.w2[d[0]]]; });
@@ -1931,7 +1937,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
   }
   let introPick = null, mask = null;
   function intro(quick) {
-    const el = $('intro'), off = () => { document.body.classList.remove('intro'); S.intro = false; introPick = null; };
+    const el = $('intro'), off = () => { document.body.classList.remove('intro'); S.intro = false; introPick = null; setTimeout(drawField, 50); };
     if (!el) { off(); return; }
     const calm = quick || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     if (quick) el.classList.add('quick');
@@ -2024,6 +2030,33 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
     story();
   }
   let zones = [];
+  let frect = null, fh = [];
+  function drawField() {
+    if (!map || S.intro) { if (frect) { map.removeLayer(frect); fh.forEach(h => map.removeLayer(h)); frect = null; fh = []; } return; }
+    const dl = S.fl / 2 / 111320, dn = S.fw / 2 / (111320 * Math.cos(S.lat * Math.PI / 180)), b = [[S.lat - dl, S.lon - dn], [S.lat + dl, S.lon + dn]];
+    if (!frect) {
+      frect = window.L.rectangle(b, { color: '#F5FAF2', weight: 2.5, fill: true, fillColor: '#a3e635', fillOpacity: 0.08, interactive: false }).addTo(map);
+      ['n', 's', 'e', 'w'].forEach(k => {
+        const h = window.L.marker([0, 0], { draggable: true, keyboard: false, icon: window.L.divIcon({ className: 'fh fh-' + k, iconSize: [18, 18] }) }).addTo(map);
+        h.k = k; h.on('drag', e => { const p = e.target.getLatLng(), m = 111320, cl = Math.cos(S.lat * Math.PI / 180);
+          if (k === 'n' || k === 's') S.fl = Math.max(20, Math.round(Math.abs(p.lat - S.lat) * m * 2 / 10) * 10);
+          else S.fw = Math.max(20, Math.round(Math.abs(p.lng - S.lon) * m * cl * 2 / 10) * 10);
+          syncField(true); });
+        h.on('dragend', () => { syncField(); later(); });
+        fh.push(h);
+      });
+    }
+    frect.setBounds(b);
+    fh.forEach(h => { const c = h.k === 'n' ? [S.lat + dl, S.lon] : h.k === 's' ? [S.lat - dl, S.lon] : h.k === 'e' ? [S.lat, S.lon + dn] : [S.lat, S.lon - dn]; if (!h.dragging || !h.dragging._draggable || !h.dragging._draggable._moving) h.setLatLng(c); });
+  }
+  function syncField(dragging) {
+    S.area = Math.round(S.fw * S.fl / 1000) / 10;
+    if (document.activeElement !== $('fw')) $('fw').value = S.fw;
+    if (document.activeElement !== $('fl')) $('fl').value = S.fl;
+    if (document.activeElement !== $('area')) $('area').value = S.area;
+    drawField();
+    if (!dragging && window.fieldChanged) window.fieldChanged();
+  }
   function drawZones() {
     if (!map) return; zones.forEach(z => map.removeLayer(z)); zones = []; const T = S.terrain; if (!T) return;
     const dl = T.step / 111320, dn = T.step / (111320 * Math.cos(S.lat * Math.PI / 180));
@@ -2110,7 +2143,7 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
     S.name = demo ? demo.name : 'Your field';
     if (demo && !keep) { S.rot = demo.rot.map(r => ({ c: r.c, cv: r.cv || null })); S.soil = demo.soil; setSlope(demo.slope); S.till = demo.till; $('soil').value = S.soil; $('till').value = S.till; renderRot(); }
     $('lat').value = S.lat; $('lon').value = S.lon; $('demo').value = S.demo || '';
-    S.terrain = null; S.soilSug = null; S.ndvi = null; S.touched = {}; $('sugsoil').innerHTML = ''; $('sugslope').innerHTML = ''; drawZones(); liveWx();
+    S.terrain = null; S.soilSug = null; S.ndvi = null; S.touched = {}; $('sugsoil').innerHTML = ''; $('sugslope').innerHTML = ''; drawZones(); drawField(); liveWx();
     if (map) { marker.setLatLng([S.lat, S.lon]); cell.setBounds(cellBounds()); goStep(0, true); }
     load();
   }
@@ -2179,9 +2212,12 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
     $('croptab').innerHTML = '<table><thead><tr><th>Crop</th><th>Family</th><th>Peak water use (Kc)</th><th>Heat limit</th><th>Warmth to mature</th><th>Nitrogen credit</th><th>Residue</th><th>Drought tolerance</th></tr></thead><tbody>' + Object.keys(C).filter(k => k !== 'fallow').map(k => { const c = C[k]; return '<tr><td>' + c.name + '</td><td>' + c.fam + '</td><td class="num">' + c.kc[1] + '</td><td class="num">' + (c.heatT ? c.heatT + ' °C' : '') + '</td><td class="num">' + (c.gdd ? c.gdd + ' °C days' + (c.base !== undefined ? ' above ' + c.base + ' °C' : ' above 0 °C from 1 Jan') : '') + '</td><td class="num">' + c.nfix + ' kg N/ha</td><td class="num">' + c.res + ' of 5</td><td class="num">' + c.dt + ' of 5</td></tr>'; }).join('') + '</tbody></table>';
     const stockUI = () => { $('stockbox').hidden = !S.stockOn; $('stockmsg').innerHTML = herd(); };
     const mUI = () => { const m = margin(); $('mout').innerHTML = 'Margin about <b>€' + r0(m).toLocaleString('en') + ' per ha</b>' + (S.area ? ', <b>€' + r0(m * S.area).toLocaleString('en') + '</b> a year on ' + S.area + ' ha. A ' + S.maxDrop + '% drop is about €' + r0(m * S.area * S.maxDrop / 100).toLocaleString('en') + ' a year.' : '.') + ' Rough defaults are for wheat; enter your own.'; $('maxdropv').textContent = S.maxDrop + '% a year' + (m && S.area ? ' (≈ €' + r0(m * S.area * S.maxDrop / 100).toLocaleString('en') + ')' : ''); };
-    window.syncExtra = () => { $('area').value = S.area; $('stock').checked = S.stockOn; $('stype').value = S.stockType; $('sn').value = S.stockN; $('maxdrop').value = S.maxDrop; $('my').value = S.mY; $('mp').value = S.mP; $('mc').value = S.mC; stockUI(); mUI(); };
+    window.syncExtra = () => { if (!(S.fw >= 20 && S.fl >= 20) || Math.abs(S.fw * S.fl / 1e4 - S.area) > 0.5) { S.fw = S.fl = Math.max(20, Math.round(Math.sqrt((S.area || 100) * 1e4))); } $('fw').value = S.fw; $('fl').value = S.fl; $('area').value = S.area; drawField(); $('stock').checked = S.stockOn; $('stype').value = S.stockType; $('sn').value = S.stockN; $('maxdrop').value = S.maxDrop; $('my').value = S.mY; $('mp').value = S.mP; $('mc').value = S.mC; stockUI(); mUI(); };
     let xt = null; const later = () => { clearTimeout(xt); xt = setTimeout(recompute, 400); };
-    $('area').oninput = e => { S.area = Math.max(0, +e.target.value || 0); stockUI(); mUI(); later(); };
+    window.fieldChanged = () => { stockUI(); mUI(); later(); };
+    $('area').oninput = e => { const a = Math.max(0, +e.target.value || 0); if (a > 0) { const k = Math.sqrt(a * 1e4 / (S.fw * S.fl)); S.fw = Math.max(20, Math.round(S.fw * k)); S.fl = Math.max(20, Math.round(S.fw ? a * 1e4 / S.fw : S.fl)); } S.area = a; $('fw').value = S.fw; $('fl').value = S.fl; drawField(); stockUI(); mUI(); later(); };
+    $('fw').oninput = e => { const v = +e.target.value; if (v >= 20) { S.fw = Math.round(v); syncField(); } };
+    $('fl').oninput = e => { const v = +e.target.value; if (v >= 20) { S.fl = Math.round(v); syncField(); } };
     $('stype').onchange = e => { S.stockType = e.target.value; stockUI(); later(); };
     $('sn').oninput = e => { S.stockN = Math.max(0, +e.target.value || 0); stockUI(); later(); };
     $('maxdrop').oninput = e => { S.maxDrop = +e.target.value; mUI(); later(); };
