@@ -749,3 +749,7 @@ body.fdrag .fh-m{opacity:.35}
 .slopeleg{left:16px;bottom:auto;top:120px;transform:none}
 body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 @media (max-width:760px){.slopeleg{top:auto;bottom:150px;left:8px;font-size:13px;min-width:0}}
+.co div{position:relative;padding-right:30px!important}
+.co .cox{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:17px;line-height:1;cursor:pointer;pointer-events:auto}
+.co .cox:hover{background:rgba(255,255,255,.3)}
+.co div{pointer-events:none}.co .cox{pointer-events:auto}

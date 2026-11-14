@@ -694,7 +694,13 @@
     overlay = lyr; setTimeout(() => { if (overlay === lyr) lyr.setOpacity(0.72); }, 60);
   }
   function cellBounds() { const cy = Math.round(S.lat / 0.5) * 0.5, cx = Math.round(S.lon / 0.625) * 0.625; return [[cy - 0.25, cx - 0.3125], [cy + 0.25, cx + 0.3125]]; }
-  function callout(html) { co.push(window.L.marker([S.lat, S.lon], { interactive: false, keyboard: false, icon: window.L.divIcon({ className: 'co', html: '<i></i><div>' + html + '</div>', iconSize: [0, 0] }) }).addTo(map)); }
+  let coOff = '';
+  function callout(html) {
+    const key = $('layer').value + '|' + $('ldate').value; if (coOff === key) return;
+    const m = window.L.marker([S.lat, S.lon], { interactive: true, keyboard: false, icon: window.L.divIcon({ className: 'co', html: '<i></i><div><button class="cox" type="button" aria-label="Hide this label" title="Hide this label">&times;</button>' + html + '</div>', iconSize: [0, 0] }) }).addTo(map);
+    m.on('click', e => { const t = e.originalEvent && e.originalEvent.target; if (t && t.closest && t.closest('.cox')) { coOff = key; co.forEach(x => map.removeLayer(x)); co = []; } });
+    co.push(m);
+  }
 
   function story() {
     if (!map || S.intro) return; co.forEach(m => map.removeLayer(m)); co = [];

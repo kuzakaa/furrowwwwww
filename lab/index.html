@@ -760,6 +760,10 @@ body.fdrag .fh-m{opacity:.35}
 .slopeleg{left:16px;bottom:auto;top:120px;transform:none}
 body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 @media (max-width:760px){.slopeleg{top:auto;bottom:150px;left:8px;font-size:13px;min-width:0}}
+.co div{position:relative;padding-right:30px!important}
+.co .cox{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:17px;line-height:1;cursor:pointer;pointer-events:auto}
+.co .cox:hover{background:rgba(255,255,255,.3)}
+.co div{pointer-events:none}.co .cox{pointer-events:auto}
 
 </style>
 </head>
@@ -2028,7 +2032,13 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     overlay = lyr; setTimeout(() => { if (overlay === lyr) lyr.setOpacity(0.72); }, 60);
   }
   function cellBounds() { const cy = Math.round(S.lat / 0.5) * 0.5, cx = Math.round(S.lon / 0.625) * 0.625; return [[cy - 0.25, cx - 0.3125], [cy + 0.25, cx + 0.3125]]; }
-  function callout(html) { co.push(window.L.marker([S.lat, S.lon], { interactive: false, keyboard: false, icon: window.L.divIcon({ className: 'co', html: '<i></i><div>' + html + '</div>', iconSize: [0, 0] }) }).addTo(map)); }
+  let coOff = '';
+  function callout(html) {
+    const key = $('layer').value + '|' + $('ldate').value; if (coOff === key) return;
+    const m = window.L.marker([S.lat, S.lon], { interactive: true, keyboard: false, icon: window.L.divIcon({ className: 'co', html: '<i></i><div><button class="cox" type="button" aria-label="Hide this label" title="Hide this label">&times;</button>' + html + '</div>', iconSize: [0, 0] }) }).addTo(map);
+    m.on('click', e => { const t = e.originalEvent && e.originalEvent.target; if (t && t.closest && t.closest('.cox')) { coOff = key; co.forEach(x => map.removeLayer(x)); co = []; } });
+    co.push(m);
+  }
 
   function story() {
     if (!map || S.intro) return; co.forEach(m => map.removeLayer(m)); co = [];
