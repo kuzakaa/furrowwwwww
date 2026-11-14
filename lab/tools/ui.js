@@ -260,7 +260,7 @@
       const o = {}; (j.properties.layers || []).forEach(l => { const d = l.depths.find(x => x.values.mean != null); if (d) o[l.name] = d.values.mean; });
       if (o.ocs == null) return null;
       return { ocs: o.ocs, soc: o.soc != null ? o.soc / 10 : null, n: o.nitrogen != null ? o.nitrogen / 100 : null, ph: o.phh2o != null ? o.phh2o / 10 : null };
-    }).then(v => { if (id !== runId) return; D.soil = v; note('Soil carbon', v ? v.ocs + ' t C/ha' : 'no data here'); render(); })
+    }).then(v => { if (id !== runId) return; D.soil = v; if (v) { v.lat = lat; v.lon = lon; } note('Soil carbon', v ? v.ocs + ' t C/ha' : 'no data here'); render(); })
       .catch(() => note('Soil carbon', 'failed'));
     note('Satellite 2015-2025', 'loading');
     (async () => {
@@ -293,7 +293,8 @@
   }
   const rotTxt = s => s.rot.map(r => C[r.c].short + (r.cv ? ' + cover crop' : '')).join(', then ') + (s.till === 'notill' ? ', no ploughing' : s.till === 'reduced' && inp.till !== 'reduced' ? ', light tillage' : '');
   const moist = () => R && R.cl.years.reduce((a, Y) => a + Y.rain, 0) / R.cl.years.reduce((a, Y) => a + Y.et, 0) > 1;
-  const carbon = s => D.soil ? L.carbonIPCC(s, R.list.find(x => x.id === 'current'), D.soil.ocs, moist()) : null;
+  const meanT = () => { if (!R) return null; let a = 0, n = 0; R.cl.years.forEach(Y => { for (let d = 0; d < 365; d++) { const v = (Y.tx[d] + Y.tn[d]) / 2; if (isFinite(v)) { a += v; n++; } } }); return n ? a / n : null; };
+  const carbon = s => D.soil ? L.carbonIPCC(s, R.list.find(x => x.id === 'current'), D.soil.ocs, moist(), (meanT() == null || meanT() > 10)) : null;
   const INFO = id => L.INFO[id] || L.EXPERIMENTAL[id];
 
   function render() { if (!R) return; strat(); params(); stress(); veg(); crops(); farm(); shared(); care(); method(); sources(); }
@@ -486,9 +487,22 @@
     const calc = () => {
       const s = pick(), c = carbon(s), ha = +$('ha').value, pr = +$('pr').value, y = yrs();
       const tC = c ? c.perYear : Math.max(0, s.x.carbon - base.x.carbon), co2 = Math.max(0, tC) * 44 / 12, money = co2 * ha * y * pr;
-      $('cres').innerHTML = '<table><tr><td>Method</td><td class="n">' + (c ? 'IPCC Tier 1, ' + (moist() ? 'moist' : 'dry') + ' temperate, inputs ' + c.level : 'rough average (soil data missing)') + '</td></tr>'
-        + (c ? '<tr><td>Soil carbon now, top 30 cm</td><td class="n">' + D.soil.ocs + ' t C/ha</td></tr><tr><td>After 20 years</td><td class="n">' + c.after20.toFixed(1) + ' t C/ha</td></tr>' : '')
-        + '<tr><td>Change per year</td><td class="n">' + tC.toFixed(2) + ' t C/ha</td></tr><tr><td>As CO₂</td><td class="n">' + co2.toFixed(2) + ' t/ha/yr</td></tr><tr><td>Over the agreement</td><td class="n">' + (co2 * ha * y).toFixed(0) + ' t CO₂</td></tr><tr><td>Possible payout</td><td class="n"><b>€' + Math.round(money).toLocaleString() + '</b> (€' + (y && ha ? Math.round(money / y / ha) : 0) + '/ha/yr)</td></tr></table>';
+      const lnk = (u, t) => '<a href="' + u + '" target="_blank" rel="noopener">' + t + '</a>', mt = meanT();
+      const src = { ipcc: lnk(L.IPCC.source, 'IPCC 2019, Table 5.5'), sg: lnk('https://rest.isric.org/soilgrids/v2.0/properties/query?lon=' + D.soil.lon + '&lat=' + D.soil.lat + '&property=ocs&depth=0-30cm&value=mean', 'SoilGrids (ISRIC)'), nasa: lnk('https://power.larc.nasa.gov/', 'NASA POWER') };
+      const row = (a, b, c) => '<tr><td>' + a + (c ? '<div class="small">' + c + '</div>' : '') + '</td><td class="n">' + b + '</td></tr>';
+      let h = '<table>';
+      if (c) {
+        h += row('Climate', (c.zone === 'warm' ? 'warm' : 'cool') + ' temperate, ' + c.moist, (mt != null ? 'Mean temperature ' + mt.toFixed(1) + ' °C (warm above 10 °C), ' : '') + 'rain ' + (c.moist === 'dry' ? 'below' : 'above') + ' evaporation demand. ' + src.nasa)
+          + row('Soil carbon now, top 30 cm', D.soil.ocs + ' t C/ha', 'Satellite soil map, 250 m grid, not a lab test. ' + src.sg)
+          + row('Tillage factor', c.fmOld.toFixed(2) + ' → ' + c.fmNew.toFixed(2), src.ipcc + ', tillage (F<sub>MG</sub>)')
+          + row('Organic input factor', c.fiOld.toFixed(2) + ' → ' + c.fiNew.toFixed(2), 'Inputs ' + c.baseLevel + ' → ' + c.level + '. ' + src.ipcc + ', input (F<sub>I</sub>)')
+          + row('After 20 years', c.after20.toFixed(1) + ' t C/ha', D.soil.ocs + ' × ' + c.ratio.toFixed(3) + ', IPCC counts change over 20 years');
+      } else h += row('Method', 'rough average', 'Soil map data missing for this point');
+      h += row('Change per year', tC.toFixed(2) + ' t C/ha', c ? '(' + c.after20.toFixed(1) + ' − ' + D.soil.ocs + ') ÷ 20' : '')
+        + row('As CO₂', co2.toFixed(2) + ' t/ha/yr', '× 44/12, the weight of CO₂ per unit of carbon')
+        + row('Over the agreement', (co2 * ha * y).toFixed(0) + ' t CO₂', '× ' + ha + ' ha × ' + y + ' years')
+        + '<tr><td>Possible payout<div class="small">× €' + pr + '/t, your price. Buyers usually require soil samples; this is an order-of-magnitude estimate.</div></td><td class="n"><b>€' + Math.round(money).toLocaleString() + '</b> (€' + (y && ha ? Math.round(money / y / ha) : 0) + '/ha/yr)</td></tr></table>';
+      $('cres').innerHTML = h;
       return { money, y };
     };
     const checks = () => {

@@ -137,9 +137,16 @@
     return out;
   }
 
+  // IPCC 2019 Refinement, Vol. 4, Ch. 5, Table 5.5 (Updated), 20-year relative stock change factors, temperate.
+  // Tillage F_MG differs for warm temperate (mean annual temp > 10 C) and cool temperate; input F_I does not.
   const IPCC = {
-    till: { conv: { dry: 1, moist: 1 }, reduced: { dry: 1.02, moist: 1.08 }, notill: { dry: 1.1, moist: 1.15 } },
-    input: { low: { dry: 0.95, moist: 0.92 }, medium: { dry: 1, moist: 1 }, high: { dry: 1.04, moist: 1.11 } }
+    till: {
+      conv: { warm: { dry: 1, moist: 1 }, cool: { dry: 1, moist: 1 } },
+      reduced: { warm: { dry: 0.99, moist: 1.05 }, cool: { dry: 0.98, moist: 1.04 } },
+      notill: { warm: { dry: 1.04, moist: 1.10 }, cool: { dry: 1.03, moist: 1.09 } }
+    },
+    input: { low: { dry: 0.95, moist: 0.92 }, medium: { dry: 1, moist: 1 }, high: { dry: 1.04, moist: 1.11 } },
+    source: 'https://www.ipcc-nggip.iges.or.jp/public/2019rf/pdf/4_Volume4/19R_V4_Ch05_Cropland.pdf'
   };
   function inputLevel(rot) {
     const n = rot.length, cov = rot.filter(r => r.cv).length, per = rot.filter(r => C[r.c] && C[r.c].kind === 'perennial').length, fal = rot.filter(r => r.c === 'fallow').length;
@@ -147,10 +154,11 @@
     if ((cov + per) / n >= 0.5) return 'high';
     return 'medium';
   }
-  function carbonIPCC(s, base, soc0, moist) {
-    const w = moist ? 'moist' : 'dry', f = x => IPCC.till[x.till][w] * IPCC.input[inputLevel(x.rot)][w];
+  function carbonIPCC(s, base, soc0, moist, warm) {
+    const w = moist ? 'moist' : 'dry', z = warm === false ? 'cool' : 'warm';
+    const fm = x => IPCC.till[x.till][z][w], fi = x => IPCC.input[inputLevel(x.rot)][w], f = x => fm(x) * fi(x);
     const ratio = f(s) / f(base), stock20 = soc0 * ratio;
-    return { level: inputLevel(s.rot), ratio, perYear: (stock20 - soc0) / 20, after20: stock20 };
+    return { level: inputLevel(s.rot), baseLevel: inputLevel(base.rot), zone: z, moist: w, fmNew: fm(s), fmOld: fm(base), fiNew: fi(s), fiOld: fi(base), ratio, perYear: (stock20 - soc0) / 20, after20: stock20 };
   }
 
   function calibrate(rows, cal) {

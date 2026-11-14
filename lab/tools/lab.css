@@ -256,3 +256,5 @@ tr:hover td:first-child{background:#18442f}
 .mstep p,.mstep li{font-size:.92rem;line-height:1.5}
 .mstep:last-child{grid-column:1/-1}
 @media (max-width:800px){.mgrid{grid-template-columns:1fr}}
+#cres td .small{font-size:0.82rem;font-weight:400;color:var(--muted);margin-top:3px;line-height:1.35}
+#cres td .small a{color:#a3e635}
