@@ -364,7 +364,8 @@
     let h = '';
     if (D.soil) h += '<div class="card">Soil (SoilGrids, 0-30 cm): ' + D.soil.ocs + ' t C/ha' + (D.soil.soc != null ? ', organic carbon ' + D.soil.soc + ' g/kg' : '') + (D.soil.n != null ? ', nitrogen ' + D.soil.n + ' g/kg' : '') + (D.soil.ph != null ? ', pH ' + D.soil.ph : '') + '. Climate class: ' + (moist() ? 'moist' : 'dry') + ' (annual rain ' + (moist() ? 'above' : 'below') + ' reference ET).</div>';
     h += '<div class="card scroll"><table><tr><th>Option</th>' + cols.map(c => '<th class="n">' + c[0] + '</th>').join('') + '</tr>';
-    R.list.forEach(s => { h += '<tr><td>' + esc(s.name) + '</td>' + cols.map(c => '<td class="n">' + c[1](s) + '</td>').join('') + '</tr>'; });
+    const heat = (v, i) => { const x = +v; if (i > 7 || !isFinite(x)) return v; const g = Math.max(0, Math.min(100, x)) / 100; return '<span class="chip" style="background:rgba(180,236,143,' + (0.08 + g * 0.42).toFixed(2) + ')">' + v + '</span>'; };
+    R.list.forEach(s => { h += '<tr><td>' + esc(s.name) + '</td>' + cols.map((c, i) => '<td class="n">' + heat(c[1](s), i) + '</td>').join('') + '</tr>'; });
     $('params').innerHTML = h + '</table></div><p class="mute">Definitions in How it works.</p>';
   }
 
