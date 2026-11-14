@@ -11,7 +11,7 @@
   ];
   const ROTS = ['wheat-sunflower', 'wheat-canola-oats', 'corn-soy', 'corn-sunflower', 'corn', 'wheat-fallow', 'wheat-corn-sunflower', 'sunflower-wheat-wheat'];
   const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
-  const D = { raw: null, proj: null, soil: null, nd: null, shared: [], tuned: false };
+  const D = { raw: null, proj: null, soil: null, nd: null, shared: [], patch: null };
   let R = null, inp = null, fieldKey = '', runId = 0;
 
   async function getJSON(url, ms) {
@@ -48,7 +48,7 @@
     const lat = +$('lat').value, lon = +$('lon').value, id = ++runId;
     if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 70) { $('status').textContent = 'Need a real latitude and longitude.'; return; }
     $('status').textContent = 'Getting 25 years of NASA weather…';
-    fieldKey = lat.toFixed(2) + ',' + lon.toFixed(2); D.proj = D.soil = D.nd = null; D.tuned = false;
+    fieldKey = lat.toFixed(2) + ',' + lon.toFixed(2); D.proj = D.soil = D.nd = D.patch = null;
     for (const k in extrasState) delete extrasState[k];
     try {
       D.raw = await cached('furrow1:' + fieldKey, async () => E.parsePower(await getJSON('https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,GWETROOT&community=AG&longitude=' + lon + '&latitude=' + lat + '&start=20010101&end=20251231&format=JSON', 60000)));
@@ -56,13 +56,23 @@
       inp = { lat, lon, rot: $('rot').value.split('-').map(c => ({ c, cv: null })), soil: $('soil').value, slope: 'gentle', till: $('till').value, irrigated: false, livestock: false, exclude: new Set(), weights: { water: 3, soil: 3, erosion: 3, income: 3, resilience: 3 } };
       compute();
       loadExtras(id, lat, lon);
+      getJSON('https://api.github.com/repos/' + REPO + '/issues?state=all&per_page=100', 20000).then(j => { if (id !== runId) return; D.shared = L.fromIssues(j); store.set('furrowlab:shared', D.shared); compute(); }).catch(() => {});
     } catch (e) { $('status').innerHTML = '<span class="bad">Couldn’t load NASA data.</span> ' + esc(e.message); }
   }
 
-  function patchNow() { return D.tuned ? store.get('furrowlab:patch', {})[fieldKey] || null : null; }
+  function allRecords() { let t = store.get('furrowlab:farm', {})[fieldKey] || ''; L.summarise(D.shared).recs.forEach(r => { if (r.field !== fieldKey) t += '\n' + r.text; }); return t; }
+  function learn() {
+    D.patch = null; const text = allRecords(); if (!text.trim()) return;
+    const base = L.calFor(D.raw, inp.lat, null), rows = L.compareFarm(L.parseFarm(text), base.cal, base.cl.south);
+    if (!rows.some(r => r.sowDiff != null)) return;
+    const patch = L.calibrate(rows, base.cal), after = L.calFor(D.raw, inp.lat, patch);
+    patch._err = { before: L.errors(rows), after: L.errors(L.compareFarm(L.parseFarm(text), after.cal, after.cl.south)) };
+    D.patch = patch;
+  }
   function compute() {
-    R = L.run(D.raw, inp, D.proj || [], patchNow());
-    $('status').innerHTML = '<span class="ok">Done.</span> ' + R.list.length + ' strategies, ' + R.cl.n + ' years, ' + R.scen.length + ' climate versions' + (D.tuned ? ', tuned crop settings' : '') + '.';
+    learn();
+    R = L.run(D.raw, inp, D.proj || [], D.patch);
+    $('status').innerHTML = '<span class="ok">Done.</span> ' + R.list.length + ' strategies, ' + R.cl.n + ' years, ' + R.scen.length + ' climate versions' + (D.patch ? ', crop settings learned from farm records' : '') + '.';
     render();
   }
 
@@ -190,41 +200,30 @@
 
   function farmRows(text, cal) { return L.compareFarm(L.parseFarm(text), cal, R.cl.south); }
   function farm() {
-    const saved = store.get('furrowlab:farm', {})[fieldKey] || '', patches = store.get('furrowlab:patch', {}), p = patches[fieldKey];
+    const saved = store.get('furrowlab:farm', {})[fieldKey] || '', p = D.patch;
     $('farm').innerHTML = '<div class="card"><b>Your own records</b><p class="mute"><code>year, crop, sowing date, harvest date, yield t/ha</code></p>'
       + '<textarea id="csv" placeholder="2024, wheat, 2023-10-01, 2024-07-05, 5.1&#10;2024, sunflower, 2024-04-25, 2024-09-20, 2.4">' + esc(saved) + '</textarea>'
-      + '<div class="bar"><button class="go" id="cmp">Compare</button><button id="tune">Tune the model to my records</button><label><input type="checkbox" id="pool"> include shared notes</label></div><div id="cmpout"></div></div>'
-      + '<div class="card"><b>Tuned crop settings</b><div id="tuneout">' + (p ? tuneTable(p) : '<span class="mute">None yet.</span>') + '</div>'
-      + '<div class="bar"><label><input type="checkbox" id="usetune"' + (D.tuned ? ' checked' : '') + (p ? '' : ' disabled') + '> use them for all results</label><button id="untune"' + (p ? '' : ' disabled') + '>Forget</button></div></div>';
+      + '<div class="bar"><button class="go" id="cmp">Save</button></div><div id="cmpout"></div></div>'
+      + '<div class="card"><b>What the model learned</b>' + (p ? tuneTable(p) : '<p class="mute">Nothing yet. It learns from your records and the shared notes.</p>') + '</div>';
+    const show = () => {
+      const rows = farmRows(saved, R.cal); if (!rows.length) return;
+      const d = v => v == null ? '–' : (v > 0 ? '+' : '') + v + ' d';
+      $('cmpout').innerHTML = '<div class="scroll"><table><tr><th>Year</th><th>Crop</th><th class="n">Sowing vs model</th><th class="n">Harvest vs model</th><th class="n">Yield</th></tr>'
+        + rows.map(r => '<tr><td>' + r.year + '</td><td>' + esc(r.crop ? C[r.crop].short : r.raw + ' (unknown)') + '</td><td class="n">' + d(r.sowDiff) + '</td><td class="n">' + d(r.harvDiff) + '</td><td class="n">' + (r.yield || '–') + '</td></tr>').join('') + '</table></div>';
+    };
+    show();
     $('cmp').onclick = () => {
       const t = $('csv').value, all = store.get('furrowlab:farm', {}); all[fieldKey] = t; store.set('furrowlab:farm', all);
-      const rows = farmRows(t, R.cal);
-      if (!rows.length) { $('cmpout').innerHTML = '<p class="warn">No lines we could read. Start each with a 4-digit year.</p>'; return; }
-      const d = v => v == null ? '–' : (v > 0 ? '+' : '') + v + ' d', e = L.errors(rows);
-      $('cmpout').innerHTML = '<div class="scroll"><table><tr><th>Year</th><th>Crop</th><th class="n">Sowing vs ours</th><th class="n">Harvest vs ours</th><th class="n">Yield</th></tr>'
-        + rows.map(r => '<tr><td>' + r.year + '</td><td>' + esc(r.crop ? C[r.crop].short : r.raw + ' (unknown)') + '</td><td class="n">' + d(r.sowDiff) + '</td><td class="n">' + d(r.harvDiff) + '</td><td class="n">' + (r.yield || '–') + '</td></tr>').join('') + '</table></div>'
-        + '<p>Average miss: sowing ' + (e.sow == null ? '–' : e.sow.toFixed(0) + ' days') + ', harvest ' + (e.harv == null ? '–' : e.harv.toFixed(0) + ' days') + '.</p>';
+      if (t.trim() && !L.parseFarm(t).length) { $('cmpout').innerHTML = '<p class="warn">No lines we could read. Start each with a 4-digit year.</p>'; return; }
+      compute(); setTab('farm');
     };
-    $('tune').onclick = () => {
-      $('cmp').click();
-      let text = $('csv').value;
-      if ($('pool').checked) L.summarise(D.shared).recs.forEach(r => { text += '\n' + r.text; });
-      const base = L.calFor(D.raw, inp.lat, null), rows = farmRows(text, base.cal);
-      if (!rows.filter(r => r.sowDiff != null).length) { $('tuneout').innerHTML = '<span class="warn">Need at least one line with a crop we know and a sowing date.</span>'; return; }
-      const patch = L.calibrate(rows, base.cal), after = L.calFor(D.raw, inp.lat, patch), e0 = L.errors(rows), e1 = L.errors(farmRows(text, after.cal));
-      patch._err = { before: e0, after: e1 };
-      const all = store.get('furrowlab:patch', {}); all[fieldKey] = patch; store.set('furrowlab:patch', all);
-      D.tuned = true; compute(); setTab('farm');
-    };
-    $('usetune').onchange = e => { D.tuned = e.target.checked; compute(); setTab('farm'); };
-    $('untune').onclick = () => { const all = store.get('furrowlab:patch', {}); delete all[fieldKey]; store.set('furrowlab:patch', all); D.tuned = false; compute(); setTab('farm'); };
   }
   function tuneTable(p) {
     const f = v => v == null ? '–' : v.toFixed(0) + ' d', e = p._err;
     let h = '<div class="scroll"><table><tr><th>Crop</th><th>Setting</th><th class="n">Was</th><th class="n">Now</th><th class="n">Records</th></tr>';
     for (const id in p) { if (id[0] === '_') continue; for (const k in p[id]) if (k !== 'n') h += '<tr><td>' + C[id].short + '</td><td>' + ({ off: 'Days after last frost to sow', dry: 'Days from ripe to harvest', lead: 'Days before first frost to sow', gdd: 'Heat needed to ripen' })[k] + '</td><td class="n">' + C[id][k] + '</td><td class="n">' + p[id][k] + '</td><td class="n">' + p[id].n + '</td></tr>'; }
     h += '</table></div>';
-    if (e) h += '<p>Average miss went from ' + f(e.before.sow) + ' to ' + f(e.after.sow) + ' for sowing and ' + f(e.before.harv) + ' to ' + f(e.after.harv) + ' for harvest.</p>';
+    if (e) h += '<p>Average miss went from ' + f(e.before.sow) + ' to ' + f(e.after.sow) + ' for sowing and ' + f(e.before.harv) + ' to ' + f(e.after.harv) + ' for harvest, from ' + e.before.n + ' records.</p>';
     return h;
   }
 
@@ -247,12 +246,12 @@
     $('shared').innerHTML = h + '</div>';
     $('exp').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(myNotes(), null, 1)], { type: 'application/json' })); a.download = 'furrow-notes.json'; a.click(); };
     $('impb').onclick = () => $('imp').click();
-    $('imp').onchange = async e => { try { merge(JSON.parse(await e.target.files[0].text())); render(); setTab('shared'); } catch (er) { $('shmsg').innerHTML = '<span class="bad">That file isn’t a Furrow notes file.</span>'; } };
+    $('imp').onchange = async e => { try { merge(JSON.parse(await e.target.files[0].text())); compute(); setTab('shared'); } catch (er) { $('shmsg').innerHTML = '<span class="bad">That file isn’t a Furrow notes file.</span>'; } };
     $('lnk').onclick = async () => { const u = location.href.split('#')[0] + '#n=' + L.pack(myNotes()); try { await navigator.clipboard.writeText(u); $('shmsg').textContent = 'Link copied.'; } catch (e) { $('shmsg').textContent = u; } };
     $('post').onclick = () => { const body = 'Field notes from the Furrow lab.\n\n```json\n' + JSON.stringify(myNotes()) + '\n```'; window.open('https://github.com/' + REPO + '/issues/new?title=' + encodeURIComponent('Field notes ' + fieldKey) + '&body=' + encodeURIComponent(body).slice(0, 7000), '_blank'); };
     $('pull').onclick = async () => {
       $('pullmsg').textContent = 'Loading…';
-      try { const j = await getJSON('https://api.github.com/repos/' + REPO + '/issues?state=all&per_page=100', 20000); D.shared = L.fromIssues(j); render(); setTab('shared'); }
+      try { const j = await getJSON('https://api.github.com/repos/' + REPO + '/issues?state=all&per_page=100', 20000); D.shared = L.fromIssues(j); store.set('furrowlab:shared', D.shared); compute(); setTab('shared'); }
       catch (e) { $('pullmsg').textContent = 'Couldn’t reach GitHub: ' + e.message; }
     };
   }
@@ -363,6 +362,7 @@
   $('tabs').onclick = e => { const b = e.target.closest('button'); if (b) setTab(b.dataset.t); };
   $('field').onchange = pickField; $('run').onclick = go;
   const m = /#n=([\w-]+)/.exec(location.hash); if (m) { try { merge(L.unpack(m[1])); history.replaceState(null, '', location.pathname); } catch (e) {} }
+  D.shared = store.get('furrowlab:shared', []);
   fillSelects(); sources();
   ['strat', 'params', 'stress', 'veg', 'farm', 'shared', 'care'].forEach(id => $(id).innerHTML = '<p class="mute">Run a field first.</p>');
 })();
