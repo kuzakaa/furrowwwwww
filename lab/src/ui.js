@@ -743,8 +743,8 @@
     }).catch(() => {});
     if (h.earthdata) fetch(PROXY + '/grace' + q + '&from=' + d(30) + '&to=' + d(1)).then(r => r.json()).then(j => {
       if (j.groundwater == null) return;
-      const pc = Math.round(j.groundwater), word = pc < 10 ? 'very low, a drought level' : pc < 30 ? 'below normal' : pc <= 70 ? 'normal' : 'above normal';
-      add('<b>Groundwater from space</b> (NASA GRACE-FO satellites, week of ' + j.date + '): groundwater here is at the <b>' + pc + 'th percentile</b> compared with the same week in 1948-2012, which is <b>' + word + '</b>.' + (j.rootzone != null ? ' Root-zone soil water: ' + Math.round(j.rootzone) + 'th percentile.' : '') + (pc < 30 ? ' Deep reserves are low, so a dry spring would hit harder; drought-tolerant crops and keeping residue on the ground lower the risk.' : ' Deep reserves can carry crops through a short dry spell.'));
+      const ord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'), pc = Math.max(1, Math.round(j.groundwater)), word = pc < 10 ? 'very low, a drought level' : pc < 30 ? 'below normal' : pc <= 70 ? 'normal' : 'above normal';
+      add('<b>Groundwater from space</b> (NASA GRACE-FO satellites, week of ' + j.date + '): groundwater here is at the <b>' + ord(pc) + ' percentile</b> compared with the same week in 1948-2012, which is <b>' + word + '</b>.' + (j.rootzone != null ? ' Root-zone soil water: ' + ord(Math.max(1, Math.round(j.rootzone))) + ' percentile.' : '') + (pc < 30 ? ' Deep reserves are low, so a dry spring would hit harder; drought-tolerant crops and keeping residue on the ground lower the risk.' : ' Deep reserves can carry crops through a short dry spell.'));
     }).catch(() => {});
     if (h.earthdata) (async () => {
       const key = 'furrow:esi:' + lat + ',' + lon; let mem = null; try { mem = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}

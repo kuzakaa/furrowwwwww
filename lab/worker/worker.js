@@ -76,7 +76,7 @@ const t = await edlToken(env), H = { Authorization: 'Bearer ' + t };
 if (raw === '1') { const d = od ? await (await fetch(od + '.dds', { headers: H })).text() : ''; return { granule: e.producer_granule_id, od, links: links.slice(0, 6), dds: d.slice(0, 1500) }; }
 if (!od) throw new Error('GRACE-DA OPeNDAP link missing');
 const i = Math.round((lat + 59.875) / 0.25), j = Math.round((lon + 179.875) / 0.25);
-const r = await fetch(od + '.ascii?gws_inst[0:0][' + i + '][' + j + '],rtzsm_inst[0:0][' + i + '][' + j + '],sfsm_inst[0:0][' + i + '][' + j + ']', { headers: H });
+const r = await fetch(od + '.ascii?' + encodeURIComponent('gws_inst[0:0][' + i + '][' + j + '],rtzsm_inst[0:0][' + i + '][' + j + '],sfsm_inst[0:0][' + i + '][' + j + ']'), { headers: H });
 const txt = await r.text(); if (raw === '2') return { status: r.status, txt: txt.slice(0, 1500) };
 if (!r.ok) throw new Error('GRACE-DA ' + r.status);
 const val = k => { const m = txt.match(new RegExp(k + '\\[0\\]\\[0\\],\\s*([-\\d.eE]+)')) || txt.match(new RegExp(k + '[^\\n]*\\n[^,\\n]*,\\s*([-\\d.eE]+)')); return m ? +m[1] : null; };
