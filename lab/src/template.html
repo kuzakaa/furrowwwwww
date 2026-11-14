@@ -38,6 +38,8 @@
   </div>
 </div>
 <div id="map" role="application" aria-label="Satellite map. Click to choose a field."></div>
+<div class="slopeleg glass" id="slopeleg" hidden></div>
+<div class="pencilwrap"><button id="pencil" class="pencil" type="button" aria-pressed="false" title="Draw your field"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21l3.8-1 11.7-11.7a2.1 2.1 0 00-3-3L3.8 17 3 21z" fill="currentColor"/><path d="M14 6.5l3.5 3.5" stroke="#0f2a1c" stroke-width="1.6"/></svg><span>Draw field</span></button><div class="pencilmsg" id="pencilmsg" hidden></div></div>
 <header class="bar glass">
   <div class="brand"><svg viewBox="0 0 34 22" aria-hidden="true"><path d="M1 5c5-4 9 4 16 0s11 4 16 0M1 11c5-4 9 4 16 0s11 4 16 0M1 17c5-4 9 4 16 0s11 4 16 0" fill="none" stroke="#8FD694" stroke-width="3" stroke-linecap="round"/></svg>Furrow</div>
   <select id="demo" aria-label="Example fields"></select>
@@ -66,9 +68,8 @@
       <button class="btn" id="load">Load</button>
     </div>
     <div class="fsize"><div class="field"><label for="fw">Width, m</label><input id="fw" type="number" min="20" step="10" value="1000"></div><span class="x">×</span><div class="field"><label for="fl">Length, m</label><input id="fl" type="number" min="20" step="10" value="1000"></div><span class="x">=</span><div class="field"><label for="area">Area, ha</label><input id="area" type="number" min="0.1" step="0.1" value="100"></div></div>
-    <p class="small muted fhint">Drag the white handles on the edges and corners to fit your field, type the size, or draw its exact shape.</p>
-    <div class="row fdrawrow"><button class="btn ghost" id="fdraw" type="button">Draw the shape</button><button class="btn ghost" id="fclear" type="button" hidden>Back to rectangle</button></div>
-    <p class="small fdrawmsg" id="fdrawmsg"></p>
+    <p class="small muted fhint">Drag the white corners to move them and the small circles on the sides to bend them. Or use the pencil on the map to draw your field.</p>
+    <div class="row fdrawrow"><button class="btn ghost" id="fclear" type="button">Reset to rectangle</button></div>
     <div class="row"><button class="btn ghost" id="reloc">Change location</button><button class="btn ghost" id="reset">Start over</button></div>
     <p class="small muted">We save your choices on this device, so you won’t lose them if you reload.</p>
   </details>

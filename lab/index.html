@@ -739,6 +739,24 @@ select option:checked,select option:hover{background:#1f6b3f!important;color:#ff
 body.drawing #map{cursor:crosshair}
 .fh-ne,.fh-sw{cursor:nesw-resize}.fh-nw,.fh-se{cursor:nwse-resize}
 .fh-ne,.fh-nw,.fh-se,.fh-sw{border-radius:4px}
+.pencilwrap{position:fixed;z-index:30;left:50%;top:64px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+body.intro .pencilwrap,body.intro .slopeleg{display:none}
+.pencil{pointer-events:auto;display:inline-flex;align-items:center;gap:10px;height:48px;padding:0 20px 0 14px;border-radius:999px;border:2px solid #a3e635;background:#123d27;color:#F5FAF2;font:inherit;font-size:16px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.45);cursor:pointer;transition:background .2s ease,transform .2s ease}
+.pencil svg{width:26px;height:26px;color:#a3e635}
+.pencil:hover{background:#175033}
+.pencil.on{background:#a3e635;color:#0f2a1c}.pencil.on svg{color:#0f2a1c}
+.pencilmsg{pointer-events:none;max-width:420px;text-align:center;padding:9px 14px;border-radius:12px;background:rgba(15,42,28,.95);border:1px solid var(--line);font-size:15px;line-height:1.4}
+body.drawing #map,body.drawing .leaflet-container{cursor:crosshair!important}
+.fh-v{width:16px!important;height:16px!important;margin:-8px 0 0 -8px!important;border-radius:4px;background:#F5FAF2;border:3px solid #1f6b3f;box-shadow:0 1px 6px rgba(0,0,0,.5);cursor:move}
+.fh-m{width:14px!important;height:14px!important;margin:-7px 0 0 -7px!important;border-radius:50%;background:rgba(245,250,242,.75);border:2px solid #1f6b3f;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:grab}
+body.fdrag .fh-m{opacity:.35}
+.slopeleg{position:fixed;z-index:25;left:50%;bottom:86px;transform:translateX(-50%);min-width:250px;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.35}
+.slopeleg b{display:block;margin-bottom:6px;font-size:14.5px}
+.slopeleg div{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;margin:3px 0}
+.slopeleg i{width:14px;height:14px;border-radius:3px;opacity:.85}
+.slopeleg i.lo{background:transparent;box-shadow:inset 0 0 0 3px #7CC6E8}
+.slopeleg em{font-style:normal;font-weight:700;font-variant-numeric:tabular-nums}
+.slopeleg small{display:block;margin-top:6px;color:var(--muted);font-size:12.5px}
 
 </style>
 </head>
@@ -768,6 +786,8 @@ body.drawing #map{cursor:crosshair}
   </div>
 </div>
 <div id="map" role="application" aria-label="Satellite map. Click to choose a field."></div>
+<div class="slopeleg glass" id="slopeleg" hidden></div>
+<div class="pencilwrap"><button id="pencil" class="pencil" type="button" aria-pressed="false" title="Draw your field"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21l3.8-1 11.7-11.7a2.1 2.1 0 00-3-3L3.8 17 3 21z" fill="currentColor"/><path d="M14 6.5l3.5 3.5" stroke="#0f2a1c" stroke-width="1.6"/></svg><span>Draw field</span></button><div class="pencilmsg" id="pencilmsg" hidden></div></div>
 <header class="bar glass">
   <div class="brand"><svg viewBox="0 0 34 22" aria-hidden="true"><path d="M1 5c5-4 9 4 16 0s11 4 16 0M1 11c5-4 9 4 16 0s11 4 16 0M1 17c5-4 9 4 16 0s11 4 16 0" fill="none" stroke="#8FD694" stroke-width="3" stroke-linecap="round"/></svg>Furrow</div>
   <select id="demo" aria-label="Example fields"></select>
@@ -796,9 +816,8 @@ body.drawing #map{cursor:crosshair}
       <button class="btn" id="load">Load</button>
     </div>
     <div class="fsize"><div class="field"><label for="fw">Width, m</label><input id="fw" type="number" min="20" step="10" value="1000"></div><span class="x">×</span><div class="field"><label for="fl">Length, m</label><input id="fl" type="number" min="20" step="10" value="1000"></div><span class="x">=</span><div class="field"><label for="area">Area, ha</label><input id="area" type="number" min="0.1" step="0.1" value="100"></div></div>
-    <p class="small muted fhint">Drag the white handles on the edges and corners to fit your field, type the size, or draw its exact shape.</p>
-    <div class="row fdrawrow"><button class="btn ghost" id="fdraw" type="button">Draw the shape</button><button class="btn ghost" id="fclear" type="button" hidden>Back to rectangle</button></div>
-    <p class="small fdrawmsg" id="fdrawmsg"></p>
+    <p class="small muted fhint">Drag the white corners to move them and the small circles on the sides to bend them. Or use the pencil on the map to draw your field.</p>
+    <div class="row fdrawrow"><button class="btn ghost" id="fclear" type="button">Reset to rectangle</button></div>
     <div class="row"><button class="btn ghost" id="reloc">Change location</button><button class="btn ghost" id="reset">Start over</button></div>
     <p class="small muted">We save your choices on this device, so you won’t lose them if you reload.</p>
   </details>
@@ -1719,9 +1738,9 @@ body.drawing #map{cursor:crosshair}
     return '<div class="legend" style="margin-bottom:2px"><span><i style="background:none;box-shadow:inset 0 0 0 2px #A8A89C;border-radius:50%"></i>your rotation now</span><span><i style="background:#8FD694;border-radius:50%"></i>the alternative</span></div><svg class="dumb" viewBox="0 0 ' + W + ' ' + (26 + DIMS.length * 44 - 6) + '" role="img" aria-label="Scores for each priority, current rotation against the alternative">' + g + '</svg>';
   }
   function terrainHTML(T) {
-    const c = 46, col = v => v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#3E8E5A'; let g = '';
-    T.slopes.forEach((v, i) => { const x = (i % T.n) * c, y = Math.floor(i / T.n) * c; if (T.mask && !(T.mask[i] > 0)) return; g += '<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (c - 2) + '" height="' + (c - 2) + '" rx="3" fill="' + col(v) + '"' + (T.low[i] ? ' stroke="#7CC6E8" stroke-width="3"' : '') + '><title>' + r0(T.z[i]) + ' m, slope ' + v.toFixed(1) + '%' + (T.low[i] ? ', low spot' : '') + '</title></rect><text x="' + (x + c / 2) + '" y="' + (y + c / 2 + 4) + '" text-anchor="middle" font-size="11" fill="#10231A">' + r0(T.z[i]) + '</text>'; });
-    return '<h2>The ground in your field</h2><div class="terr"><svg viewBox="0 0 ' + c * T.n + ' ' + c * T.n + '" role="img" aria-label="Elevation and slope on a 5 by 5 grid over the field">' + g + '</svg><div><p>Across a ' + (T.step * T.n / 1000).toFixed(2).replace(/0$/, '') + ' km square the ground runs from <b>' + r0(T.min) + ' m</b> to <b>' + r0(T.max) + ' m</b>. Typical slope is <b>' + T.typical.toFixed(1) + '%</b>, the steepest part <b>' + T.steepest.toFixed(1) + '%</b>.</p><p>' + (T.steepCells ? '<b>' + T.steepCells + ' of ' + (T.cells || T.slopes.length) + '</b> squares slope more than 6%. Heavy rain on bare soil does the most damage there, so those are the places where cover matters most.' : 'No square slopes more than 6%, so runoff speed is not the main erosion driver here.') + '</p><p>' + (T.lowCells ? '<b>' + T.lowCells + '</b> low ' + (T.lowCells === 1 ? 'spot is' : 'spots are') + ' outlined in blue. Cold air settles in hollows, so frost can come later in spring and earlier in autumn there than the district dates suggest.' : 'No marked hollows where cold air would pool.') + '</p><div class="legend"><span><i style="background:#3E8E5A"></i>under 2%</span><span><i style="background:#F2A541"></i>2 to 6%</span><span><i style="background:#F2907E"></i>over 6%</span><span><i style="background:none;box-shadow:inset 0 0 0 2px #7CC6E8"></i>low spot</span></div></div></div><p class="fine">Numbers are metres above sea level. Source: Copernicus 90 m elevation model (ESA), read through Open-Meteo. Too coarse for a field survey; use it to know where to look.</p>';
+    const c = T.n > 6 ? 26 : 46, col = v => v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#3E8E5A'; let g = '';
+    T.slopes.forEach((v, i) => { const x = (i % T.n) * c, y = Math.floor(i / T.n) * c; if (T.mask && !(T.mask[i] > 0)) return; g += '<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (c - 2) + '" height="' + (c - 2) + '" rx="3" fill="' + col(v) + '"' + (T.low[i] ? ' stroke="#7CC6E8" stroke-width="3"' : '') + '><title>' + r0(T.z[i]) + ' m, slope ' + v.toFixed(1) + '%' + (T.low[i] ? ', low spot' : '') + '</title></rect>' + (T.n > 6 ? '' : '<text x="' + (x + c / 2) + '" y="' + (y + c / 2 + 4) + '" text-anchor="middle" font-size="11" fill="#10231A">' + r0(T.z[i]) + '</text>'); });
+    return '<h2>The ground in your field</h2><div class="terr"><svg viewBox="0 0 ' + c * T.n + ' ' + c * T.n + '" role="img" aria-label="Elevation and slope on a grid over the field">' + g + '</svg><div><p>Across a ' + (T.step * T.n / 1000).toFixed(2).replace(/0$/, '') + ' km square the ground runs from <b>' + r0(T.min) + ' m</b> to <b>' + r0(T.max) + ' m</b>. Typical slope is <b>' + T.typical.toFixed(1) + '%</b>, the steepest part <b>' + T.steepest.toFixed(1) + '%</b>.</p><p>' + (T.steepCells ? '<b>' + T.steepCells + ' of ' + (T.cells || T.slopes.length) + '</b> squares slope more than 6%. Heavy rain on bare soil does the most damage there, so those are the places where cover matters most.' : 'No square slopes more than 6%, so runoff speed is not the main erosion driver here.') + '</p><p>' + (T.lowCells ? '<b>' + T.lowCells + '</b> low ' + (T.lowCells === 1 ? 'spot is' : 'spots are') + ' outlined in blue. Cold air settles in hollows, so frost can come later in spring and earlier in autumn there than the district dates suggest.' : 'No marked hollows where cold air would pool.') + '</p><div class="legend"><span><i style="background:#3E8E5A"></i>under 2%</span><span><i style="background:#F2A541"></i>2 to 6%</span><span><i style="background:#F2907E"></i>over 6%</span><span><i style="background:none;box-shadow:inset 0 0 0 2px #7CC6E8"></i>low spot</span></div></div></div><p class="fine">Numbers are metres above sea level. Source: Copernicus 90 m elevation model (ESA), read through Open-Meteo. Too coarse for a field survey; use it to know where to look.</p>';
   }
   function spark(i, cl) {
     const v = i.series, n = v.length, W = 200, H = 44, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), sp = (hi - lo) || 1;
@@ -2028,10 +2047,17 @@ body.drawing #map{cursor:crosshair}
     story();
   }
   let zones = [];
-  let keepPoly = false, frect = null, fpoly = null, fh = [], treq = 0, tTimer = null, drawing = null;
+  let keepPoly = false, fpoly = null, fh = [], treq = 0, tTimer = null, drawing = null, dragIdx = -1;
   const M = 111320, cosl = () => Math.cos(S.lat * Math.PI / 180);
+  const toXY = p => [(p[1] - S.lon) * M * cosl(), (p[0] - S.lat) * M], toLL = (x, y) => [S.lat + y / M, S.lon + x / (M * cosl())];
+  function rectPoly(n, s, e, w) { return [toLL(-w, n), toLL(e, n), toLL(e, -s), toLL(-w, -s)]; }
   function fieldInit() {
-    if (!(S.fN > 0 && S.fS > 0 && S.fE > 0 && S.fW > 0)) { const w = S.fw >= 20 ? S.fw : Math.sqrt((S.area || 100) * 1e4), l = S.fl >= 20 ? S.fl : w; S.fE = S.fW = w / 2; S.fN = S.fS = l / 2; }
+    if (!S.poly || S.poly.length < 3) {
+      if (!(S.fN > 0 && S.fS > 0 && S.fE > 0 && S.fW > 0)) { const w = S.fw >= 20 ? S.fw : Math.sqrt((S.area || 100) * 1e4), l = S.fl >= 20 ? S.fl : w; S.fE = S.fW = w / 2; S.fN = S.fS = l / 2; }
+      S.poly = rectPoly(S.fN, S.fS, S.fE, S.fW);
+    }
+    const xy = S.poly.map(toXY), xs = xy.map(p => p[0]), ys = xy.map(p => p[1]);
+    S.fN = Math.max(...ys); S.fS = -Math.min(...ys); S.fE = Math.max(...xs); S.fW = -Math.min(...xs);
     S.fw = Math.round(S.fE + S.fW); S.fl = Math.round(S.fN + S.fS);
   }
   function fBounds() { return [[S.lat - S.fS / M, S.lon - S.fW / (M * cosl())], [S.lat + S.fN / M, S.lon + S.fE / (M * cosl())]]; }
@@ -2070,7 +2096,7 @@ body.drawing #map{cursor:crosshair}
   }
   function loadTerrain() {
     fieldInit();
-    const id = ++treq, lat = S.lat, lon = S.lon, N = S.poly ? 7 : 5, sx = (S.fE + S.fW) / N, sy = (S.fN + S.fS) / N, cc = cellCenters(N), mask = cellGeo(N).map(g => g.wt);
+    const id = ++treq, lat = S.lat, lon = S.lon, N = 10, sx = (S.fE + S.fW) / N, sy = (S.fN + S.fS) / N, cc = cellCenters(N), mask = cellGeo(N).map(g => g.wt);
     if (!mask.some(Boolean)) return;
     const k = 'furrowz2:' + cc.map(p => p[0].toFixed(5) + ',' + p[1].toFixed(5)).join(';');
     (async () => {
@@ -2085,84 +2111,99 @@ body.drawing #map{cursor:crosshair}
       } catch (e) {}
     })();
   }
-  const HANDLES = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
-  function clearShapes() { if (frect) { map.removeLayer(frect); frect = null; } if (fpoly) { map.removeLayer(fpoly); fpoly = null; } fh.forEach(h => map.removeLayer(h)); fh = []; }
+  function clearShapes() { if (fpoly) { map.removeLayer(fpoly); fpoly = null; } fh.forEach(h => map.removeLayer(h)); fh = []; }
+  function mids() { const P = S.poly; return P.map((p, i) => { const q = P[(i + 1) % P.length]; return [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; }); }
+  function liveShape() { if (fpoly) fpoly.setLatLngs(S.poly); fieldInit(); S.area = Math.round(polyArea(S.poly) / 1000) / 10; ['fw', 'fl', 'area'].forEach(id => { if (document.activeElement !== $(id)) $(id).value = id === 'area' ? S.area : S[id]; }); drawZones(); }
+  function buildHandles() {
+    fh.forEach(h => map.removeLayer(h)); fh = []; if (drawing) return;
+    S.poly.forEach((p, i) => {
+      const h = window.L.marker(p, { draggable: true, keyboard: false, zIndexOffset: 1000, icon: window.L.divIcon({ className: 'fh fh-v', iconSize: [16, 16] }) }).addTo(map);
+      h.on('dragstart', () => { setPlaying(false); map.stop(); document.body.classList.add('fdrag'); });
+      h.on('drag', e => { const q = e.target.getLatLng(); S.poly[i] = [q.lat, q.lng]; liveShape(); });
+      h.on('dragend', () => { document.body.classList.remove('fdrag'); syncField(); });
+      h.on('dblclick', ev => { window.L.DomEvent.stop(ev); if (S.poly.length > 3) { S.poly.splice(i, 1); syncField(); } });
+      h.bindTooltip('Drag to move this corner. Double-click to remove it.', { direction: 'top', offset: [0, -8] });
+      fh.push(h);
+    });
+    mids().forEach((m, i) => {
+      const h = window.L.marker(m, { draggable: true, keyboard: false, zIndexOffset: 900, icon: window.L.divIcon({ className: 'fh fh-m', iconSize: [14, 14] }) }).addTo(map);
+      h.on('dragstart', () => { setPlaying(false); map.stop(); document.body.classList.add('fdrag'); const q = h.getLatLng(); S.poly.splice(i + 1, 0, [q.lat, q.lng]); dragIdx = i + 1; });
+      h.on('drag', e => { const q = e.target.getLatLng(); S.poly[dragIdx] = [q.lat, q.lng]; liveShape(); });
+      h.on('dragend', () => { document.body.classList.remove('fdrag'); dragIdx = -1; syncField(); });
+      h.bindTooltip('Drag to bend this side', { direction: 'top', offset: [0, -8] });
+      fh.push(h);
+    });
+  }
   function drawField() {
     if (!map) return;
     if (S.intro) { clearShapes(); return; }
     fieldInit();
-    if (S.poly && S.poly.length >= 3) {
-      if (frect || fh.length) clearShapes();
-      if (!fpoly) fpoly = window.L.polygon(S.poly, { color: '#F5FAF2', weight: 2.5, fill: false, interactive: false }).addTo(map); else fpoly.setLatLngs(S.poly);
-      return;
-    }
-    if (fpoly) { map.removeLayer(fpoly); fpoly = null; }
-    const b = fBounds(), N = b[1][0], Sx = b[0][0], Ex = b[1][1], Wx = b[0][1], mid = [(N + Sx) / 2, (Ex + Wx) / 2];
-    if (!frect) {
-      frect = window.L.rectangle(b, { color: '#F5FAF2', weight: 2.5, fill: false, interactive: false }).addTo(map);
-      HANDLES.forEach(k => {
-        const h = window.L.marker([0, 0], { draggable: true, keyboard: false, zIndexOffset: 1000, icon: window.L.divIcon({ className: 'fh fh-' + k, iconSize: [18, 18] }) }).addTo(map);
-        h.k = k;
-        h.on('dragstart', () => { setPlaying(false); map.stop(); h.moving = true; });
-        h.on('drag', e => { const p = e.target.getLatLng(), dn = (p.lat - S.lat) * M, de = (p.lng - S.lon) * M * cosl();
-          if (k.includes('n')) S.fN = Math.max(10, dn); if (k.includes('s')) S.fS = Math.max(10, -dn);
-          if (k.includes('e')) S.fE = Math.max(10, de); if (k.includes('w')) S.fW = Math.max(10, -de);
-          syncField(true); });
-        h.on('dragend', () => { h.moving = false; syncField(); });
-        fh.push(h);
-      });
-    }
-    frect.setBounds(b);
-    const pos = { n: [N, mid[1]], s: [Sx, mid[1]], e: [mid[0], Ex], w: [mid[0], Wx], ne: [N, Ex], nw: [N, Wx], se: [Sx, Ex], sw: [Sx, Wx] };
-    fh.forEach(h => { if (!h.moving) h.setLatLng(pos[h.k]); });
+    if (!fpoly) fpoly = window.L.polygon(S.poly, { color: '#F5FAF2', weight: 2.5, fill: false, interactive: false }).addTo(map); else fpoly.setLatLngs(S.poly);
+    buildHandles();
   }
-  function syncField(dragging) {
-    S.fw = Math.round(S.fE + S.fW); S.fl = Math.round(S.fN + S.fS);
-    S.area = Math.round((S.poly && S.poly.length >= 3 ? polyArea(S.poly) : S.fw * S.fl) / 1000) / 10;
-    if (document.activeElement !== $('fw')) $('fw').value = S.fw;
-    if (document.activeElement !== $('fl')) $('fl').value = S.fl;
-    if (document.activeElement !== $('area')) $('area').value = S.area;
+  function syncField() {
+    fieldInit(); S.area = Math.round(polyArea(S.poly) / 1000) / 10;
+    ['fw', 'fl', 'area'].forEach(id => { if (document.activeElement !== $(id)) $(id).value = id === 'area' ? S.area : S[id]; });
     drawField(); drawZones(); drawUI();
-    clearTimeout(tTimer); tTimer = setTimeout(loadTerrain, dragging ? 350 : 150);
+    clearTimeout(tTimer); tTimer = setTimeout(loadTerrain, 200);
     if (window.fieldChanged) window.fieldChanged();
   }
-  function scaleField(kx, ky) { S.poly = null; S.fE *= kx; S.fW *= kx; S.fN *= ky; S.fS *= ky; setPlaying(false); syncField(); }
+  function scaleField(kx, ky) { fieldInit(); S.poly = S.poly.map(p => { const v = toXY(p); return toLL(v[0] * kx, v[1] * ky); }); setPlaying(false); syncField(); }
   function drawUI() {
-    if (!$('fdraw')) return;
-    $('fdraw').textContent = drawing ? 'Finish shape' : S.poly ? 'Draw again' : 'Draw the shape';
-    $('fclear').hidden = !S.poly || !!drawing;
-    $('fdrawmsg').textContent = drawing ? 'Click the corners of your field on the map. ' + (drawing.pts.length < 3 ? 'At least 3 points.' : 'Click the first point or "Finish shape" to close.') : '';
+    const b = $('pencil'); if (!b) return;
+    b.classList.toggle('on', !!drawing); b.setAttribute('aria-pressed', drawing ? 'true' : 'false');
+    $('pencilmsg').hidden = !drawing;
+    $('pencilmsg').innerHTML = !drawing ? '' : drawing.pts.length === 0 ? '<b>Hold and drag</b> to draw your field freehand, or <b>click</b> its corners one by one.' : drawing.pts.length < 3 ? 'Keep clicking corners (at least 3).' : 'Click the first point, double-click, or press the pencil again to finish.';
     document.body.classList.toggle('drawing', !!drawing);
   }
   function startDraw() {
-    if (drawing) return finishDraw();
-    setPlaying(false); if (map) map.stop();
-    drawing = { pts: [], line: window.L.polyline([], { color: '#a3e635', weight: 2.5, dashArray: '6 5', interactive: false }).addTo(map), dots: [] };
-    drawUI();
+    if (!map) return;
+    if (drawing) { if (drawing.pts.length >= 3) return finishDraw(); return cancelDraw(); }
+    setPlaying(false); map.stop(); map.dragging.disable(); map.doubleClickZoom.disable();
+    drawing = { pts: [], line: window.L.polyline([], { color: '#a3e635', weight: 3, interactive: false }).addTo(map), dots: [], free: false, down: null };
+    fh.forEach(h => map.removeLayer(h)); fh = []; drawUI();
   }
   function addPoint(ll) {
     const d = drawing;
-    if (d.pts.length >= 3 && map.distance(ll, d.pts[0]) < Math.max(15, 12 * 156543 * cosl() / Math.pow(2, map.getZoom()))) return finishDraw();
+    if (d.pts.length >= 3) { const a = map.latLngToContainerPoint(ll), b = map.latLngToContainerPoint(d.pts[0]); if (a.distanceTo(b) < 14) return finishDraw(); }
     d.pts.push([ll.lat, ll.lng]); d.line.setLatLngs(d.pts);
-    const dot = window.L.circleMarker(ll, { radius: d.pts.length === 1 ? 7 : 5, color: '#fff', weight: 2, fillColor: '#a3e635', fillOpacity: 1 }).addTo(map);
-    if (d.pts.length === 1) dot.on('click', ev => { window.L.DomEvent.stopPropagation(ev); if (drawing && drawing.pts.length >= 3) finishDraw(); });
-    d.dots.push(dot); drawUI();
+    d.dots.push(window.L.circleMarker(ll, { radius: d.pts.length === 1 ? 7 : 5, color: '#fff', weight: 2, fillColor: '#a3e635', fillOpacity: 1, interactive: false }).addTo(map)); drawUI();
   }
-  function cancelDraw() { if (!drawing) return; map.removeLayer(drawing.line); drawing.dots.forEach(x => map.removeLayer(x)); drawing = null; drawUI(); }
+  function simplify(pts, tol) {
+    if (pts.length < 3) return pts; const P = pts.map(p => map.latLngToContainerPoint(p));
+    const keep = new Array(P.length).fill(false); keep[0] = keep[P.length - 1] = true;
+    const rec = (a, b) => { let md = 0, mi = -1; const A = P[a], B = P[b], dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1; for (let i = a + 1; i < b; i++) { const d = Math.abs(dy * P[i].x - dx * P[i].y + B.x * A.y - B.y * A.x) / L; if (d > md) { md = d; mi = i; } } if (md > tol) { keep[mi] = true; rec(a, mi); rec(mi, b); } };
+    rec(0, P.length - 1); return pts.filter((p, i) => keep[i]);
+  }
+  function cancelDraw() { if (!drawing) return; map.removeLayer(drawing.line); drawing.dots.forEach(x => map.removeLayer(x)); drawing = null; map.dragging.enable(); map.doubleClickZoom.enable(); drawUI(); if (!S.intro) buildHandles(); }
   function finishDraw() {
-    const P = drawing.pts.slice(); cancelDraw(); if (P.length < 3) return;
+    let P = drawing.free ? simplify(drawing.pts, 4) : drawing.pts.slice(); cancelDraw(); if (P.length < 3) return;
     const lats = P.map(p => p[0]), lons = P.map(p => p[1]), cla = (Math.min(...lats) + Math.max(...lats)) / 2, clo = (Math.min(...lons) + Math.max(...lons)) / 2;
-    const far = map.distance([cla, clo], [S.lat, S.lon]) > 3000;
-    const apply = () => { S.poly = P; const c = cosl(); S.fN = Math.max(10, (Math.max(...lats) - S.lat) * M); S.fS = Math.max(10, (S.lat - Math.min(...lats)) * M); S.fE = Math.max(10, (Math.max(...lons) - S.lon) * M * c); S.fW = Math.max(10, (S.lon - Math.min(...lons)) * M * c); syncField(); };
-    S.poly = P; const outside = !inPoly(S.lat, S.lon);
-    if (far || outside) { keepPoly = true; setPlace(cla, clo, null, true); keepPoly = false; S.poly = P; }
-    apply(); if ((far || outside) && S.wiz != null && S.wiz > 0) wizard(0);
+    const prev = S.poly; S.poly = P; const outside = !inPoly(S.lat, S.lon), far = map.distance([cla, clo], [S.lat, S.lon]) > 3000;
+    if (far || outside) { keepPoly = true; setPlace(cla, clo, null, true); keepPoly = false; S.poly = P; if (S.wiz != null && S.wiz > 0) wizard(0); }
+    syncField();
+  }
+  function wireDraw() {
+    const el = map.getContainer();
+    el.addEventListener('pointerdown', e => { if (!drawing || e.button !== 0) return; drawing.down = { x: e.clientX, y: e.clientY, pts: [] }; el.setPointerCapture && el.setPointerCapture(e.pointerId); });
+    el.addEventListener('pointermove', e => { const d = drawing; if (!d || !d.down) return; if (!d.free && Math.hypot(e.clientX - d.down.x, e.clientY - d.down.y) > 6) { d.free = true; d.pts = []; d.dots.forEach(x => map.removeLayer(x)); d.dots = []; } if (d.free) { const ll = map.mouseEventToLatLng(e); d.pts.push([ll.lat, ll.lng]); d.line.setLatLngs(d.pts); } });
+    el.addEventListener('pointerup', e => { const d = drawing; if (!d || !d.down) return; d.down = null; if (d.free) { if (d.pts.length >= 6) finishDraw(); else { d.free = false; d.pts = []; d.line.setLatLngs([]); } } else addPoint(map.mouseEventToLatLng(e)); });
+    el.addEventListener('dblclick', e => { if (drawing && drawing.pts.length >= 3) { e.stopPropagation(); finishDraw(); } }, true);
   }
   function drawZones() {
-    if (!map) return; zones.forEach(z => map.removeLayer(z)); zones = []; const T = S.terrain; if (!T || S.intro) return; fieldInit();
-    const N = T.n, geo = cellGeo(N);
-    T.slopes.forEach((v, i) => { const g = geo[i]; if (!g || !g.wt) return; const z = window.L.polygon(g.shape, { stroke: true, color: T.low[i] ? '#7CC6E8' : 'rgba(255,255,255,.85)', weight: T.low[i] ? 3 : 1.2, fillColor: v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#5FBF73', fillOpacity: 0.42, interactive: true }).addTo(map); z.bindTooltip(v.toFixed(1) + '% slope' + (T.low[i] ? ', low spot' : '') + (g.wt < 0.99 ? ', ' + Math.round(g.wt * 100) + '% of this square is in your field' : ''), { direction: 'top' }); zones.push(z); });
-    if (frect) frect.bringToFront(); if (fpoly) fpoly.bringToFront();
+    if (!map) return; zones.forEach(z => map.removeLayer(z)); zones = []; const T = S.terrain; if ($('slopeleg') && (!T || S.intro)) $('slopeleg').hidden = true; if (!T || S.intro) return; fieldInit();
+    const N = T.n, H = N / 2, fine = cellGeo(N), coarse = cellGeo(H), cls = v => v > 6 ? 2 : v >= 2 ? 1 : 0, col = ['#5FBF73', '#F2A541', '#F2907E'];
+    const put = (shape, v, low, note) => { const z = window.L.polygon(shape, { stroke: true, color: low ? '#7CC6E8' : 'rgba(255,255,255,.85)', weight: low ? 3 : 1.1, fillColor: col[cls(v)], fillOpacity: 0.42, interactive: true }).addTo(map); z.bindTooltip(v.toFixed(1) + '% slope' + (low ? ', low spot' : '') + (note || ''), { direction: 'top' }); zones.push(z); };
+    for (let R = 0; R < H; R++) for (let C = 0; C < H; C++) {
+      const ids = [(2 * R) * N + 2 * C, (2 * R) * N + 2 * C + 1, (2 * R + 1) * N + 2 * C, (2 * R + 1) * N + 2 * C + 1], inn = ids.filter(i => fine[i].wt > 0);
+      if (!inn.length) continue;
+      const same = inn.length === 4 && inn.every(i => cls(T.slopes[i]) === cls(T.slopes[ids[0]])) && !inn.some(i => T.low[i]);
+      if (same) { const g = coarse[R * H + C], v = ids.reduce((a, i) => a + T.slopes[i], 0) / 4; put(g.shape, v, false, g.wt < 0.99 ? ', ' + Math.round(g.wt * 100) + '% of this square is in your field' : ''); }
+      else inn.forEach(i => put(fine[i].shape, T.slopes[i], T.low[i], fine[i].wt < 0.99 ? ', ' + Math.round(fine[i].wt * 100) + '% of this part is in your field' : ''));
+    }
+    if (fpoly) fpoly.bringToFront();
+    const tot = T.slopes.reduce((a, v, i) => a + (fine[i].wt || 0), 0) || 1, share = k => Math.round(100 * T.slopes.reduce((a, v, i) => a + (cls(v) === k ? fine[i].wt || 0 : 0), 0) / tot), lowS = Math.round(100 * T.low.reduce((a, l, i) => a + (l ? fine[i].wt || 0 : 0), 0) / tot);
+    const L = $('slopeleg'); if (L) { L.hidden = false; L.innerHTML = '<b>Your field by slope</b>' + [['Flat, under 2%', 0], ['Gentle, 2 to 6%', 1], ['Steep, over 6%', 2]].map(x => '<div><i style="background:' + col[x[1]] + '"></i><span>' + x[0] + '</span><em>' + share(x[1]) + '%</em></div>').join('') + (lowS ? '<div><i class="lo"></i><span>Low spots, water collects</span><em>' + lowS + '%</em></div>' : '') + '<small>typical slope ' + T.typical.toFixed(1) + '%, steepest ' + T.steepest.toFixed(1) + '%</small>'; }
   }
   function setPlaying(on) { playing = on; $('play').textContent = on ? 'Pause tour' : 'Play tour'; $('play').setAttribute('aria-pressed', on ? 'true' : 'false'); }
   const PROXY = 'https://still-cell-0930.kuzaka.workers.dev';
@@ -2240,12 +2281,13 @@ body.drawing #map{cursor:crosshair}
     }
   }
   function setPlace(lat, lon, demo, keep) {
+    const prevLat = S.lat, prevLon = S.lon;
     lon = ((lon + 180) % 360 + 360) % 360 - 180; lat = Math.max(-60, Math.min(70, lat));
     S.lat = Math.round(lat * 100) / 100; S.lon = Math.round(lon * 100) / 100; S.demo = demo ? demo.id : null;
     S.name = demo ? demo.name : 'Your field';
     if (demo && !keep) { S.rot = demo.rot.map(r => ({ c: r.c, cv: r.cv || null })); S.soil = demo.soil; setSlope(demo.slope); S.till = demo.till; $('soil').value = S.soil; $('till').value = S.till; renderRot(); }
     $('lat').value = S.lat; $('lon').value = S.lon; $('demo').value = S.demo || '';
-    if (!keepPoly) S.poly = null;
+    if (!keepPoly && S.poly && S.poly.length >= 3 && isFinite(prevLat)) { const dla = S.lat - prevLat, dlo = S.lon - prevLon; S.poly = S.poly.map(p => [p[0] + dla, p[1] + dlo]); }
     S.terrain = null; S.soilSug = null; S.ndvi = null; S.touched = {}; $('sugsoil').innerHTML = ''; $('sugslope').innerHTML = ''; drawZones(); drawField(); liveWx();
     if (map) { marker.setLatLng([S.lat, S.lon]); cell.setBounds(cellBounds()); goStep(0, true); }
     load();
@@ -2321,7 +2363,7 @@ body.drawing #map{cursor:crosshair}
     window.fieldChanged = () => { stockUI(); mUI(); later(); };
     $('area').oninput = e => { const a = +e.target.value; if (a > 0) { fieldInit(); const k = Math.sqrt(a * 1e4 / ((S.fE + S.fW) * (S.fN + S.fS))); scaleField(k, k); } };
     $('fw').oninput = e => { const v = +e.target.value; if (v >= 20) { fieldInit(); scaleField(v / (S.fE + S.fW), 1); } };
-    $('fdraw').onclick = startDraw; $('fclear').onclick = () => { S.poly = null; syncField(); };
+    $('pencil').onclick = e => { e.stopPropagation(); startDraw(); }; $('fclear').onclick = () => { fieldInit(); S.poly = rectPoly(S.fN, S.fS, S.fE, S.fW); syncField(); };
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawing) cancelDraw(); });
     $('fl').oninput = e => { const v = +e.target.value; if (v >= 20) { fieldInit(); scaleField(1, v / (S.fN + S.fS)); } };
     $('stype').onchange = e => { S.stockType = e.target.value; stockUI(); later(); };
@@ -2355,8 +2397,8 @@ body.drawing #map{cursor:crosshair}
       cell = window.L.rectangle([[0, 0], [1, 1]], { color: '#EEF2E6', weight: 1.5, fillOpacity: 0.03, dashArray: '6 5', interactive: false }).addTo(map);
       cell.bindTooltip('NASA POWER grid cell, about 50 km', { permanent: true, direction: 'bottom', className: 'cell' });
       marker = window.L.marker([DEMOS[0].lat, DEMOS[0].lon], { interactive: false, keyboard: false, icon: window.L.divIcon({ className: 'pin', iconSize: [0, 0] }) }).addTo(map);
-      map.on('dragstart', () => setPlaying(false));
-      map.on('click', e => { if (drawing) { addPoint(e.latlng); return; } if (S.intro) { if (introPick) introPick(e.latlng.lat, e.latlng.lng, null); return; } setPlace(e.latlng.lat, e.latlng.lng, null); if (S.wiz != null && S.wiz > 0) wizard(0); });
+      map.on('dragstart', () => setPlaying(false)); wireDraw();
+      map.on('click', e => { if (drawing) return; if (S.intro) { if (introPick) introPick(e.latlng.lat, e.latlng.lng, null); return; } setPlace(e.latlng.lat, e.latlng.lng, null); if (S.wiz != null && S.wiz > 0) wizard(0); });
       window.addEventListener('resize', () => map.invalidateSize());
     } else { $('play').hidden = true;
     }
