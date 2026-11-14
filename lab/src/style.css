@@ -806,3 +806,5 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .scnote{font-size:13.5px;color:var(--muted);margin:4px 0 0}
 @media (max-width:640px){.scrow{grid-template-columns:1fr auto}.scbars{grid-column:1/-1;grid-row:2}}
 .leaflet-control-attribution.attrfix{position:fixed!important;margin:0!important;right:auto!important;bottom:auto!important;z-index:20;white-space:nowrap}
+.mvpop .leaflet-popup-content{margin:14px 16px;font-size:16px}
+.mvrow{display:flex;gap:10px;margin-top:12px}.mvrow .btn{height:42px;padding:0 16px;font-size:15px}
