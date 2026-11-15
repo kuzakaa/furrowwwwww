@@ -1027,3 +1027,4 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
 #known .chip[aria-pressed="true"]{background:#8FD694;color:#10231A;border-color:#8FD694}
 #known .chip:disabled{opacity:.75;cursor:default}
 #known .knall{border-style:dashed}
+.srch{color:#8FD694;margin:8px 0 0;font-weight:600}
