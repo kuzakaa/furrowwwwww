@@ -1066,3 +1066,4 @@ body:not(.wiz) .plen{grid-template-columns:auto minmax(0,1fr) auto;padding:7px 1
 .res .conf.yr .yrs i b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:10.5px;font-weight:600;color:rgba(10,30,18,.75);font-variant-numeric:tabular-nums}
 .res .conf.yr .yrs i.w{background:#8fd694}.res .conf.yr .yrs i.l{background:#ff8a7a}.res .conf.yr .yrs i.t{background:rgba(220,245,225,.3)}
 .res .conf.yr .cn small{white-space:nowrap}
+.res .conf.yr .yrs i{display:flex!important;align-items:center;justify-content:center;margin:0!important;padding:0!important;font-style:normal;font-size:10.5px;font-weight:600;line-height:1;text-align:center;color:rgba(10,30,18,.78);font-variant-numeric:tabular-nums;font-family:inherit;letter-spacing:0;min-width:0;overflow:hidden}
