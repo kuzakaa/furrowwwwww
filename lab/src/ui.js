@@ -305,33 +305,18 @@
         const covOK = id => !inp.exclude.has(id);
         st.list = []; L.forEach(r => { st.list.push(r.map(c => ({ c, cv: null }))); if (covOK('rye') || covOK('legmix')) st.list.push(r.map(c => ({ c, cv: (C[c].kind === 'summer' || C[c].kind === 'winter') ? (C[c].kind === 'winter' && covOK('legmix') ? 'legmix' : covOK('rye') ? 'rye' : 'legmix') : null }))); });
       }
-      if (!st.done && !st.busy) { st.busy = true; const cl = A.cl, cal = A.cal, inp2 = Object.assign({}, inp);
-        const prog = () => { const pg = $('srchp'); if (pg) pg.textContent = 'Checking every rotation: ' + Math.round(st.i / st.list.length * 100) + '% of ' + st.list.length.toLocaleString('en') + ' done'; };
-        const phase2 = () => {
+      if (!st.done && !st.busy) { st.busy = true; const cl = A.cl, cal = A.cal, inp2 = Object.assign({}, inp); const step = () => { const t0 = performance.now(); while (st.i < st.list.length && performance.now() - t0 < 25) { const rot = st.list[st.i++]; try { const r = E.simulate(rot, cl, cal, inp2); st.res.push({ rot, sim: r }); } catch (e) {} } if (st.i < st.list.length) { const pg = $('srchp'); if (pg) pg.textContent = 'Checking every rotation: ' + Math.round(st.i / st.list.length * 100) + '% of ' + st.list.length.toLocaleString('en') + ' done'; setTimeout(step, 0); } else if (!st.refine) { // phase 2: for the most promising crop orders, try every on/off pattern of cover crops
             const pick = c => (C[c].kind === 'winter' && !inp2.exclude.has('legmix')) ? 'legmix' : !inp2.exclude.has('rye') ? 'rye' : !inp2.exclude.has('legmix') ? 'legmix' : null;
             const seenR = new Set(st.res.map(o => JSON.stringify(o.rot))), seq = new Map();
             st.res.forEach(o => { const k = o.rot.map(r => r.c).join(','), m = E.match(o.sim.sc, inp2.weights); if (!seq.has(k) || seq.get(k).m < m) seq.set(k, { m, crops: o.rot.map(r => r.c) }); });
             const top = [...seq.values()].sort((a, b) => b.m - a.m).slice(0, 150); st.refine = [];
             top.forEach(t => { const n = t.crops.length; for (let mask = 0; mask < (1 << n); mask++) { const rot = t.crops.map((c, j) => ({ c, cv: (mask >> j) & 1 && (C[c].kind === 'summer' || C[c].kind === 'winter') ? pick(c) : null })); const k = JSON.stringify(rot); if (!seenR.has(k)) { seenR.add(k); st.refine.push(rot); } } });
-            return st.refine;
-        };
-        const finish = () => { st.done = true; st.busy = false; if (st.pool) st.pool.forEach(w => w.terminate()); st.pool = null; if (window.__searchDone) window.__searchDone(); };
-        let pool = null;
-        try { const src = [...document.scripts].find(x => x.textContent.indexOf('G.Engine = API') >= 0); if (src && window.Worker) { const code = src.textContent + '\nlet D;onmessage=e=>{const m=e.data;if(m.init){D=m;return;}const out=m.rots.map(r=>{try{const z=Engine.simulate(r,D.cl,D.cal,D.inp);return {sc:z.sc,light:1}}catch(x){return null}});postMessage({id:m.id,out});};'; const url = URL.createObjectURL(new Blob([code], { type: 'text/javascript' })); const inpW = {}; for (const k in inp2) { try { inpW[k] = structuredClone(inp2[k]); } catch (e) {} } const W = Math.max(2, Math.min(8, (navigator.hardwareConcurrency || 4) - 1)); pool = Array.from({ length: W }, () => { const w = new Worker(url); w.postMessage({ init: 1, cl, cal, inp: inpW }); return w; }); st.pool = pool; window.__poolN = pool.length; } } catch (e) { pool = null; }
-        if (pool) {
-          let next = 0, busyN = 0, phase = 1;
-          const pump = () => { pool.forEach(w => { if (w._busy) return; if (next >= st.list.length) return; const from = next, to = Math.min(st.list.length, next + 120); next = to; w._busy = true; busyN++; w.onmessage = e => { const m = e.data; m.out.forEach((sim, j) => { if (sim) st.res.push({ rot: st.list[from + j], sim }); }); st.i += to - from; w._busy = false; busyN--; prog(); if (next < st.list.length) pump(); else if (!busyN) { if (phase === 1) { phase = 2; st.list = st.list.concat(phase2()); pump(); if (!busyN) finish(); } else finish(); } }; w.onerror = () => { w._busy = false; busyN--; }; w.postMessage({ id: from, rots: st.list.slice(from, to) }); }); };
-          pump();
-        } else {
-          const step = () => { const t0 = performance.now(); while (st.i < st.list.length && performance.now() - t0 < 25) { const rot = st.list[st.i++]; try { st.res.push({ rot, sim: E.simulate(rot, cl, cal, inp2) }); } catch (e) {} } if (st.i < st.list.length) { prog(); setTimeout(step, 0); } else if (!st.refine) { st.list = st.list.concat(phase2()); setTimeout(step, 0); } else finish(); };
-          setTimeout(step, 0);
-        }
-      }
-      const full = o => { if (o.sim.light) { try { o.sim = E.simulate(o.rot, A.cl, A.cal, inp); } catch (e) {} } return o.sim; };
+            st.list = st.list.concat(st.refine); setTimeout(step, 0);
+          } else { st.done = true; st.busy = false; if (window.__searchDone) window.__searchDone(); } }; setTimeout(step, 0); }
       const key2 = x => JSON.stringify(x.rot.map(r => [r.c, r.cv || null]));
       const have = new Set(all.map(key2).concat([key2(A.current)]));
       const top = st.res.map(o => ({ o, m: E.match(o.sim.sc, inp.weights) })).sort((a, b) => b.m - a.m).slice(0, 8).filter(t => !have.has(key2({ rot: t.o.rot })));
-      const nx = top.map(t => Object.assign({ id: 'best' + key2({ rot: t.o.rot }), name: 'The top-scoring rotation', tag: 'Found by testing every rotation of 2 to 5 years', rot: t.o.rot }, full(t.o), { match: t.m }));
+      const nx = top.map(t => Object.assign({ id: 'best' + key2({ rot: t.o.rot }), name: 'The top-scoring rotation', tag: 'Found by testing every rotation of 2 to 5 years', rot: t.o.rot }, t.o.sim, { match: t.m }));
       if (nx.length) { let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300, d = nx.map(() => []);
         for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)), mc = E.match(E.scoreSet(A.current, inp, idx), inp.weights); nx.forEach((x, j) => d[j].push(E.match(E.scoreSet(x, inp, idx), inp.weights) - mc)); }
         nx.forEach((x, j) => { const v = d[j].slice().sort((a, b) => a - b); x.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; all.push(x); }); }
@@ -350,8 +335,7 @@
     if (window.Lab) { // apply your limits to every rotation tested, keep the best that fits
       const st = window.__search && Object.values(window.__search).find(v => v.done && v.res.length && v.res[0].sim);
       const k2 = x => JSON.stringify(x.rot.map(r => [r.c, r.cv || null])), have = new Set(all.map(k2));
-      if (st) { let bestOk = null; st.res.forEach(o => { const x = Object.assign({ id: 'all' + k2(o), name: 'The top rotation that fits your limits', tag: 'Found by testing every rotation of 2 to 5 years', rot: o.rot }, o.sim); x.match = E.match(x.sc, inp.weights); ADJ(x); if (!x.adj.blocked.length && (!bestOk || x.match > bestOk.match)) { bestOk = x; bestOk._o = o; } });
-        if (bestOk && bestOk._o && bestOk._o.sim.light) { const f = full(bestOk._o), mm = bestOk.match, need = bestOk.need, adj = bestOk.adj, rm = bestOk.rawMatch; Object.assign(bestOk, f); bestOk.match = mm; bestOk.need = need; bestOk.adj = adj; bestOk.rawMatch = rm; }
+      if (st) { let bestOk = null; st.res.forEach(o => { const x = Object.assign({ id: 'all' + k2(o), name: 'The top rotation that fits your limits', tag: 'Found by testing every rotation of 2 to 5 years', rot: o.rot }, o.sim); x.match = E.match(x.sc, inp.weights); ADJ(x); if (!x.adj.blocked.length && (!bestOk || x.match > bestOk.match)) bestOk = x; });
         if (bestOk) { let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300, v = []; for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)); v.push(E.match(E.scoreSet(bestOk, inp, idx), inp.weights) - E.match(E.scoreSet(A.current, inp, idx), inp.weights)); } v.sort((a, b) => a - b); bestOk.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; all.push(bestOk); }
         A.searched = st.res.length;
         if (st.done) { const keepK = new Set(all.filter(x => /^(all|best)/.test(x.id)).map(k2)); const tweaks = all.filter(x => !/^(all|best)/.test(x.id) && x.tag !== 'New, less tested'); tweaks.forEach(x => { if (!keepK.has(k2(x)) && x.rot.length <= 4) { /* covered by the full search */ } }); for (let i = all.length - 1; i >= 0; i--) { const x = all[i]; if (!/^(all|best)/.test(x.id)) all.splice(i, 1); }
