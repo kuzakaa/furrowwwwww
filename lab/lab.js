@@ -360,7 +360,7 @@
       for (let j = 0; j < m; j++) { const k = idx ? idx[j] : j; rel += s.rel[k]; hd += s.hd[k]; def += s.def[k]; if (s.rel[k] > 0.25) st++; }
       rel /= m; hd /= m; def /= m; st /= m;
       const wat = o.irrigated ? 1 : 1 - 0.8 * clip(rel / 0.6);
-      let inc = s.fallow ? 0 : cc.margin * (cc.market / 5) * wat * (0.5 + 0.5 * s.reliab) * (p === c && cc.kind !== 'perennial' ? 0.88 : 1) + (o.livestock && cc.forage ? 1 : 0);
+      let inc = s.fallow ? 0 : cc.margin * (cc.market / 5) * wat * (0.5 + 0.5 * s.reliab) + (o.livestock && cc.forage ? 1 : 0);
       if (cvOn) inc -= COV[cT.cv].cost - (o.livestock ? 0.3 : 0);
       return {
         soil, eros: 100 * (1 - s.exp), inc: inc / 4.2 * 100, cash: s.fallow ? 0 : 1,
