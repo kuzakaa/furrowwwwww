@@ -913,3 +913,5 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .slopeleg small{font-size:13.5px!important}
 .rotrow .yr{font-size:14.5px!important}
 [data-pane="options"]{padding-bottom:84px}
+.ovl img,.leaflet-tile.ovl,.ovl .leaflet-tile{image-rendering:pixelated}
+.s2ov{transition:opacity .6s ease;image-rendering:auto}

@@ -726,7 +726,14 @@
     const g = GIBS[$('layer').value]; if (!g) return;
     const lyr = window.L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/' + g[0] + '/default/' + $('ldate').value + '/' + g[1] + '/{z}/{y}/{x}.' + g[2], { maxNativeZoom: g[3], maxZoom: 17, opacity: 0, className: 'ovl', attribution: 'NASA GIBS' }).addTo(map);
     overlay = lyr; setTimeout(() => { if (overlay === lyr) lyr.setOpacity(0.72); }, 60);
+    if (s2ov) { map.removeLayer(s2ov); s2ov = null; }
+    if ($('layer').value === 'ndvi') {
+      const d = new Date($('ldate').value || Date.now()), to = d.toISOString().slice(0, 10), from = new Date(d - 40 * 864e5).toISOString().slice(0, 10), M2 = 2500, dl = M2 / 111320, dn = M2 / (111320 * Math.cos(S.lat * Math.PI / 180));
+      const ov = window.L.imageOverlay(PROXY + '/s2map?lat=' + S.lat.toFixed(4) + '&lon=' + S.lon.toFixed(4) + '&from=' + from + '&to=' + to, [[S.lat - dl, S.lon - dn], [S.lat + dl, S.lon + dn]], { opacity: 0, className: 's2ov', interactive: false }).addTo(map);
+      ov.on('load', () => { if (s2ov === ov) ov.setOpacity(0.85); }); s2ov = ov;
+    }
   }
+  let s2ov = null;
   function cellBounds() { const cy = Math.round(S.lat / 0.5) * 0.5, cx = Math.round(S.lon / 0.625) * 0.625; return [[cy - 0.25, cx - 0.3125], [cy + 0.25, cx + 0.3125]]; }
   let coOff = '';
   function callout(html) {
