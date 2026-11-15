@@ -12,6 +12,10 @@
   ];
   const DIMS = [['income', 'Profit after costs'], ['water', 'Saving water'], ['soil', 'Building soil health'], ['erosion', 'Keeping soil in place'], ['resilience', 'Steady harvest in bad years']];
   const LEVEL = ['Not a focus now', 'Minor', 'Some', 'Important', 'Very important', 'Top priority'];
+
+  const CROPLIB = (() => { const L = { wheat: 'Winter wheat,Winter barley,Winter rye,Triticale,Spelt,Durum wheat (winter),Einkorn,Emmer,Winter oats,Winter triticale', oats: 'Spring oats,Spring barley,Spring wheat,Malting barley,Durum wheat (spring),Buckwheat,Millet (proso),Canary seed,Quinoa,Teff,Flax (linseed),Hemp,Mustard (spring),Spring rye,Rice (upland)', corn: 'Corn (maize),Silage corn,Sweet corn,Popcorn,Potato,Sugar beet,Fodder beet,Tomato,Pepper,Cabbage,Onion,Carrot,Garlic,Cucumber,Pumpkin,Squash,Melon,Watermelon,Tobacco,Cotton,Sugar cane', soy: 'Soybean,Dry bean,Kidney bean,Navy bean,Black bean,Mung bean,Adzuki bean,Peanut (groundnut),Cowpea,Green bean', sunflower: 'Sunflower,Safflower,Sesame,Chicory,Echinacea,Milk thistle', sorghum: 'Grain sorghum,Sorghum-sudangrass,Sudangrass,Pearl millet,Foxtail millet,Sweet sorghum', pea: 'Field pea,Lentil,Chickpea,Faba bean (broad bean),Lupin,Vetch (harvested),Grass pea,Fenugreek,Green pea', canola: 'Winter canola (rapeseed),Spring canola,Mustard (winter),Camelina,Turnip rape,Crambe,Radish (seed)', alfalfa: 'Alfalfa,Lucerne,Red clover,White clover,Sainfoin,Grass-clover ley,Timothy hay,Ryegrass ley,Orchardgrass hay,Pasture,Miscanthus,Switchgrass', fallow: 'Fallow (no crop),Bare fallow,Set-aside' }; const out = []; for (const k in L) L[k].split(',').forEach(n => out.push({ n, k })); return out; })();
+  const libName = n => CROPLIB.find(x => x.n.toLowerCase() === (n || '').trim().toLowerCase());
+  { E.rotLabel = rot => rot.map(r => (r.as || C[r.c].short) + (r.cv ? ' + ' + CV[r.cv].short : '')).join(', then '); }
   const CORDER = ['wheat', 'sunflower', 'corn', 'soy', 'canola', 'oats', 'pea', 'sorghum', 'alfalfa', 'fallow'];
   const SOILTXT = { sand: 'Over 85% sand. Low water-holding capacity, fast drainage; drought stress comes early and nutrients leach.', sandy_loam: 'Mostly sand with some silt and clay. Drains well, moderate water-holding capacity.', loam: 'Balanced sand, silt and clay. Good structure and water-holding capacity.', silt_loam: 'Over 50% silt. Holds plenty of water, but crusts and erodes easily when bare.', clay_loam: '27 to 40% clay. High water-holding capacity, slow drainage, compacts if worked wet.', clay: 'Over 40% clay. Stores the most water but drains poorly and compacts; narrow working window.' };
   const MEANS = {
@@ -226,7 +230,7 @@
   function restore() {
     let v = fromLink(); if (!v) { try { v = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
     if (!v || !v.done || !isFinite(v.lat) || !isFinite(v.lon) || Math.abs(v.lat) > 70 || Math.abs(v.lon) > 180 || !Array.isArray(v.rot) || !v.rot.length || v.rot.length > 6 || v.rot.some(r => !r || !C[r.c])) return null;
-    S.rot = v.rot.map(r => ({ c: r.c, cv: CV[r.cv] ? r.cv : null }));
+    S.rot = v.rot.filter(r => C[r.c]).map(r => ({ c: r.c, cv: CV[r.cv] ? r.cv : null, as: r.as || null }));
     if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp', 'area', 'fw', 'fl', 'fN', 'fS', 'fE', 'fW', 'poly', 'polyAt', 'stockOn', 'stockType', 'stockN', 'maxDrop', 'mY', 'mP', 'mC'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
     S.irrigated = !!v.irrigated; S.livestock = !!v.livestock; S.exclude = new Set((Array.isArray(v.exclude) ? v.exclude : []).filter(k => C[k] || CV[k]));
     DIMS.forEach(d => { const w = v.weights && v.weights[d[0]]; if (w >= 0 && w <= 5) S.weights[d[0]] = Math.round(w); $('w_' + d[0]).value = S.weights[d[0]]; $('w_v' + d[0]).textContent = LEVEL[S.weights[d[0]]]; });
@@ -302,7 +306,9 @@
     R += '<div class="place">' + esc(S.name) + ', ' + Math.abs(S.lat).toFixed(2) + '°' + (S.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(S.lon).toFixed(2) + '°' + (S.lon < 0 ? 'W' : 'E') + '. ' + E.SOILS[S.soil].name + ', ' + E.TILLAGE[S.till].name.toLowerCase() + '.</div>';
     R += '<h1>' + (!best ? 'We couldn’t build any other rotations from your choices' : better ? 'Best match for you: ' + esc(best.name.charAt(0).toLowerCase() + best.name.slice(1)) : 'Your rotation is already about as good as anything we tried') + '</h1>';
     if (best) {
-      R += '<div class="vs"><div class="win"><span class="tag">' + (best.match + 0.5 < A.current.match ? 'Closest alternative' : 'Best match') + '</span><span class="row2"><span class="n">' + r0(best.match) + '<small>/100</small></span><span class="l">' + esc(E.rotLabel(best.rot)) + '</span></span></div><div class="nowc"><span class="tag">What you grow now</span><span class="row2"><span class="n">' + r0(A.current.match) + '<small>/100</small></span><span class="l">' + esc(E.rotLabel(A.current.rot)) + '</span></span></div></div><p class="small muted">Scores out of 100, weighted by your priorities' + (A.acc && Object.keys(A.acc).length ? ' and adjusted for what you can take on' : '') + '.</p>';
+      { const cm = r0(A.current.match), bm = r0(best.match), dd = bm - cm, alt = best.match + 0.5 < A.current.match ? 'Closest alternative' : 'Best match';
+      R += '<div class="vs2"><div class="side now"><span class="tag">What you grow now</span><span class="n">' + cm + '</span><span class="l">' + esc(E.rotLabel(A.current.rot)) + '</span></div><div class="mid ' + (dd > 0 ? 'pos' : dd < 0 ? 'neg' : 'eq') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg><span>' + (dd > 0 ? '+' : '') + dd + '</span></div><div class="side alt"><span class="tag">' + alt + '</span><span class="n">' + bm + '</span><span class="l">' + esc(E.rotLabel(best.rot)) + '</span></div></div>'; }
+      R += '<p class="small muted">Scores out of 100, weighted by your priorities' + (A.acc && Object.keys(A.acc).length ? ' and adjusted for what you can take on' : '') + '.</p>';
       if (A.cons && A.cons.length) R += '<div class="note"><h4>Applied from your notes</h4><ul>' + A.cons.map(c => '<li><b>' + esc(c.tag) + '.</b> ' + esc(c.why) + '</li>').join('') + '</ul></div>';
       if (A.plan) R += '<div class="plan"><div><span class="tag">Years 1 to ' + A.plan.after + '</span><b>' + esc(A.plan.first.name) + '</b><small>' + esc(E.rotLabel(A.plan.first.rot)) + '</small></div><div><span class="tag">From year ' + (A.plan.after + 1) + '</span><b>' + esc(A.plan.then.name) + '</b><small>' + esc(E.rotLabel(A.plan.then.rot)) + '</small></div></div>' + (A.plan.first === A.plan.then ? '<p class="small muted">The same option fits both phases.</p>' : '');
       const cm = A.current.m, bm2 = best.m, hot = cl.yearTypes && cl.yearTypes.types.find(t => t.name.indexOf('Hot') === 0);
@@ -395,14 +401,22 @@
     return '<p class="fine"><b style="color:#fff">Satellite check.</b> The top strips are greenness measured by NASA\'s MODIS instrument on a 250 m square at your point. ' + parts.join(' ') + ' A poor match can mean our dates are off for your area, that something else was grown that year, or that the square covers several fields.</p>';
   }
   function dumbbell(cur, best) {
-    return '<div class="sclist">' + DIMS.map(d => {
-      const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, k = dl > 2 ? 'up' : dl < -2 ? 'down' : 'same';
-      const verdict = k === 'up' ? 'Gets better' : k === 'down' ? 'Gets worse' : 'About the same';
-      return '<button type="button" class="scrow ' + k + '" data-term="s_' + d[0] + '"><span class="sct"><b>' + d[1] + '</b><span class="scv">' + verdict + (k === 'same' ? '' : ' by ' + Math.abs(dl)) + '</span></span>' +
-        '<span class="scbars"><span class="scb"><i class="now" style="width:' + a + '%"></i></span><span class="scn">now ' + a + '</span><span class="scb"><i class="alt" style="width:' + b + '%"></i></span><span class="scn">new ' + b + '</span></span>' +
-        '<span class="scmore">What is this? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span></button>';
-    }).join('') + '</div><p class="scnote">Scores go from 0 (bad) to 100 (very good).</p>';
+    const W = 600, L = 200, R = 70, pw = W - L - R, X = v => L + v / 100 * pw, RH = 56; let g = '', y = 30;
+    [0, 50, 100].forEach(v => { g += '<text x="' + X(v) + '" y="12" text-anchor="middle" font-size="12.5" fill="' + COL.muted + '">' + v + '</text>'; });
+    for (const d of DIMS) {
+      const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, c = dl > 2 ? '#8FD694' : dl < -2 ? '#F2907E' : '#C9C9BE', vt = dl > 2 ? 'Better by ' + dl : dl < -2 ? 'Worse by ' + -dl : 'About the same';
+      g += '<g class="drow" data-term="s_' + d[0] + '" tabindex="0" role="button" aria-label="' + esc(d[1] + ': ' + vt + '. Tap to learn more') + '"><rect class="dbg" x="-8" y="' + (y - 22) + '" width="' + (W + 16) + '" height="' + (RH - 6) + '" rx="12"/>';
+      g += '<text x="4" y="' + (y + 0) + '" font-size="16" font-weight="600" fill="' + COL.ink + '">' + d[1] + '</text><text x="4" y="' + (y + 19) + '" font-size="13.5" font-weight="700" fill="' + c + '">' + vt + '</text>';
+      g += '<line x1="' + X(0) + '" x2="' + X(100) + '" y1="' + (y + 4) + '" y2="' + (y + 4) + '" stroke="rgba(255,255,255,.12)" stroke-width="8" stroke-linecap="round"/>';
+      g += '<line x1="' + X(Math.min(a, b)) + '" x2="' + X(Math.max(a, b)) + '" y1="' + (y + 4) + '" y2="' + (y + 4) + '" stroke="' + c + '" stroke-width="8" stroke-linecap="round" opacity=".45"/>';
+      g += '<circle cx="' + X(a) + '" cy="' + (y + 4) + '" r="7" fill="' + COL.panel + '" stroke="#C9C9BE" stroke-width="2.5"/><circle cx="' + X(b) + '" cy="' + (y + 4) + '" r="8" fill="' + c + '"/>';
+      g += '<text x="' + (X(b)) + '" y="' + (y - 9) + '" text-anchor="middle" font-size="12.5" font-weight="700" fill="' + c + '">' + b + '</text>' + (Math.abs(dl) > 6 ? '<text x="' + X(a) + '" y="' + (y + 25) + '" text-anchor="middle" font-size="12" fill="' + COL.muted + '">' + a + '</text>' : '');
+      g += '<text x="' + (W - 2) + '" y="' + (y + 9) + '" text-anchor="end" font-size="13.5" font-weight="700" fill="#8FD694">More ›</text></g>';
+      y += RH;
+    }
+    return '<div class="legend dleg"><span><i class="lnow"></i>what you grow now</span><span><i class="lnew"></i>if you switch</span><span class="muted">Tap a row to learn more</span></div><svg class="dumb" viewBox="-8 0 ' + (W + 16) + ' ' + (y - 16) + '" role="img" aria-label="How each score changes if you switch">' + g + '</svg><p class="scnote">0 is bad, 100 is very good.</p>';
   }
+
 
   function terrainHTML(T) {
     const c = T.n > 6 ? 26 : 46, col = v => v > 6 ? '#F2907E' : v >= 2 ? '#F2A541' : '#3E8E5A'; let g = '';
@@ -488,12 +502,14 @@
 
   function renderRot() {
     const cropOpts = id => CORDER.map(k => '<option value="' + k + '"' + (k === id ? ' selected' : '') + '>' + C[k].name + '</option>').join('');
+    if (!$('croplist')) document.body.insertAdjacentHTML('beforeend', '<datalist id="croplist">' + CROPLIB.map(x => '<option value="' + esc(x.n) + '">').join('') + '</datalist>');
     $('rot').innerHTML = S.rot.map((r, i) => {
       const noCv = C[r.c].kind === 'fallow' || C[r.c].kind === 'perennial';
-      return '<div class="rotrow"><span class="yr">Year ' + (i + 1) + '</span><select id="rc' + i + '" aria-label="Crop in year ' + (i + 1) + '">' + cropOpts(r.c) + '</select><select id="rv' + i + '" aria-label="Cover crop after year ' + (i + 1) + '"' + (noCv ? ' disabled' : '') + '><option value="">No cover crop</option>' + Object.keys(CV).map(k => '<option value="' + k + '"' + (k === r.cv ? ' selected' : '') + '>+ ' + CV[k].short + '</option>').join('') + '</select>' + (S.rot.length > 1 ? '<button id="rx' + i + '" aria-label="Remove year ' + (i + 1) + '" title="Remove this year">×</button>' : '<span></span>') + '</div>';
+      return '<div class="rotrow"><span class="yr">Year ' + (i + 1) + '</span><span class="cropin"><input id="rc' + i + '" list="croplist" autocomplete="off" aria-label="Crop in year ' + (i + 1) + '" value="' + esc(r.as || C[r.c].name) + '">' + (r.as ? '<small>modelled like ' + esc(C[r.c].short.toLowerCase()) + '</small>' : '') + '</span><select id="rv' + i + '" aria-label="Cover crop after year ' + (i + 1) + '"' + (noCv ? ' disabled' : '') + '><option value="">No cover crop</option>' + Object.keys(CV).map(k => '<option value="' + k + '"' + (k === r.cv ? ' selected' : '') + '>+ ' + CV[k].short + '</option>').join('') + '</select>' + (S.rot.length > 1 ? '<button id="rx' + i + '" aria-label="Remove year ' + (i + 1) + '" title="Remove this year">×</button>' : '<span></span>') + '</div>';
     }).join('');
     S.rot.forEach((r, i) => {
-      $('rc' + i).onchange = e => { r.c = e.target.value; if (C[r.c].kind === 'fallow' || C[r.c].kind === 'perennial') r.cv = null; renderRot(); recompute(); };
+      $('rc' + i).onfocus = e => e.target.select();
+      $('rc' + i).onchange = e => { const v = e.target.value.trim().toLowerCase(), f = libName(v) || (v && CROPLIB.find(x => x.n.toLowerCase().startsWith(v))) || (v && CROPLIB.find(x => x.n.toLowerCase().includes(v))); if (!f) { e.target.value = r.as || C[r.c].name; e.target.classList.add('bad'); setTimeout(() => e.target.classList.remove('bad'), 1200); return; } r.c = f.k; r.as = f.n === C[f.k].name ? null : f.n; if (C[r.c].kind === 'fallow' || C[r.c].kind === 'perennial') r.cv = null; renderRot(); recompute(); };
       $('rv' + i).onchange = e => { r.cv = e.target.value || null; recompute(); };
       if ($('rx' + i)) $('rx' + i).onclick = () => { S.rot.splice(i, 1); renderRot(); recompute(); };
     });
