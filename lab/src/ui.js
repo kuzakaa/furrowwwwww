@@ -305,14 +305,28 @@
         const covOK = id => !inp.exclude.has(id);
         st.list = []; L.forEach(r => { st.list.push(r.map(c => ({ c, cv: null }))); if (covOK('rye') || covOK('legmix')) st.list.push(r.map(c => ({ c, cv: (C[c].kind === 'summer' || C[c].kind === 'winter') ? (C[c].kind === 'winter' && covOK('legmix') ? 'legmix' : covOK('rye') ? 'rye' : 'legmix') : null }))); });
       }
-      if (!st.done && !st.busy) { st.busy = true; const cl = A.cl, cal = A.cal, inp2 = Object.assign({}, inp); const step = () => { const t0 = performance.now(); while (st.i < st.list.length && performance.now() - t0 < 25) { const rot = st.list[st.i++]; try { const r = E.simulate(rot, cl, cal, inp2); st.res.push({ rot, sim: r }); } catch (e) {} } if (st.i < st.list.length) { const pg = $('srchp'); if (pg) pg.textContent = 'Checking every rotation: ' + Math.round(st.i / st.list.length * 100) + '% of ' + st.list.length.toLocaleString('en') + ' done'; setTimeout(step, 0); } else if (!st.refine) { // phase 2: for the most promising crop orders, try every on/off pattern of cover crops
+      if (!st.done && !st.busy) { st.busy = true; const cl = A.cl, cal = A.cal, inp2 = Object.assign({}, inp);
+        const prog = () => { const pg = $('srchp'); if (pg) pg.textContent = 'Checking every rotation: ' + Math.round(st.i / st.list.length * 100) + '% of ' + st.list.length.toLocaleString('en') + ' done'; };
+        const phase2 = () => {
             const pick = c => (C[c].kind === 'winter' && !inp2.exclude.has('legmix')) ? 'legmix' : !inp2.exclude.has('rye') ? 'rye' : !inp2.exclude.has('legmix') ? 'legmix' : null;
             const seenR = new Set(st.res.map(o => JSON.stringify(o.rot))), seq = new Map();
             st.res.forEach(o => { const k = o.rot.map(r => r.c).join(','), m = E.match(o.sim.sc, inp2.weights); if (!seq.has(k) || seq.get(k).m < m) seq.set(k, { m, crops: o.rot.map(r => r.c) }); });
             const top = [...seq.values()].sort((a, b) => b.m - a.m).slice(0, 150); st.refine = [];
             top.forEach(t => { const n = t.crops.length; for (let mask = 0; mask < (1 << n); mask++) { const rot = t.crops.map((c, j) => ({ c, cv: (mask >> j) & 1 && (C[c].kind === 'summer' || C[c].kind === 'winter') ? pick(c) : null })); const k = JSON.stringify(rot); if (!seenR.has(k)) { seenR.add(k); st.refine.push(rot); } } });
-            st.list = st.list.concat(st.refine); setTimeout(step, 0);
-          } else { st.done = true; st.busy = false; if (window.__searchDone) window.__searchDone(); } }; setTimeout(step, 0); }
+            return st.refine;
+        };
+        const finish = () => { st.done = true; st.busy = false; if (st.pool) st.pool.forEach(w => w.terminate()); st.pool = null; if (window.__searchDone) window.__searchDone(); };
+        let pool = null;
+        try { const src = [...document.scripts].find(x => x.textContent.indexOf('G.Engine = API') >= 0); if (src && window.Worker) { const code = src.textContent + '\nlet D;onmessage=e=>{const m=e.data;if(m.init){D=m;return;}const out=m.rots.map(r=>{try{return Engine.simulate(r,D.cl,D.cal,D.inp)}catch(x){return null}});postMessage({id:m.id,out});};'; const url = URL.createObjectURL(new Blob([code], { type: 'text/javascript' })); const W = Math.max(2, Math.min(8, (navigator.hardwareConcurrency || 4) - 1)); pool = Array.from({ length: W }, () => { const w = new Worker(url); w.postMessage({ init: 1, cl, cal, inp: inp2 }); return w; }); st.pool = pool; } } catch (e) { pool = null; }
+        if (pool) {
+          let next = 0, busyN = 0, phase = 1;
+          const pump = () => { pool.forEach(w => { if (w._busy) return; if (next >= st.list.length) return; const from = next, to = Math.min(st.list.length, next + 120); next = to; w._busy = true; busyN++; w.onmessage = e => { const m = e.data; m.out.forEach((sim, j) => { if (sim) st.res.push({ rot: st.list[from + j], sim }); }); st.i += to - from; w._busy = false; busyN--; prog(); if (next < st.list.length) pump(); else if (!busyN) { if (phase === 1) { phase = 2; st.list = st.list.concat(phase2()); pump(); if (!busyN) finish(); } else finish(); } }; w.onerror = () => { w._busy = false; busyN--; }; w.postMessage({ id: from, rots: st.list.slice(from, to) }); }); };
+          pump();
+        } else {
+          const step = () => { const t0 = performance.now(); while (st.i < st.list.length && performance.now() - t0 < 25) { const rot = st.list[st.i++]; try { st.res.push({ rot, sim: E.simulate(rot, cl, cal, inp2) }); } catch (e) {} } if (st.i < st.list.length) { prog(); setTimeout(step, 0); } else if (!st.refine) { st.list = st.list.concat(phase2()); setTimeout(step, 0); } else finish(); };
+          setTimeout(step, 0);
+        }
+      }
       const key2 = x => JSON.stringify(x.rot.map(r => [r.c, r.cv || null]));
       const have = new Set(all.map(key2).concat([key2(A.current)]));
       const top = st.res.map(o => ({ o, m: E.match(o.sim.sc, inp.weights) })).sort((a, b) => b.m - a.m).slice(0, 8).filter(t => !have.has(key2({ rot: t.o.rot })));
