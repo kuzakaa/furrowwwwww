@@ -1845,8 +1845,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     return '<p class="fine"><b style="color:#fff">Satellite check.</b> The top strips are greenness measured by NASA\'s MODIS instrument on a 250 m square at your point. ' + parts.join(' ') + ' A poor match can mean our dates are off for your area, that something else was grown that year, or that the square covers several fields.</p>';
   }
   function dumbbell(cur, best) {
-    const W = 600, L = 200, R = 70, pw = W - L - R, X = v => L + v / 100 * pw, RH = 56; let g = '', y = 30;
-    [0, 50, 100].forEach(v => { g += '<text x="' + X(v) + '" y="12" text-anchor="middle" font-size="12.5" fill="' + COL.muted + '">' + v + '</text>'; });
+    const W = 600, L = 200, R = 70, pw = W - L - R, X = v => L + v / 100 * pw, RH = 56; let g = '', y = 26;
     for (const d of DIMS) {
       const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, c = dl > 2 ? '#8FD694' : dl < -2 ? '#F2907E' : '#C9C9BE', vt = dl > 2 ? 'Better by ' + dl : dl < -2 ? 'Worse by ' + -dl : 'About the same';
       g += '<g class="drow" data-term="s_' + d[0] + '" tabindex="0" role="button" aria-label="' + esc(d[1] + ': ' + vt + '. Tap to learn more') + '"><rect class="dbg" x="-8" y="' + (y - 22) + '" width="' + (W + 16) + '" height="' + (RH - 6) + '" rx="12"/>';
