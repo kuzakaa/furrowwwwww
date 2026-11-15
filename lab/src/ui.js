@@ -312,8 +312,8 @@
     R += '<div class="place">' + esc(S.name) + ', ' + Math.abs(S.lat).toFixed(2) + '°' + (S.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(S.lon).toFixed(2) + '°' + (S.lon < 0 ? 'W' : 'E') + '. ' + E.SOILS[S.soil].name + ', ' + E.TILLAGE[S.till].name.toLowerCase() + '.</div>';
     R += '<h1>' + (!best ? 'We couldn’t build any other rotations from your choices' : better ? 'Best match for you: ' + esc(best.name.charAt(0).toLowerCase() + best.name.slice(1)) : 'Your rotation is already about as good as anything we tried') + '</h1>';
     if (best) {
-      { const cm = r0(A.current.match), bm = r0(best.match), dd = bm - cm, alt = best.match + 0.5 < A.current.match ? 'Closest alternative' : 'Best match';
-      R += '<div class="vs2"><div class="side now"><span class="tag">What you grow now</span><span class="ring" style="--p:' + cm + '"><span class="n" data-v="' + cm + '">' + cm + '</span></span><span class="l">' + esc(E.rotLabel(A.current.rot)) + '</span></div><div class="mid ' + (dd > 0 ? 'pos' : dd < 0 ? 'neg' : 'eq') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg><span>' + (dd > 0 ? '+' : '') + dd + '</span></div><div class="side alt"><span class="tag">' + alt + '</span><span class="ring" style="--p:' + bm + '"><span class="n" data-v="' + bm + '">' + bm + '</span></span><span class="l">' + esc(E.rotLabel(best.rot)) + '</span></div></div>'; }
+      { const cm = r0(A.current.match), bm = r0(best.match), dd = bm - cm, _x = setTimeout(() => { RING.now = cm; RING.alt = bm; }, 0), alt = best.match + 0.5 < A.current.match ? 'Closest alternative' : 'Best match';
+      R += '<div class="vs2"><div class="side now"><span class="tag">What you grow now</span><span class="ring' + (RING.now !== cm ? ' anim' : '') + '" style="--p:' + cm + '"><span class="n"' + (RING.now !== cm ? ' data-v="' + cm + '"' : '') + '>' + cm + '</span></span><span class="l">' + esc(E.rotLabel(A.current.rot)) + '</span></div><div class="mid ' + (dd > 0 ? 'pos' : dd < 0 ? 'neg' : 'eq') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg><span>' + (dd > 0 ? '+' : '') + dd + '</span></div><div class="side alt"><span class="tag">' + alt + '</span><span class="ring' + (RING.alt !== bm ? ' anim' : '') + '" style="--p:' + bm + '"><span class="n"' + (RING.alt !== bm ? ' data-v="' + bm + '"' : '') + '>' + bm + '</span></span><span class="l">' + esc(E.rotLabel(best.rot)) + '</span></div></div>'; }
       R += '<p class="small muted">Scores out of 100, weighted by your priorities' + (A.acc && Object.keys(A.acc).length ? ' and adjusted for what you can take on' : '') + '.</p>';
       if (A.cons && A.cons.length) R += '<div class="note"><h4>Applied from your notes</h4><ul>' + A.cons.map(c => '<li><b>' + esc(c.tag) + '.</b> ' + esc(c.why) + '</li>').join('') + '</ul></div>';
       if (A.plan) R += '<div class="plan"><div><span class="tag">Years 1 to ' + A.plan.after + '</span><b>' + esc(A.plan.first.name) + '</b><small>' + esc(E.rotLabel(A.plan.first.rot)) + '</small></div><div><span class="tag">From year ' + (A.plan.after + 1) + '</span><b>' + esc(A.plan.then.name) + '</b><small>' + esc(E.rotLabel(A.plan.then.rot)) + '</small></div></div>' + (A.plan.first === A.plan.then ? '<p class="small muted">The same option fits both phases.</p>' : '');
@@ -406,8 +406,9 @@
     });
     return '<p class="fine"><b style="color:#fff">Satellite check.</b> The top strips are greenness measured by NASA\'s MODIS instrument on a 250 m square at your point. ' + parts.join(' ') + ' A poor match can mean our dates are off for your area, that something else was grown that year, or that the square covers several fields.</p>';
   }
+  const RING = {};
   function countUp() { document.querySelectorAll('.vs2 .n[data-v]:not(.done)').forEach(el => { el.classList.add('done'); const v = +el.dataset.v, t0 = performance.now(), D = 900; const f = t => { const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(v * e); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }); }
-  setInterval(countUp, 400);
+  new MutationObserver(countUp).observe(document.body, { childList: true, subtree: true });
   function dumbbell(cur, best) {
     const W = 600, L = 200, R = 70, pw = W - L - R, X = v => L + v / 100 * pw, RH = 56; let g = '', y = 26;
     for (const d of DIMS) {
