@@ -461,6 +461,7 @@
         h += '<div class="mr"><span><b>' + (i + 1) + '</b> ' + esc(C[m.c].short) + (m.cv ? ' <em>+ ' + esc(CV[m.cv].short) + '</em>' : '') + '</span><span>' + (e.y ? (e.y * m.mean.yf).toFixed(1) + ' ' + e.unit + ' × €' + e.price : '-') + '</span><span>' + eur(m.mean.rev) + '</span><span title="' + esc(tip) + '">' + eur(m.mean.tot) + '</span><span class="' + (m.mean.margin < 0 ? 'neg' : 'pos') + '">' + eur(m.mean.margin) + '</span></div>'; });
       h += '</div><div class="mstats"><div><span>Average year</span><b>' + eur(avg) + '</b><small>per ha</small></div><div><span>Bad year (1 in 10)</span><b class="' + (r.p10 < 0 ? 'neg' : '') + '">' + eur(r.p10) + '</b><small>per ha</small></div><div><span>Good year (1 in 10)</span><b>' + eur(r.p90) + '</b><small>per ha</small></div><div><span>Chance of a loss</span><b>' + Math.round(r.loss * 100) + '%</b><small>of years</small></div></div>';
       if (S.area) h += '<p class="small muted">On your ' + S.area + ' ha that is about ' + eur(avg * S.area) + ' a year in an average year.</p>';
+      h += '</div>';
       return { h, avg };
     };
     const cur = block(S.rot, 'What you grow now'), bb = best && best.rot ? block(best.rot, 'Best option') : null;
