@@ -265,7 +265,7 @@
     return n;
   }
   const ACCEPT = {
-    equipment: { q: 'Buying or renting new machinery', lo: 'Not possible now', hi: 'No problem' },
+    equipment: { q: 'Money you can spend on machinery (buying or renting)', lo: 'Nothing', hi: 'Over €80,000', steps: ['Nothing', 'Up to €2,000', 'Up to €10,000', 'Up to €30,000', 'Up to €80,000', 'Over €80,000'] },
     newCrop: { q: 'Learning to grow a crop you haven’t grown', lo: 'Rather not', hi: 'Happy to' },
     newBuyer: { q: 'Finding a new buyer for a new crop', lo: 'No buyer nearby', hi: 'Easy for me' },
     seedCost: { q: 'Paying for cover crop seed', lo: 'Can’t afford it', hi: 'Fine' },
