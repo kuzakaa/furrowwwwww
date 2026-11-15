@@ -78,15 +78,9 @@
   </details>
   <details class="box" open data-wiz="pri"><summary>Your priorities</summary>
     <input type="checkbox" id="later" checked hidden>
-    <h4 class="phead">Short term <span id="stlab">(next 3 years)</span></h4>
-    <p class="small muted">What matters most to you in the next few years.</p>
-    <div id="weights"></div>
-    <div class="slider phz"><label for="years">Short term lasts</label><input id="years" type="range" min="1" max="8" step="1" value="3"><span class="num" id="yearsv">3 yrs</span></div>
-    <div id="laterbox">
-      <h4 class="phead">Long term <span>(after that)</span></h4>
-      <p class="small muted">What you want the farm to be good at in the long run.</p>
-      <div id="weights2"></div>
-    </div>
+    <div class="plen"><label for="years">Short term lasts</label><input id="years" type="range" min="1" max="8" step="1" value="3"><span id="yearsv">3 years</span></div>
+    <div class="pgrid" id="weights"></div>
+    <div id="laterbox" hidden><div id="weights2"></div></div>
   </details>
   <details class="box" data-wiz="acc"><summary>What you can take on</summary>
     <div class="wrow money-row"><div class="wh"><label for="maxdrop">Largest drop from your current income you can accept</label><span class="lvl" id="maxdropv">15% a year</span></div><input id="maxdrop" type="range" min="0" max="40" step="1" value="40"><div class="ends"><span>0%, no drop at all</span><span>No limit</span></div>

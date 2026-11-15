@@ -246,7 +246,7 @@
     if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp', 'area', 'fw', 'fl', 'fN', 'fS', 'fE', 'fW', 'poly', 'polyAt', 'stockOn', 'stockType', 'stockN', 'maxDrop', 'dropYears', 'known', 'mY', 'mP', 'mC'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
     S.irrigated = !!v.irrigated; S.livestock = !!v.livestock; S.exclude = new Set((Array.isArray(v.exclude) ? v.exclude : []).filter(k => C[k] || CV[k])); S.exReason = v.exReason && typeof v.exReason === 'object' ? v.exReason : {};
     DIMS.forEach(d => { const w = v.weights && v.weights[d[0]]; if (w >= 0 && w <= 5) S.weights[d[0]] = Math.round(w); $('w_' + d[0]).value = S.weights[d[0]]; $('w_v' + d[0]).textContent = LEVEL[S.weights[d[0]]]; });
-    $('soil').value = S.soil; $('till').value = S.till; $('irrig').checked = S.irrigated; if (window.syncExtra) window.syncExtra(); S.later = true; $('later').checked = true; $('laterbox').hidden = false; $('years').value = S.years; $('yearsv').textContent = S.years + ' yrs'; $('free').value = S.text || ''; showUnd(); if (window.syncChips) window.syncChips(); DIMS.forEach(d => { $('w2_' + d[0]).value = S.w2[d[0]]; $('w2_v' + d[0]).textContent = LEVEL[S.w2[d[0]]]; });
+    $('soil').value = S.soil; $('till').value = S.till; $('irrig').checked = S.irrigated; if (window.syncExtra) window.syncExtra(); S.later = true; $('later').checked = true; $('laterbox').hidden = true; $('years').value = S.years; $('yearsv').textContent = S.years + (S.years === 1 ? ' year' : ' years'); if ($('stlab')) $('stlab').textContent = 'Next ' + S.years + (S.years === 1 ? ' year' : ' years'); $('free').value = S.text || ''; showUnd(); if (window.syncChips) window.syncChips(); DIMS.forEach(d => { $('w2_' + d[0]).value = S.w2[d[0]]; $('w2_v' + d[0]).textContent = LEVEL[S.w2[d[0]]]; });
     document.querySelectorAll('#excl .chip').forEach(b => b.setAttribute('aria-pressed', S.exclude.has(b.dataset.id) ? 'true' : 'false')); exReasons(); knownUI();
     renderRot(); return v;
   }
@@ -351,6 +351,13 @@
       R += '<p class="small muted">Scores out of 100, weighted by your priorities' + (A.acc && Object.keys(A.acc).length ? ' and adjusted for what you can take on' : '') + '.</p>';
       if (A.cons && A.cons.length) R += '<div class="note"><h4>Applied from your notes</h4><ul>' + A.cons.map(c => '<li><b>' + esc(c.tag) + '.</b> ' + esc(c.why) + '</li>').join('') + '</ul></div>';
       if (A.plan) R += '<div class="plan"><div><span class="tag">Years 1 to ' + A.plan.after + '</span><b>' + esc(A.plan.first.name) + '</b><small>' + esc(E.rotLabel(A.plan.first.rot)) + '</small></div><div><span class="tag">From year ' + (A.plan.after + 1) + '</span><b>' + esc(A.plan.then.name) + '</b><small>' + esc(E.rotLabel(A.plan.then.rot)) + '</small></div></div>' + (A.plan.first === A.plan.then ? '<p class="small muted">The same option fits both phases.</p>' : '');
+      const gains = (from, to) => { const out = [], d = (x, y) => Math.round(y) - Math.round(x);
+        DIMS.forEach(k => { const v = d(from.sc[k[0]], to.sc[k[0]]); if (Math.abs(v) >= 2) out.push([Math.abs(v), '<li class="' + (v > 0 ? 'up' : 'dn') + '"><b>' + k[1] + '</b> ' + (v > 0 ? '+' : '−') + Math.abs(v) + ' <span>(' + Math.round(from.sc[k[0]]) + ' to ' + Math.round(to.sc[k[0]]) + ')</span></li>']); });
+        const bd = d(from.m.bare, to.m.bare); if (Math.abs(bd) >= 10) out.push([Math.abs(bd) / 4, '<li class="' + (bd < 0 ? 'up' : 'dn') + '"><b>Bare soil</b> ' + Math.round(to.m.bare) + ' days a year <span>(was ' + Math.round(from.m.bare) + ')</span></li>']);
+        const nf = d(from.m.nfix, to.m.nfix); if (Math.abs(nf) >= 5) out.push([Math.abs(nf) / 3, '<li class="' + (nf > 0 ? 'up' : 'dn') + '"><b>Nitrogen from legumes</b> about ' + Math.round(to.m.nfix) + ' kg/ha a year <span>(was ' + Math.round(from.m.nfix) + ')</span></li>']);
+        return out.sort((x, y) => y[0] - x[0]).slice(0, 4).map(x => x[1]).join(''); };
+      if (A.plan && !A.plan.same && !A.plan.keep) { const pl = A.plan, g1 = gains(A.current, pl.first), g2 = gains(pl.first, pl.then);
+        R += '<div class="steps2"><div><h4>By the end of year ' + pl.after + '</h4><p class="small muted">Compared with what you grow now</p><ul>' + (g1 || '<li>About the same as now</li>') + '</ul></div><div><h4>Then, from year ' + (pl.after + 1) + '</h4><p class="small muted">Compared with years 1 to ' + pl.after + '</p><ul>' + (g2 || '<li>About the same</li>') + '</ul></div></div>'; }
       const cm = A.current.m, bm2 = best.m, hot = cl.yearTypes && cl.yearTypes.types.find(t => t.name.indexOf('Hot') === 0);
       const rh = q => hot ? E.mean(hot.idx.map(i => q.m.relByYear[i])) : q.m.relMean;
       const kp = (a, b, unit, main, sub, go) => '<div class="kp" data-go="' + go + '" title="Tap to see the chart"><div class="big2 ' + (b < a ? 'good' : b > a ? 'bad' : 'same') + '"><s>' + a + unit + '</s><i>→</i><em>' + b + unit + '</em></div><p>' + main + '<span>' + sub + '</span></p></div>';
@@ -1072,14 +1079,15 @@
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, manual); else manual();
     });
     const wrow = (pre, d, v) => '<div class="wrow wc"><div class="wh"><label for="' + pre + d[0] + '">' + d[1] + ' <button type="button" class="qm" data-term="s_' + d[0] + '" aria-label="What does ' + esc(d[1]) + ' mean?">?</button></label><span class="lvl" id="' + pre + 'v' + d[0] + '">' + LEVEL[v] + '</span></div><input id="' + pre + d[0] + '" type="range" min="0" max="5" step="1" value="' + v + '"></div>';
-    $('weights').innerHTML = DIMS.map(d => wrow('w_', d, S.weights[d[0]])).join('');
-    $('weights2').innerHTML = DIMS.map(d => wrow('w2_', d, S.w2[d[0]])).join('');
+    const pcell = (pre, d, v) => '<div class="pc"><input id="' + pre + d[0] + '" type="range" min="0" max="5" step="1" value="' + v + '" aria-label="' + esc(d[1]) + (pre === 'w_' ? ', short term' : ', long term') + '"><span class="lvl" id="' + pre + 'v' + d[0] + '">' + LEVEL[v] + '</span></div>';
+    $('weights').innerHTML = '<div class="ph"><span></span><span id="stlab">Next 3 years</span><span>After that</span></div>' + DIMS.map(d => '<div class="pr"><span class="pn">' + d[1] + ' <button type="button" class="qm" data-term="s_' + d[0] + '" aria-label="What does ' + esc(d[1]) + ' mean?">?</button></span>' + pcell('w_', d, S.weights[d[0]]) + pcell('w2_', d, S.w2[d[0]]) + '</div>').join('');
+    if ($('stlab')) $('stlab').textContent = 'Next ' + S.years + (S.years === 1 ? ' year' : ' years');
     DIMS.forEach(d => {
       $('w_' + d[0]).oninput = e => { S.weights[d[0]] = +e.target.value; $('w_v' + d[0]).textContent = LEVEL[+e.target.value]; recompute(); };
       $('w2_' + d[0]).oninput = e => { S.w2[d[0]] = +e.target.value; $('w2_v' + d[0]).textContent = LEVEL[+e.target.value]; recompute(); };
     });
     $('later').onchange = e => { S.later = e.target.checked; $('laterbox').hidden = !S.later; recompute(); };
-    $('years').oninput = e => { S.years = +e.target.value; $('yearsv').textContent = S.years + ' yrs'; if ($('stlab')) $('stlab').textContent = '(next ' + S.years + (S.years === 1 ? ' year)' : ' years)'); recompute(); };
+    $('years').oninput = e => { S.years = +e.target.value; $('yearsv').textContent = S.years + (S.years === 1 ? ' year' : ' years'); if ($('stlab')) $('stlab').textContent = 'Next ' + S.years + (S.years === 1 ? ' year' : ' years'); recompute(); };
     const LIM = ['Diesel is short or expensive', 'No money for new machinery', 'No no-till drill', 'Not enough workers or time', 'Little grain storage', 'No buyer nearby for new crops', 'Export prices or tariffs are unstable', 'Someone has a pollen allergy', 'The land is rented', 'We keep livestock', 'No irrigation, water is the worry', 'We farm organically'];
     $('limchips').innerHTML = LIM.map(l => '<button class="chip" aria-pressed="false">' + l + '</button>').join('');
     const syncChips = () => document.querySelectorAll('#limchips .chip').forEach(b => b.setAttribute('aria-pressed', String(S.text.toLowerCase().indexOf(b.textContent.toLowerCase()) >= 0)));
