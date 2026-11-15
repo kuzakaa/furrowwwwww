@@ -298,9 +298,15 @@
     });
     all.sort((a, b) => (a.adj && a.adj.blocked.length ? 1 : 0) - (b.adj && b.adj.blocked.length ? 1 : 0) || b.match - a.match);
     const ok = all.filter(x => !(x.adj && x.adj.blocked.length));
+    { const lk = S.lat.toFixed(3) + ',' + S.lon.toFixed(3), name = x => E.rotLabel(x.rot) + '|' + (x.till || ''), pool = ok.length ? ok : all;
+      pool.sort((a, b) => b.match - a.match || (name(a) < name(b) ? -1 : 1));
+      const prev = STICK[lk] && pool.find(x => name(x) === STICK[lk]);
+      if (prev && pool[0] !== prev && pool[0].match - prev.match < 1) { pool.splice(pool.indexOf(prev), 1); pool.unshift(prev); }
+      if (pool[0]) STICK[lk] = name(pool[0]); if (ok.length) { const rest = all.filter(x => ok.indexOf(x) < 0); all.length = 0; all.push(...ok, ...rest); } }
     A.alts = (ok.length ? ok : all).slice(0, 3); A.others = all.filter(x => A.alts.indexOf(x) < 0); A.cons = cons; A.acc = acc;
     if (S.later && ok.length) { const by = ww => ok.slice().sort((a, b) => (E.match(b.sc, ww) - (b.adj ? b.adj.pen : 0)) - (E.match(a.sc, ww) - (a.adj ? a.adj.pen : 0)))[0]; A.plan = { first: by(inp.weights), then: by(S.w2), after: S.years }; } else A.plan = null;
   }
+  const STICK = {};
   function render() {
     const A = LAST; if (!A) return;
     const cl = A.cl, all = [A.current].concat(A.alts), best = A.alts[0], better = best && best.match > A.current.match + 1;
