@@ -870,3 +870,12 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .mwhy{font-size:13.5px;color:var(--muted);margin:8px 0 4px;line-height:1.45}
 .exwhy{margin-top:12px}.exhead{font-size:15px;margin:0 0 8px}.exhead .muted{display:block;font-size:13px;margin-top:2px}
 .exrow{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin:6px 0}.exrow b{font-size:14.5px}.exrow select{width:100%}
+.vs2 .side{align-items:flex-start}
+.vs2 .ring{--c:#E8EFE6;position:relative;width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),rgba(255,255,255,.1) 0);animation:ringIn 1s cubic-bezier(.2,.8,.2,1) both;margin:4px 0 2px}
+.vs2 .ring::before{content:"";position:absolute;inset:8px;border-radius:50%;background:#183a28}
+.vs2 .alt .ring{--c:#8FD694;box-shadow:0 0 24px rgba(143,214,148,.35)}
+.vs2 .alt .ring::before{background:#1f4a31}
+.vs2 .ring .n{position:relative;font-size:36px!important;letter-spacing:-1px}
+.vs2 .ring .n::after{content:none}
+@keyframes ringIn{from{transform:scale(.6);opacity:0}}
+.vs2 .mid span{font-size:22px}
