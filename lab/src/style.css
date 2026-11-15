@@ -1060,3 +1060,9 @@ body:not(.wiz) .pgrid .ph span:first-child{display:none}
 body:not(.wiz) .plen{grid-template-columns:auto minmax(0,1fr) auto;padding:7px 10px;gap:10px}
 @media (max-width:700px){.pgrid .ph,.pgrid .pr{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.pgrid .pn{grid-column:1 / -1}.pgrid .ph span:first-child{display:none}}
 .steps2{gap:10px;margin:0 0 12px}.steps2>div{padding:10px 12px}.steps2 h4{font-size:14.5px}.steps2 p{font-size:12.5px;margin:1px 0 6px}.steps2 li{font-size:13.5px;padding:3px 0}.steps2 li span{font-size:12px}
+
+.res .conf.yr .yrs{grid-column:1 / -1;display:grid;grid-template-columns:repeat(25,minmax(0,1fr));gap:3px;margin-top:10px}
+.res .conf.yr .yrs i{display:block;height:26px;border-radius:5px;position:relative;cursor:default}
+.res .conf.yr .yrs i b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:10.5px;font-weight:600;color:rgba(10,30,18,.75);font-variant-numeric:tabular-nums}
+.res .conf.yr .yrs i.w{background:#8fd694}.res .conf.yr .yrs i.l{background:#ff8a7a}.res .conf.yr .yrs i.t{background:rgba(220,245,225,.3)}
+.res .conf.yr .cn small{white-space:nowrap}
