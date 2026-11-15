@@ -881,3 +881,5 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .vs2 .mid span{font-size:22px}
 .vs2 .ring.anim{animation:ringIn .8s cubic-bezier(.2,.8,.2,1) both}
 .mapbox #play{align-self:flex-end!important}
+.dleg .lnow2{width:3px!important;height:16px!important;border-radius:2px!important;background:#F5FAF2;vertical-align:-3px!important}
+.dleg .lnew2{width:22px!important;height:10px!important;border-radius:2px!important;background:linear-gradient(90deg,#F2907E 50%,#8FD694 50%)}

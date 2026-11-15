@@ -415,16 +415,18 @@
       const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, c = dl > 2 ? '#8FD694' : dl < -2 ? '#F2907E' : '#C9C9BE', vt = dl > 2 ? 'Better by ' + dl : dl < -2 ? 'Worse by ' + -dl : 'About the same';
       g += '<g class="drow" data-term="s_' + d[0] + '" tabindex="0" role="button" aria-label="' + esc(d[1] + ': ' + vt + '. Tap to learn more') + '"><rect class="dbg" x="-8" y="' + (y - 22) + '" width="' + (W + 16) + '" height="' + (RH - 6) + '" rx="12"/>';
       g += '<text x="4" y="' + (y + 0) + '" font-size="16" font-weight="600" fill="' + COL.ink + '">' + d[1] + '</text><text x="4" y="' + (y + 19) + '" font-size="13.5" font-weight="700" fill="' + c + '">' + vt + '</text>';
-      g += '<line x1="' + X(0) + '" x2="' + X(100) + '" y1="' + (y + 4) + '" y2="' + (y + 4) + '" stroke="rgba(255,255,255,.12)" stroke-width="8" stroke-linecap="round"/>';
-      g += '<line x1="' + X(Math.min(a, b)) + '" x2="' + X(Math.max(a, b)) + '" y1="' + (y + 4) + '" y2="' + (y + 4) + '" stroke="' + c + '" stroke-width="8" stroke-linecap="round" opacity=".45"/>';
-      g += '<circle cx="' + X(a) + '" cy="' + (y + 4) + '" r="7" fill="' + COL.panel + '" stroke="#C9C9BE" stroke-width="2.5"/><circle cx="' + X(b) + '" cy="' + (y + 4) + '" r="8" fill="' + c + '"/>';
+      const ty = y - 4, th = 16, lo = Math.min(a, b), hi = Math.max(a, b);
+      g += '<rect x="' + X(0) + '" y="' + ty + '" width="' + (X(100) - X(0)) + '" height="' + th + '" rx="8" fill="rgba(255,255,255,.08)"/>';
+      g += '<rect x="' + X(0) + '" y="' + ty + '" width="' + (X(lo) - X(0)) + '" height="' + th + '" rx="8" fill="rgba(201,201,190,.35)"/>';
+      if (hi > lo) g += '<rect x="' + (X(lo) - 6) + '" y="' + ty + '" width="' + (X(hi) - X(lo) + 6) + '" height="' + th + '" rx="0" fill="' + c + '"/>' + (b > a ? '<path d="M' + X(hi) + ' ' + ty + ' l7 ' + th / 2 + ' l-7 ' + th / 2 + 'z" fill="' + c + '"/>' : '<path d="M' + X(lo) + ' ' + ty + ' l-7 ' + th / 2 + ' l7 ' + th / 2 + 'z" fill="' + c + '"/>');
+      g += '<line x1="' + X(a) + '" x2="' + X(a) + '" y1="' + (ty - 5) + '" y2="' + (ty + th + 5) + '" stroke="#F5FAF2" stroke-width="3" stroke-linecap="round"/>';
       const pill = (dl > 0 ? '+' : dl < 0 ? '−' : '±') + Math.abs(dl), px = W - 58;
       g += '<text x="' + (px - 14) + '" y="' + (y + 9) + '" text-anchor="end" font-size="14" fill="' + COL.muted + '">' + a + ' → <tspan font-weight="800" fill="' + c + '">' + b + '</tspan></text>';
       g += '<rect x="' + px + '" y="' + (y - 9) + '" width="44" height="26" rx="13" fill="' + c + '" opacity="' + (Math.abs(dl) > 2 ? '.95' : '.25') + '"/><text x="' + (px + 22) + '" y="' + (y + 9) + '" text-anchor="middle" font-size="14" font-weight="800" fill="' + (Math.abs(dl) > 2 ? '#10231A' : '#E8EFE6') + '">' + pill + '</text>';
       g += '<text x="' + (W + 4) + '" y="' + (y + 10) + '" text-anchor="end" font-size="18" font-weight="700" fill="#8FD694">›</text></g>';
       y += RH;
     }
-    return '<div class="legend dleg"><span><i class="lnow"></i>what you grow now</span><span><i class="lnew"></i>if you switch</span><span class="muted">Tap a row to learn more</span></div><svg class="dumb" viewBox="-8 0 ' + (W + 16) + ' ' + (y - 16) + '" role="img" aria-label="How each score changes if you switch">' + g + '</svg><p class="scnote">0 is bad, 100 is very good.</p>';
+    return '<div class="legend dleg"><span><i class="lnow2"></i>what you grow now</span><span><i class="lnew2"></i>change if you switch</span><span class="muted">Tap a row to learn more</span></div><svg class="dumb" viewBox="-8 0 ' + (W + 16) + ' ' + (y - 16) + '" role="img" aria-label="How each score changes if you switch">' + g + '</svg><p class="scnote">0 is bad, 100 is very good.</p>';
   }
 
 
