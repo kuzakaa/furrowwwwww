@@ -276,7 +276,7 @@
   };
   function adjust(s, need, acc) {
     let pen = 0; const blocked = [];
-    for (const k in need) { const a = acc[k] == null ? 3 : acc[k]; if (a === 0) blocked.push(k); pen += (5 - a) * 1.2; }
+    for (const k in need) { const a = acc[k] == null ? 5 : acc[k]; if (a === 0) blocked.push(k); pen += (5 - a) * 1.2; }
     return { pen: Math.round(pen * 10) / 10, blocked, final: Math.round((s.match - pen) * 10) / 10 };
   }
 
