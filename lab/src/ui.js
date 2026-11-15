@@ -439,7 +439,7 @@
     if (!S.keepAnim) $('scroll').classList.remove('anim'); S.keepAnim = false;
     sheet(A);
     { const sq = LAST && LAST.search; if (sq && !sq.finished) R = '<div class="loader"><div class="ldspin"><span></span><span></span><span></span></div><h2>Finding the best rotation for your field</h2><p class="muted">We test every rotation of 1 to 6 years against 25 years of your weather.</p><div class="ldtrack"><i id="ldbar" style="width:' + sq.pc + '%"></i></div><p class="small muted" id="ldtxt">Starting…</p></div>'; }
-    $('out').innerHTML = pane('result', R) + pane('climate', Cm) + pane('calendar', K) + pane('options', O) + pane('years', Yh) + pane('money', moneyPane(A));
+    $('out').innerHTML = pane('result', R) + pane('climate', Cm) + pane('calendar', K) + pane('options', O) + pane('years', Yh) + pane('money', (() => { try { return moneyPane(A); } catch (e) { return '<p class="muted">Could not build this page: ' + esc(e.message) + '</p>'; } })());
     story();
   }
 
