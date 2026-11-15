@@ -999,6 +999,24 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .freebest .fbn{font-size:30px;font-weight:800;color:#B8F0A8}.freebest .fbn small{font-size:13px;color:var(--muted);font-weight:600}
 .freebest .l{font-size:14.5px;font-weight:600;margin:6px 0 4px;line-height:1.4}
 .freebest p.small{margin:4px 0 0}
+.freebest{display:grid!important;grid-template-columns:120px 1fr;gap:18px;align-items:start;padding:18px 20px!important;border:1px solid rgba(143,214,148,.45)!important;border-style:solid!important;background:linear-gradient(135deg,rgba(143,214,148,.12),rgba(143,214,148,.03))!important}
+.freebest .fbl{display:flex;flex-direction:column;align-items:center;gap:8px}
+.freebest .ring{--c:#8FD694;position:relative;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),rgba(255,255,255,.1) 0);box-shadow:0 0 24px rgba(143,214,148,.3)}
+.freebest .ring::before{content:"";position:absolute;inset:8px;border-radius:50%;background:#1f4a31}
+.freebest .ring .n{position:relative;font-size:34px;font-weight:800;color:#B8F0A8}
+.freebest .fbd{font-size:12.5px;font-weight:700;color:#10231A;background:#8FD694;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.freebest .tag{display:block;font-size:13.5px;font-weight:700;color:#8FD694;margin-bottom:8px}
+.freebest .yrs{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.yrchip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--line);font-size:13.5px;font-weight:600}
+.yrchip i{font-style:normal;font-size:11px;color:var(--muted)}
+.yrchip em{font-style:normal;font-size:12px;color:#9BE3A0;font-weight:500}
+.yrarr{color:var(--muted)}
+.fbq{margin:12px 0 6px;font-size:13px;font-weight:700;color:#E8EFE6}
+.fneeds{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.fneeds li{display:grid;grid-template-columns:150px 1fr;gap:10px;font-size:13.5px}
+.fneeds b{color:#F2C3B8;font-weight:600}.fneeds span{color:#DCE8DC}
+.fbnote{margin:10px 0 0;font-size:12.5px;color:var(--muted)}
+@media (max-width:640px){.freebest{grid-template-columns:1fr}.fneeds li{grid-template-columns:1fr}}
 
 </style>
 </head>
@@ -1920,7 +1938,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     if (best) {
       { const cm = r0(A.current.match), bm = r0(best.match), dd = bm - cm, calm = Date.now() - (RING.t || 0) < 2500; if (calm) { RING.now = cm; RING.alt = bm; } RING.t = Date.now(); const _x = setTimeout(() => { RING.now = cm; RING.alt = bm; }, 0), alt = best.match + 0.5 < A.current.match ? 'Next best within your limits' : 'Best within your limits';
       R += '<div class="vs2"><div class="side now"><span class="tag">What you grow now</span><span class="ring' + (RING.now !== cm ? ' anim' : '') + '" style="--p:' + cm + '"><span class="n"' + (RING.now !== cm ? ' data-v="' + cm + '"' : '') + '>' + cm + '</span></span><span class="l">' + esc(E.rotLabel(A.current.rot)) + '</span></div><div class="mid ' + (dd > 0 ? 'pos' : dd < 0 ? 'neg' : 'eq') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg><span>' + (dd > 0 ? '+' : '') + dd + '</span></div><div class="side alt"><span class="tag">' + alt + '</span><span class="ring' + (RING.alt !== bm ? ' anim' : '') + '" style="--p:' + bm + '"><span class="n"' + (RING.alt !== bm ? ' data-v="' + bm + '"' : '') + '>' + bm + '</span></span><span class="l">' + esc(E.rotLabel(best.rot)) + '</span></div></div>'; }
-      { const F = A.free; if (F && F !== best && (F.rawMatch || F.match) > best.match + 0.5) { const fm = r0(F.rawMatch || F.match), nd = window.Lab ? Object.entries(Lab.needs(F, S.rot)).map(([k, v]) => ((Lab.ACCEPT[k] || {}).q || k) + ' (' + [...new Set(String(v).split(', '))].join(', ') + ')') : []; R += '<div class="freebest"><div class="fbh"><span class="tag">Best with no limits</span><span class="fbn">' + fm + '<small> / 100</small></span></div><p class="l">' + esc(E.rotLabel(F.rot)) + '</p>' + (nd.length ? '<p class="small muted">It would need: ' + esc(nd.join('; ')) + '.</p>' : '') + '<p class="small muted">The best of every rotation of 2 to 4 years we tested, ignoring what you said you can take on.</p></div>'; } }
+      { const F = A.free; if (F && F !== best && (F.rawMatch || F.match) > best.match + 0.5) { const fm = r0(F.rawMatch || F.match), nd = window.Lab ? Object.entries(Lab.needs(F, S.rot)).map(([k, v]) => ((Lab.ACCEPT[k] || {}).q || k) + ' (' + [...new Set(String(v).split(', '))].join(', ') + ')') : []; const chips = F.rot.map((r, i) => '<span class="yrchip"><i>Y' + (i + 1) + '</i>' + esc(r.as || C[r.c].short) + (r.cv ? '<em>+ ' + esc(CV[r.cv].short) + '</em>' : '') + '</span>').join('<span class="yrarr">›</span>'), needs = window.Lab ? Object.entries(Lab.needs(F, S.rot)).map(([k, v]) => '<li><b>' + esc(({ newCrop: 'New crops to learn', newBuyer: 'New buyers to find', seedCost: 'Cover crop seed', equipment: 'Machinery', incomeDip: 'Lower income at first', moreWork: 'More field work', experimental: 'Less tested method', market: 'Large niche harvest' })[k] || k) + '</b><span>' + esc([...new Set(String(v).split(', '))].join(', ')) + '</span></li>').join('') : ''; R += '<div class="freebest"><div class="fbl"><span class="ring" style="--p:' + fm + '"><span class="n">' + fm + '</span></span><span class="fbd">' + (fm - r0(best.match) > 0 ? '+' : '') + (fm - r0(best.match)) + ' vs your limits</span></div><div class="fbr"><span class="tag">Best with no limits</span><div class="yrs">' + chips + '</div>' + (needs ? '<p class="fbq">What it would take</p><ul class="fneeds">' + needs + '</ul>' : '') + '<p class="fbnote">Best of every 2 to 4 year rotation we tested, ignoring your limits.</p></div></div>'; } }
       R += '<p class="small muted">Scores out of 100, weighted by your priorities' + (A.acc && Object.keys(A.acc).length ? ' and adjusted for what you can take on' : '') + '.</p>';
       if (A.cons && A.cons.length) R += '<div class="note"><h4>Applied from your notes</h4><ul>' + A.cons.map(c => '<li><b>' + esc(c.tag) + '.</b> ' + esc(c.why) + '</li>').join('') + '</ul></div>';
       if (A.plan) R += '<div class="plan"><div><span class="tag">Years 1 to ' + A.plan.after + '</span><b>' + esc(A.plan.first.name) + '</b><small>' + esc(E.rotLabel(A.plan.first.rot)) + '</small></div><div><span class="tag">From year ' + (A.plan.after + 1) + '</span><b>' + esc(A.plan.then.name) + '</b><small>' + esc(E.rotLabel(A.plan.then.rot)) + '</small></div></div>' + (A.plan.first === A.plan.then ? '<p class="small muted">The same option fits both phases.</p>' : '');
