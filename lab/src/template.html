@@ -76,12 +76,15 @@
     <div id="rot"></div>
     <div class="row"><button class="btn ghost" id="addyr">Add a year</button></div>
   </details>
-  <details class="box" open data-wiz="pri"><summary>Your priorities right now</summary>
+  <details class="box" open data-wiz="pri"><summary>Your priorities</summary>
+    <input type="checkbox" id="later" checked hidden>
+    <h4 class="phead">Short term <span id="stlab">(next 3 years)</span></h4>
+    <p class="small muted">What matters most to you in the next few years.</p>
     <div id="weights"></div>
-    <label class="check big"><input type="checkbox" id="later"> My priorities will change in a few years</label>
-    <div id="laterbox" hidden>
-      <div class="slider"><label for="years">Switch after</label><input id="years" type="range" min="1" max="8" step="1" value="3"><span class="num" id="yearsv">3 yrs</span></div>
-      <p class="small muted">Priorities after that:</p>
+    <div class="slider phz"><label for="years">Short term lasts</label><input id="years" type="range" min="1" max="8" step="1" value="3"><span class="num" id="yearsv">3 yrs</span></div>
+    <div id="laterbox">
+      <h4 class="phead">Long term <span>(after that)</span></h4>
+      <p class="small muted">What you want the farm to be good at in the long run.</p>
       <div id="weights2"></div>
     </div>
   </details>
