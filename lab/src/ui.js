@@ -925,7 +925,7 @@
     const tot = T.slopes.reduce((a, v, i) => a + (fine[i].wt || 0), 0) || 1, share = k => Math.round(100 * T.slopes.reduce((a, v, i) => a + (cls(v) === k ? fine[i].wt || 0 : 0), 0) / tot), lowS = Math.round(100 * T.low.reduce((a, l, i) => a + (l ? fine[i].wt || 0 : 0), 0) / tot);
     const L = $('slopeleg'); if (L) { L.hidden = false; L.innerHTML = '<b>Your field by slope</b>' + [['Flat, under 2%', 0], ['Gentle, 2 to 6%', 1], ['Steep, over 6%', 2]].map(x => '<div><i style="background:' + col[x[1]] + '"></i><span>' + x[0] + '</span><em>' + share(x[1]) + '%</em></div>').join('') + (lowS ? '<div><i class="lo"></i><span>Low spots, water collects</span><em>' + lowS + '%</em></div>' : '') + '<small>typical slope ' + T.typical.toFixed(1) + '%, steepest ' + T.steepest.toFixed(1) + '%</small>'; }
   }
-  function setPlaying(on) { playing = on; $('play').textContent = on ? 'Pause tour' : 'Play tour'; $('play').setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  function setPlaying(on) { playing = on; $('play').textContent = on ? 'Pause cycle' : 'Play cycle'; $('play').setAttribute('aria-pressed', on ? 'true' : 'false'); }
   const PROXY = 'https://still-cell-0930.kuzaka.workers.dev';
   function liveWx() {
     const box = $('livewx'), lat = S.lat, lon = S.lon, d = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);

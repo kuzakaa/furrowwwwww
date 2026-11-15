@@ -880,3 +880,4 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 @keyframes ringIn{from{transform:scale(.6);opacity:0}}
 .vs2 .mid span{font-size:22px}
 .vs2 .ring.anim{animation:ringIn .8s cubic-bezier(.2,.8,.2,1) both}
+.mapbox #play{align-self:flex-end!important}

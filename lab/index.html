@@ -891,6 +891,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 @keyframes ringIn{from{transform:scale(.6);opacity:0}}
 .vs2 .mid span{font-size:22px}
 .vs2 .ring.anim{animation:ringIn .8s cubic-bezier(.2,.8,.2,1) both}
+.mapbox #play{align-self:flex-end!important}
 
 </style>
 </head>
@@ -937,7 +938,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
       <option value="imerg">Rainfall (GPM IMERG)</option>
     </select></div>
   <div class="field dt"><label for="ldate">Date</label><input id="ldate" type="date" value="2025-07-12" min="2015-04-01"></div>
-  <button class="btn ghost" id="play" aria-pressed="true">Pause tour</button>
+  <button class="btn ghost" id="play" aria-pressed="true">Pause cycle</button>
 </div>
 <button class="handle" id="handle" aria-label="Hide settings" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Settings</span></button>
 <aside class="setup glass" id="setup">
@@ -2392,7 +2393,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     const tot = T.slopes.reduce((a, v, i) => a + (fine[i].wt || 0), 0) || 1, share = k => Math.round(100 * T.slopes.reduce((a, v, i) => a + (cls(v) === k ? fine[i].wt || 0 : 0), 0) / tot), lowS = Math.round(100 * T.low.reduce((a, l, i) => a + (l ? fine[i].wt || 0 : 0), 0) / tot);
     const L = $('slopeleg'); if (L) { L.hidden = false; L.innerHTML = '<b>Your field by slope</b>' + [['Flat, under 2%', 0], ['Gentle, 2 to 6%', 1], ['Steep, over 6%', 2]].map(x => '<div><i style="background:' + col[x[1]] + '"></i><span>' + x[0] + '</span><em>' + share(x[1]) + '%</em></div>').join('') + (lowS ? '<div><i class="lo"></i><span>Low spots, water collects</span><em>' + lowS + '%</em></div>' : '') + '<small>typical slope ' + T.typical.toFixed(1) + '%, steepest ' + T.steepest.toFixed(1) + '%</small>'; }
   }
-  function setPlaying(on) { playing = on; $('play').textContent = on ? 'Pause tour' : 'Play tour'; $('play').setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  function setPlaying(on) { playing = on; $('play').textContent = on ? 'Pause cycle' : 'Play cycle'; $('play').setAttribute('aria-pressed', on ? 'true' : 'false'); }
   const PROXY = 'https://still-cell-0930.kuzaka.workers.dev';
   function liveWx() {
     const box = $('livewx'), lat = S.lat, lon = S.lon, d = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
