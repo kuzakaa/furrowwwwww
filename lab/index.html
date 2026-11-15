@@ -2133,7 +2133,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
   async function showAnswer(q) {
     const e = answer(q), o = $('asko'); if (!o) return;
     const box = (body, src) => { o.innerHTML = '<div class="ans"><div class="q2">' + esc(q) + '</div>' + body + '<span class="src">' + src + '</span></div>'; o.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
-    if (e && e[1] === 'Can I trust this?') return box('Cause I said so.', 'Furrow');
+    if (/trust|довер|довір/i.test(q)) return box('Cause I said so.', 'Furrow');
     if (e && e[1].toLowerCase() === q.toLowerCase()) return box(esc(e[2]), 'Answer from Furrow’s built-in guide');
     box('<span class="spin"></span>Thinking…', 'Asking Furrow’s assistant');
     const ctx = 'Topic open: ' + askTopic + '. Field near ' + S.lat.toFixed(2) + ', ' + S.lon.toFixed(2) + (S.name ? ' (' + S.name + ')' : '') + '. Rotation now: ' + (S.rot || []).map(r => r.c).join(', ') + '. Soil: ' + S.soil + '.';
