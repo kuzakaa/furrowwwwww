@@ -41,7 +41,7 @@ button,select,input{font:inherit;color:inherit}
 .dock{display:none}
 .scrollarea{flex:1;overflow:auto;padding:18px 20px 30px}
 .pane{display:none}
-body[data-tab=result] .pane[data-pane=result],body[data-tab=climate] .pane[data-pane=climate],body[data-tab=calendar] .pane[data-pane=calendar],body[data-tab=options] .pane[data-pane=options],body[data-tab=years] .pane[data-pane=years],body[data-tab=method] .pane[data-pane=method]{display:block}
+body[data-tab=result] .pane[data-pane=result],body[data-tab=climate] .pane[data-pane=climate],body[data-tab=calendar] .pane[data-pane=calendar],body[data-tab=options] .pane[data-pane=options],body[data-tab=years] .pane[data-pane=years],body[data-tab=money] .pane[data-pane=money],body[data-tab=method] .pane[data-pane=method]{display:block}
 #out:empty{display:none}
 .box{border-bottom:1px solid var(--line);padding:4px 0}
 .setup .box:last-child{border-bottom:0}
