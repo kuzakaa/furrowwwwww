@@ -883,3 +883,5 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .mapbox #play{align-self:flex-end!important}
 .dleg .lnow2{width:3px!important;height:16px!important;border-radius:2px!important;background:#F5FAF2;vertical-align:-3px!important}
 .dleg .lnew2{width:22px!important;height:10px!important;border-radius:2px!important;background:linear-gradient(90deg,#F2907E 50%,#8FD694 50%)}
+.dleg .lnow3{width:10px!important;height:10px!important;border-radius:50%!important;box-shadow:inset 0 0 0 2px #E8EFE6;background:#163323}
+.dleg .lnew3{width:22px!important;height:8px!important;border-radius:4px!important;background:linear-gradient(90deg,#4f9a5c,#9BE3A0)}
