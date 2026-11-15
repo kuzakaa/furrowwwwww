@@ -2126,7 +2126,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
   }
   const SUGG = { bare: [1, 0, 2], heavy: [8, 1, 12], water: [7, 13, 0], roots: [9, 1, 3], boot: [4, 5, 17], s_income: [6, 5, 17], s_water: [7, 13, 15], s_soil: [3, 1, 2], s_erosion: [8, 12, 2], s_resilience: [16, 15, 4] };
   function askBox(k) {
-    const sg = (SUGG[k] || [5, 17, 18]).map(i => KB[i]);
+    const sg = (SUGG[k] || [5, 17, 18]).map(i => KB[i]).filter(e => e && e[1] !== 'Can I trust this?');
     return '<div class="ask"><h3>Ask a question</h3><div class="sugg">' + sg.map(e => '<button type="button" data-ask="' + esc(e[1]) + '">' + esc(e[1]) + '</button>').join('') + '</div><form id="askf"><input id="askq" placeholder="Type your question, any language" autocomplete="off"><button class="btn">Ask</button></form><div id="asko"></div></div>';
   }
   let askTopic = '';
