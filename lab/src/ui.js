@@ -329,8 +329,10 @@
       const st = window.__search && Object.values(window.__search).find(v => v.done && v.res.length && v.res[0].sim);
       const k2 = x => JSON.stringify(x.rot.map(r => [r.c, r.cv || null])), have = new Set(all.map(k2));
       if (st) { let bestOk = null; st.res.forEach(o => { const x = Object.assign({ id: 'all' + k2(o), name: 'The top rotation that fits your limits', tag: 'Found by testing every rotation of 2 to 4 years', rot: o.rot }, o.sim); x.match = E.match(x.sc, inp.weights); ADJ(x); if (!x.adj.blocked.length && (!bestOk || x.match > bestOk.match)) bestOk = x; });
-        if (bestOk && !have.has(k2(bestOk))) { let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300, v = []; for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)); v.push(E.match(E.scoreSet(bestOk, inp, idx), inp.weights) - E.match(E.scoreSet(A.current, inp, idx), inp.weights)); } v.sort((a, b) => a - b); bestOk.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; all.push(bestOk); }
-        A.searched = st.res.length; }
+        if (bestOk) { let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300, v = []; for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)); v.push(E.match(E.scoreSet(bestOk, inp, idx), inp.weights) - E.match(E.scoreSet(A.current, inp, idx), inp.weights)); } v.sort((a, b) => a - b); bestOk.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; all.push(bestOk); }
+        A.searched = st.res.length;
+        if (st.done) { const keepK = new Set(all.filter(x => /^(all|best)/.test(x.id)).map(k2)); const tweaks = all.filter(x => !/^(all|best)/.test(x.id) && x.tag !== 'New, less tested'); tweaks.forEach(x => { if (!keepK.has(k2(x)) && x.rot.length <= 4) { /* covered by the full search */ } }); for (let i = all.length - 1; i >= 0; i--) { const x = all[i]; if (!/^(all|best)/.test(x.id) && x.tag !== 'New, less tested') all.splice(i, 1); }
+          if (bestOk && !all.includes(bestOk)) all.push(bestOk); } }
     }
     all.sort((a, b) => (a.adj && a.adj.blocked.length ? 1 : 0) - (b.adj && b.adj.blocked.length ? 1 : 0) || b.match - a.match);
     const ok = all.filter(x => !(x.adj && x.adj.blocked.length));
