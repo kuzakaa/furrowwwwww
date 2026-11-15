@@ -1906,14 +1906,22 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
       A.search = { total: st.list.length, done: st.i, finished: st.done };
     }
     const mg = margin(), curC = new Set(S.rot.map(r => r.c));
-    if (window.Lab) all.forEach(x => {
+    const ADJ = x => {
       x.need = Lab.needs(x, S.rot); x.adj = Lab.adjust(x, x.need, acc); x.rawMatch = x.match;
       const ci = A.current.sc.income || 1; x.incPct = (x.sc.income - ci) / ci * 100; x.incEur = x.incPct / 100 * mg * (S.area || 0);
       if (x.incPct < -S.maxDrop && x.id !== 'current') { x.adj.blocked.push('incomeDip'); x.need.incomeDip = 'about ' + Math.round(-x.incPct) + '% less income, more than the ' + S.maxDrop + '% you can accept'; }
       const big = x.rot.map(r => r.c).filter(c => !curC.has(c) && Lab.CROPINFO[c] && Lab.CROPINFO[c].niche >= 3).map(c => { const t = (S.area || 0) / x.rot.length * (YIELD[c] || 3); return t >= 300 ? C[c].short.toLowerCase() + ' (about ' + r0(t) + ' t a year)' : null; }).filter(Boolean);
       if (big.length) { x.need.market = big.join(', ') + ' may be more than local buyers will take'; x.adj.pen += 3; }
       x.adj.final = Math.round((x.rawMatch - x.adj.pen) * 10) / 10; x.match = x.adj.final;
-    });
+    };
+    if (window.Lab) all.forEach(ADJ);
+    if (window.Lab) { // apply your limits to every rotation tested, keep the best that fits
+      const st = window.__search && Object.values(window.__search).find(v => v.done && v.res.length && v.res[0].sim);
+      const k2 = x => JSON.stringify(x.rot.map(r => [r.c, r.cv || null])), have = new Set(all.map(k2));
+      if (st) { let bestOk = null; st.res.forEach(o => { const x = Object.assign({ id: 'all' + k2(o), name: 'The top rotation that fits your limits', tag: 'Found by testing every rotation of 2 to 4 years', rot: o.rot }, o.sim); x.match = E.match(x.sc, inp.weights); ADJ(x); if (!x.adj.blocked.length && (!bestOk || x.match > bestOk.match)) bestOk = x; });
+        if (bestOk && !have.has(k2(bestOk))) { let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300, v = []; for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)); v.push(E.match(E.scoreSet(bestOk, inp, idx), inp.weights) - E.match(E.scoreSet(A.current, inp, idx), inp.weights)); } v.sort((a, b) => a - b); bestOk.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; all.push(bestOk); }
+        A.searched = st.res.length; }
+    }
     all.sort((a, b) => (a.adj && a.adj.blocked.length ? 1 : 0) - (b.adj && b.adj.blocked.length ? 1 : 0) || b.match - a.match);
     const ok = all.filter(x => !(x.adj && x.adj.blocked.length));
     { const lk = S.lat.toFixed(3) + ',' + S.lon.toFixed(3), name = x => E.rotLabel(x.rot) + '|' + (x.till || ''), pool = ok.length ? ok : all; A.free = all.filter(x => x.id !== 'current').slice().sort((a, b) => (b.rawMatch || b.match) - (a.rawMatch || a.match))[0];
