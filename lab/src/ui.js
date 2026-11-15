@@ -298,7 +298,7 @@
       const sk = [S.lat.toFixed(3), S.lon.toFixed(3), inp.soil, inp.slopePct, inp.till, inp.irrigated, [...inp.exclude].sort().join('.'), A.cl.n].join('|');
       const SR = window.__search || (window.__search = {}); const st = SR[sk] || (SR[sk] = { done: false, res: [], i: 0, list: null });
       if (!st.list) {
-        const crops = CORDER.filter(c => c !== 'fallow' && !inp.exclude.has(c) && (!A.cal[c] || A.cal[c].reliab == null || A.cal[c].reliab >= 0.6)), seen = new Set(), L = [];
+        let crops = CORDER.filter(c => c !== 'fallow' && !inp.exclude.has(c) && (!A.cal[c] || A.cal[c].reliab == null || A.cal[c].reliab >= 0.6)); if (crops.length < 3) crops = CORDER.filter(c => c !== 'fallow' && !inp.exclude.has(c)); const seen = new Set(), L = [];
         const canon = r => { let best = null; for (let k = 0; k < r.length; k++) { const t = r.slice(k).concat(r.slice(0, k)).join(','); if (best == null || t < best) best = t; } return best; };
         const rec = (r, n) => { if (r.length === n) { if (r[0] === r[n - 1] && n > 1) return; const c = canon(r); if (!seen.has(c)) { seen.add(c); L.push(r.slice()); } return; } for (const c of crops) { if (r.length && r[r.length - 1] === c) continue; if (C[c].kind === 'perennial' && r.includes(c)) continue; r.push(c); rec(r, n); r.pop(); } };
         [2, 3, 4].forEach(n => rec([], n));
