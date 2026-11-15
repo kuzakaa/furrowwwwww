@@ -382,7 +382,7 @@
       rel /= m; hd /= m; def /= m; st /= m;
       const wat = o.irrigated ? 1 : 1 - 0.8 * clip(rel / 0.6);
       const prevLeg = C[p].nfix > 0 || (pT.cv === 'legmix' && s.g0), ey = econYear(s.fallow ? 'fallow' : c, prevLeg, wat, s.reliab, cvOn ? cT.cv : null, o.livestock);
-      const inc = clip((ey.margin + 300) / 1400) * 4.2;
+      const inc = clip((ey.margin + 600) / 1700) * 4.2;
       return {
         soil, eros: 100 * (1 - s.exp), inc: inc / 4.2 * 100, mar: ey.margin, cash: s.fallow ? 0 : 1,
         water: s.fallow ? 0 : o.irrigated ? 100 * (1 - clip(def / 450)) : 100 * (1 - clip(rel / 0.45)),
