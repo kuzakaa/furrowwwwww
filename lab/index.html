@@ -980,6 +980,17 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .wrow.wc .lvl{grid-column:3;grid-row:1;text-align:right;white-space:nowrap}
 .phz{grid-template-columns:190px 1fr 150px!important;padding-left:14px;padding-right:14px}
 .phz .num{text-align:right}
+.slider.dropy{display:grid!important;grid-template-columns:120px 1fr 80px!important;gap:12px!important;align-items:center;margin-top:12px}
+.slider.dropy label{position:static!important;width:auto!important;white-space:nowrap}
+.slider.dropy .num{position:static!important;text-align:right}
+#acc{display:flex!important;flex-direction:column!important;gap:0!important;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:12px}
+#acc .wrow{display:grid!important;grid-template-columns:minmax(220px,1.2fr) 1.6fr 130px;grid-template-rows:auto auto;column-gap:16px;row-gap:2px;align-items:center;padding:10px 14px!important;margin:0!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;background:transparent!important}
+#acc .wrow:last-child{border-bottom:0!important}
+#acc .wrow .wh{display:contents}
+#acc .wrow label{grid-column:1;grid-row:1 / span 2;margin:0;font-size:14.5px;line-height:1.3}
+#acc .wrow input{grid-column:2;grid-row:1;width:100%;margin:0}
+#acc .wrow .lvl{grid-column:3;grid-row:1;text-align:right;white-space:nowrap;font-size:13.5px}
+#acc .wrow .ends{grid-column:2;grid-row:2;font-size:12px;margin:0}
 
 </style>
 </head>
