@@ -982,3 +982,9 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 #acc .wrow .ends{grid-column:2;grid-row:2;font-size:12px;margin:0}
 .topfound{margin:12px 0 4px;padding:12px 14px;border-radius:14px;border:1px dashed rgba(143,214,148,.5);background:rgba(143,214,148,.06);font-size:14.5px;line-height:1.5}
 .rotrow{grid-template-columns:56px minmax(0,1fr) minmax(0,1fr) 20px!important}.rotrow .yr{white-space:nowrap}
+.freebest{margin:12px 0 4px;padding:14px 18px;border-radius:16px;border:1px dashed rgba(143,214,148,.55);background:rgba(143,214,148,.05)}
+.freebest .fbh{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.freebest .tag{font-size:13.5px;font-weight:700;color:#8FD694}
+.freebest .fbn{font-size:30px;font-weight:800;color:#B8F0A8}.freebest .fbn small{font-size:13px;color:var(--muted);font-weight:600}
+.freebest .l{font-size:14.5px;font-weight:600;margin:6px 0 4px;line-height:1.4}
+.freebest p.small{margin:4px 0 0}
