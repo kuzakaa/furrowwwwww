@@ -963,6 +963,14 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .phz{display:grid!important;grid-template-columns:auto 1fr auto!important;gap:12px;align-items:center}.phz label{white-space:nowrap;font-weight:600}
 .dropy{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin-top:10px}.dropy label{white-space:nowrap;font-weight:600}
 .dropy .num{white-space:nowrap;min-width:64px;text-align:right}.dropy input{min-width:0}
+#weights,#weights2{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))!important;gap:8px!important}
+.wrow.wc{padding:9px 12px!important;margin:0!important}
+.wrow.wc .wh{margin-bottom:4px}
+.wrow.wc label{font-size:14.5px;display:inline-flex;align-items:center;gap:6px}
+.wrow.wc .lvl{font-size:13px}
+.qm{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(143,214,148,.6);background:transparent;color:#8FD694;font:700 12px/1 inherit;cursor:pointer;padding:0;display:inline-grid;place-items:center}
+.qm:hover{background:rgba(143,214,148,.15)}
+.phead{margin-top:8px!important}
 
 </style>
 </head>
@@ -2584,7 +2592,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
       const link = shareLink(), box = $('shared'), done = () => { box.textContent = 'Link copied. Anyone who opens it sees this exact result.'; }, manual = () => { box.innerHTML = 'Copy this: <input readonly value="' + esc(link) + '" style="width:220px">'; const i = box.querySelector('input'); i.focus(); i.select(); };
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, manual); else manual();
     });
-    const wrow = (pre, d, v) => '<div class="wrow"><div class="wh"><label for="' + pre + d[0] + '">' + d[1] + '</label><span class="lvl" id="' + pre + 'v' + d[0] + '">' + LEVEL[v] + '</span></div><input id="' + pre + d[0] + '" type="range" min="0" max="5" step="1" value="' + v + '"><button class="why" data-term="s_' + d[0] + '">What does this mean?</button></div>';
+    const wrow = (pre, d, v) => '<div class="wrow wc"><div class="wh"><label for="' + pre + d[0] + '">' + d[1] + ' <button type="button" class="qm" data-term="s_' + d[0] + '" aria-label="What does ' + esc(d[1]) + ' mean?">?</button></label><span class="lvl" id="' + pre + 'v' + d[0] + '">' + LEVEL[v] + '</span></div><input id="' + pre + d[0] + '" type="range" min="0" max="5" step="1" value="' + v + '"></div>';
     $('weights').innerHTML = DIMS.map(d => wrow('w_', d, S.weights[d[0]])).join('');
     $('weights2').innerHTML = DIMS.map(d => wrow('w2_', d, S.w2[d[0]])).join('');
     DIMS.forEach(d => {

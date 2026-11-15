@@ -952,3 +952,11 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .phz{display:grid!important;grid-template-columns:auto 1fr auto!important;gap:12px;align-items:center}.phz label{white-space:nowrap;font-weight:600}
 .dropy{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin-top:10px}.dropy label{white-space:nowrap;font-weight:600}
 .dropy .num{white-space:nowrap;min-width:64px;text-align:right}.dropy input{min-width:0}
+#weights,#weights2{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))!important;gap:8px!important}
+.wrow.wc{padding:9px 12px!important;margin:0!important}
+.wrow.wc .wh{margin-bottom:4px}
+.wrow.wc label{font-size:14.5px;display:inline-flex;align-items:center;gap:6px}
+.wrow.wc .lvl{font-size:13px}
+.qm{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(143,214,148,.6);background:transparent;color:#8FD694;font:700 12px/1 inherit;cursor:pointer;padding:0;display:inline-grid;place-items:center}
+.qm:hover{background:rgba(143,214,148,.15)}
+.phead{margin-top:8px!important}

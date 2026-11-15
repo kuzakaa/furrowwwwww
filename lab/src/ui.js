@@ -1042,7 +1042,7 @@
       const link = shareLink(), box = $('shared'), done = () => { box.textContent = 'Link copied. Anyone who opens it sees this exact result.'; }, manual = () => { box.innerHTML = 'Copy this: <input readonly value="' + esc(link) + '" style="width:220px">'; const i = box.querySelector('input'); i.focus(); i.select(); };
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, manual); else manual();
     });
-    const wrow = (pre, d, v) => '<div class="wrow"><div class="wh"><label for="' + pre + d[0] + '">' + d[1] + '</label><span class="lvl" id="' + pre + 'v' + d[0] + '">' + LEVEL[v] + '</span></div><input id="' + pre + d[0] + '" type="range" min="0" max="5" step="1" value="' + v + '"><button class="why" data-term="s_' + d[0] + '">What does this mean?</button></div>';
+    const wrow = (pre, d, v) => '<div class="wrow wc"><div class="wh"><label for="' + pre + d[0] + '">' + d[1] + ' <button type="button" class="qm" data-term="s_' + d[0] + '" aria-label="What does ' + esc(d[1]) + ' mean?">?</button></label><span class="lvl" id="' + pre + 'v' + d[0] + '">' + LEVEL[v] + '</span></div><input id="' + pre + d[0] + '" type="range" min="0" max="5" step="1" value="' + v + '"></div>';
     $('weights').innerHTML = DIMS.map(d => wrow('w_', d, S.weights[d[0]])).join('');
     $('weights2').innerHTML = DIMS.map(d => wrow('w2_', d, S.w2[d[0]])).join('');
     DIMS.forEach(d => {
