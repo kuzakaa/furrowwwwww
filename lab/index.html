@@ -1623,7 +1623,7 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
 
 </script>
 <div class="modal" id="modal"><div class="mbox glass" id="mbox"></div></div>
-<script src="lab.js?v=16"></script>
+<script src="lab.js?v=18"></script>
 <script>
 (function () {
   'use strict';
@@ -1922,9 +1922,9 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
     const P = PL.P, okc = id => !inp.exclude.has(id), types = [];
     CORDER.filter(okc).forEach(c => { types.push({ c, cv: null }); if (P.canCv(c)) ['rye', 'legmix'].filter(okc).forEach(cv => types.push({ c, cv })); });
     const PEN = [[{ c: 'wheat' }], [{ c: 'wheat', cv: 'rye' }], [{ c: 'alfalfa' }], [{ c: 'alfalfa' }, { c: 'wheat', cv: 'rye' }]].map(rot => { const d = Lab.adjust({ match: 0 }, Lab.needs({ rot }, ALLC), acc); return { pen: d.pen, blocked: d.blocked.length > 0 }; });
-    const maxDrop = S.maxDrop < 40 ? S.maxDrop : null, bfKey = JSON.stringify([types, w1, w2, Y, PEN, maxDrop, o, S.area]);
+    const maxDrop = S.maxDrop < 40 ? S.maxDrop : null, bfKey = JSON.stringify([types, w1, w2, Y, PEN, o, S.area]);
     if (PL.bfKey !== bfKey && types.length) {
-      PL.bfKey = bfKey; PL.res = null; PL.objs = {}; PL.pc = 0; const tok = ++PL.tok, J = P.job({ types, o, w1, w2, share: fa, pen: PEN, big: bigList(), maxDrop, maxLen: 6 });
+      PL.bfKey = bfKey; PL.res = null; PL.objs = {}; PL.pc = 0; const tok = ++PL.tok, J = P.job({ types, o, w1, w2, share: fa, pen: PEN, big: bigList(), maxLen: 6 });
       const tick = () => {
         if (PL !== window.__plan || tok !== PL.tok) return; const fin = J.step(30);
         PL.pc = J.done < J.total ? Math.round(J.done / J.total * 55) : 55 + Math.round((J.bf || 0) * 45);
@@ -1933,9 +1933,9 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
       };
       clearTimeout(PL.t); PL.t = setTimeout(tick, 200);
     }
-    const res = PL.res && PL.bfKey === bfKey ? PL.res : null;
+    const curInc = P.score(S.rot, o).sc.income, res0 = PL.res && PL.bfKey === bfKey ? PL.res : null, res = res0 && (maxDrop == null ? res0 : P.within(res0, curInc * (1 - maxDrop / 100)));
     const fill = x => { const s = P.score(x.rot, o).sc, l = limitsOf(x, acc); x.sc = s; x.need = l.need; x.adj = l.adj; x.m1 = E.match(s, w1) - l.adj.pen; x.m2 = E.match(s, w2) - l.adj.pen; x.match = fa * x.m1 + fb * x.m2; x.adj.final = x.match; x.rawMatch = x.match + l.adj.pen;
-      if (res && maxDrop != null && s.income < res.minInc) { x.adj.blocked.push('incomeDip'); x.need.incomeDip = 'earns about ' + Math.round((1 - s.income / Math.max(1, res.maxInc)) * 100) + '% less than the best-earning rotation here, more than the ' + S.maxDrop + '% you can accept'; }
+      if (res && maxDrop != null && s.income < res.minInc) { x.adj.blocked.push('incomeDip'); x.need.incomeDip = 'about ' + Math.round((1 - s.income / Math.max(1, curInc)) * 100) + '% less income than what you grow now, more than the ' + S.maxDrop + '% you can accept'; }
       return x; };
     fill(A.current);
     const mg = margin(), ci = A.current.sc.income || 1, money = x => { x.incPct = (x.sc.income - ci) / ci * 100; x.incEur = x.incPct / 100 * mg * (S.area || 0); };

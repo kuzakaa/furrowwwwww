@@ -376,6 +376,14 @@
     }
     const mt = (wa, so, er, inc, re, w) => { const tw = w[5]; return tw ? (0 + wa * w[0] + so * w[1] + er * w[2] + inc * w[3] + re * w[4]) / tw : (wa + so + er + inc + re) / 5; };
     const wv = w => { const v = ['water', 'soil', 'erosion', 'income', 'resilience'].map(k => w[k] || 0); v.push(v[0] + v[1] + v[2] + v[3] + v[4]); return v; };
+    function choose(T, BM, BR, lo) {
+      const rotOf = q => { const L = BR[q * 8], r = []; for (let i = 0; i < L; i++) r.push({ c: T[BR[q * 8 + 1 + i]].c, cv: T[BR[q * 8 + 1 + i]].cv }); return r; };
+      const pick = off => { let b = -1; for (let i = 0; i <= 100; i++) if (i >= lo && BM[off + i] > -1e8 && (b < 0 || BM[off + i] > BM[off + b])) b = i; return b < 0 ? null : { m: BM[off + b], rot: rotOf(off + b) }; };
+      const top = []; for (let i = 0; i <= 100; i++) if (i >= lo && BM[202 + i] > -1e8) top.push({ m: BM[202 + i], rot: rotOf(202 + i) });
+      top.sort((p, q) => q.m - p.m);
+      return { first: pick(0), then: pick(101), top, minInc: lo };
+    }
+    function within(res, lo) { const r = choose(res.T, res.BM, res.BR, lo); r.count = res.count; r.maxInc = res.maxInc; return r; }
     function job(cfg) {
       const T = cfg.types.map(norm), NT = T.length, n3 = NT * NT * NT, maxLen = cfg.maxLen || 6;
       const SO = new Int32Array(n3), ER = new Int32Array(n3), IN = new Int32Array(n3), WA = new Int32Array(n3), RE = new Int32Array(n3), CA = new Uint8Array(n3);
@@ -427,16 +435,12 @@
             }
             J.bf = y0 / NT; if (y0 < NT) return false; stage = 2;
           }
-          const lo = cfg.maxDrop == null ? -1 : maxInc * (1 - cfg.maxDrop / 100), rotOf = q => { const L = BR[q * 8], r = []; for (let i = 0; i < L; i++) r.push({ c: T[BR[q * 8 + 1 + i]].c, cv: T[BR[q * 8 + 1 + i]].cv }); return r; };
-          const pick = off => { let b = -1; for (let i = 0; i <= 100; i++) if (i >= lo && BM[off + i] > -1e8 && (b < 0 || BM[off + i] > BM[off + b])) b = i; return b < 0 ? null : { m: BM[off + b], rot: rotOf(off + b) }; };
-          const top = []; for (let i = 0; i <= 100; i++) if (i >= lo && BM[202 + i] > -1e8) top.push({ m: BM[202 + i], rot: rotOf(202 + i) });
-          top.sort((p, q) => q.m - p.m);
-          J.result = { first: pick(0), then: pick(101), top, maxInc, minInc: lo, count }; J.finished = true; return true;
+          J.result = choose(T, BM, BR, -1); J.result.BM = BM; J.result.BR = BR; J.result.T = T; J.result.maxInc = maxInc; J.result.count = count; J.finished = true; return true;
         }
       };
       return J;
     }
-    return { score, job, year, ci, canCv, sims };
+    return { score, job, within, year, ci, canCv, sims };
   }
 
   const API = { CROPINFO, EXPERIMENTAL, experimental, needs, ACCEPT, adjust, planner, RULES, parseConstraints, plan, qc, confidence, MODELS, projections, IPCC, inputLevel, carbonIPCC, calibrate, errors, calFor, withPatch, ndviYears, corr, oracle, rainChange, pack, unpack, fromIssues, summarise, SCEN, INFO, strategies, run, extra, parseFarm, compareFarm, doyOf, credits };
