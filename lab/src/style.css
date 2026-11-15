@@ -930,3 +930,15 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .scth,.sctr{grid-template-columns:minmax(150px,1.6fr) 150px 70px 18px!important}
 .scth span:nth-child(2){text-align:left!important;padding-left:8px}
 .sctr .big2 em{font-size:24px!important}
+.vs2 .side{gap:12px!important;padding:18px 20px!important}
+.vs2 + p.small{margin:10px 0 18px!important}
+[data-pane] .small.muted + .key,[data-pane] .key{margin-top:16px}
+[data-pane] .place + h1{margin-top:10px}
+[data-pane] .ct + .cs{margin-top:10px}
+.ohead + .big{margin-top:10px}.big + .oscore{margin-top:12px}
+[data-pane] .osec + .osec{margin-top:12px}
+[data-pane] h2 + .sub{margin-top:10px}
+[data-pane] .hd + .yrs{margin-top:8px}
+[data-pane] h3 + .sub{margin-top:6px}
+[data-pane] h2.second{margin-top:26px}
+.sct{margin-top:14px}
