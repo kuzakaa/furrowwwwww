@@ -319,7 +319,7 @@
       if (A.plan) R += '<div class="plan"><div><span class="tag">Years 1 to ' + A.plan.after + '</span><b>' + esc(A.plan.first.name) + '</b><small>' + esc(E.rotLabel(A.plan.first.rot)) + '</small></div><div><span class="tag">From year ' + (A.plan.after + 1) + '</span><b>' + esc(A.plan.then.name) + '</b><small>' + esc(E.rotLabel(A.plan.then.rot)) + '</small></div></div>' + (A.plan.first === A.plan.then ? '<p class="small muted">The same option fits both phases.</p>' : '');
       const cm = A.current.m, bm2 = best.m, hot = cl.yearTypes && cl.yearTypes.types.find(t => t.name.indexOf('Hot') === 0);
       const rh = q => hot ? E.mean(hot.idx.map(i => q.m.relByYear[i])) : q.m.relMean;
-      const kp = (a, b, unit, main, sub, go) => '<div class="kp" data-go="' + go + '" title="Tap to see the chart"><div class="big2 ' + (b < a ? 'good' : b > a ? 'bad' : 'same') + '"><em>' + b + unit + '</em><s>was ' + a + unit + '</s></div><p>' + main + '<span>' + sub + '</span></p></div>';
+      const kp = (a, b, unit, main, sub, go) => '<div class="kp" data-go="' + go + '" title="Tap to see the chart"><div class="big2 ' + (b < a ? 'good' : b > a ? 'bad' : 'same') + '"><s>' + a + unit + '</s><i>→</i><em>' + b + unit + '</em></div><p>' + main + '<span>' + sub + '</span></p></div>';
       R += '<div class="key"><h3>The big changes</h3>' +
         kp(r0(cm.bare), r0(bm2.bare), '', 'days of bare soil a year', 'Right now it’s bare ' + bareMonths(A.current, cl), 'calendar') +
         kp(r0(cm.exposed), r0(bm2.exposed), '', 'mm of heavy rain a year hitting poorly covered soil', 'Out of ' + r0(cl.erosTotal) + ' mm that falls on really rainy days (12.7 mm or more)', 'calendar') +

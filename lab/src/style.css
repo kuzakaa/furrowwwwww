@@ -922,3 +922,8 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .big2 em{font-style:normal;font-size:30px;font-weight:800;letter-spacing:-.5px}
 .big2 s{text-decoration:none;font-size:13px;color:var(--muted);margin-top:5px;white-space:nowrap}
 .big2.good em{color:#8FD694}.big2.bad em{color:#F2907E}.big2.same em{color:#E8EFE6}
+.key .kp{grid-template-columns:168px 1fr!important}
+.big2{display:grid!important;grid-template-columns:54px 22px 1fr;align-items:baseline;flex-direction:initial}
+.big2 s{grid-column:1;text-align:right;font-size:17px!important;font-weight:600;color:#9FB2A4!important;margin:0!important}
+.big2 i{grid-column:2;font-style:normal;text-align:center;color:#6f8a77;font-size:16px}
+.big2 em{grid-column:3;text-align:left;font-size:32px!important}
