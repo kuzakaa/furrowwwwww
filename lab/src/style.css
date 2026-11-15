@@ -1028,3 +1028,12 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
 #known .chip:disabled{opacity:.75;cursor:default}
 #known .knall{border-style:dashed}
 .srch{color:#8FD694;margin:8px 0 0;font-weight:600}
+.loader{display:flex;flex-direction:column;align-items:center;text-align:center;padding:60px 20px;gap:10px}
+.loader h2{margin:10px 0 0;font-size:22px}
+.loader p{margin:0;max-width:380px}
+.ldtrack{width:100%;max-width:420px;height:12px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:14px}
+.ldtrack i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#4f9a5c,#9BE3A0);transition:width .4s ease}
+.ldspin{display:flex;gap:8px;height:40px;align-items:flex-end}
+.ldspin span{width:10px;border-radius:5px;background:#8FD694;animation:ldg 1.2s ease-in-out infinite}
+.ldspin span:nth-child(2){animation-delay:.2s}.ldspin span:nth-child(3){animation-delay:.4s}
+@keyframes ldg{0%,100%{height:10px;opacity:.5}50%{height:40px;opacity:1}}

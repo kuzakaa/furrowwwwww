@@ -1039,6 +1039,15 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
 #known .chip:disabled{opacity:.75;cursor:default}
 #known .knall{border-style:dashed}
 .srch{color:#8FD694;margin:8px 0 0;font-weight:600}
+.loader{display:flex;flex-direction:column;align-items:center;text-align:center;padding:60px 20px;gap:10px}
+.loader h2{margin:10px 0 0;font-size:22px}
+.loader p{margin:0;max-width:380px}
+.ldtrack{width:100%;max-width:420px;height:12px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:14px}
+.ldtrack i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#4f9a5c,#9BE3A0);transition:width .4s ease}
+.ldspin{display:flex;gap:8px;height:40px;align-items:flex-end}
+.ldspin span{width:10px;border-radius:5px;background:#8FD694;animation:ldg 1.2s ease-in-out infinite}
+.ldspin span:nth-child(2){animation-delay:.2s}.ldspin span:nth-child(3){animation-delay:.4s}
+@keyframes ldg{0%,100%{height:10px;opacity:.5}50%{height:40px;opacity:1}}
 
 </style>
 </head>
@@ -1923,7 +1932,7 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
         const covOK = id => !inp.exclude.has(id);
         st.list = []; L.forEach(r => { st.list.push(r.map(c => ({ c, cv: null }))); if (covOK('rye') || covOK('legmix')) st.list.push(r.map(c => ({ c, cv: (C[c].kind === 'summer' || C[c].kind === 'winter') ? (C[c].kind === 'winter' && covOK('legmix') ? 'legmix' : covOK('rye') ? 'rye' : 'legmix') : null }))); });
       }
-      if (!st.done && !st.busy) { st.busy = true; const cl = A.cl, cal = A.cal, inp2 = Object.assign({}, inp); const step = () => { const t0 = performance.now(); while (st.i < st.list.length && performance.now() - t0 < 25) { const rot = st.list[st.i++]; try { const r = E.simulate(rot, cl, cal, inp2); st.res.push({ rot, sim: r }); } catch (e) {} } if (st.i < st.list.length) { const pg = $('srchp'); if (pg) pg.textContent = 'Checking every rotation: ' + Math.round(st.i / st.list.length * 100) + '% of ' + st.list.length.toLocaleString('en') + ' done'; setTimeout(step, 0); } else if (!st.refine) { // phase 2: for the most promising crop orders, try every on/off pattern of cover crops
+      if (!st.done && !st.busy) { st.busy = true; const cl = A.cl, cal = A.cal, inp2 = Object.assign({}, inp); const step = () => { const t0 = performance.now(); while (st.i < st.list.length && performance.now() - t0 < 25) { const rot = st.list[st.i++]; try { const r = E.simulate(rot, cl, cal, inp2); st.res.push({ rot, sim: r }); } catch (e) {} } if (st.i < st.list.length) { const pg = $('srchp'), pc = Math.round(st.i / st.list.length * 100); if (pg) pg.textContent = 'Checking every rotation: ' + pc + '% of ' + st.list.length.toLocaleString('en') + ' done'; const lb = $('ldbar'), lt = $('ldtxt'); if (lb) lb.style.width = pc + '%'; if (lt) lt.textContent = st.i.toLocaleString('en') + ' of ' + st.list.length.toLocaleString('en') + ' rotations checked'; setTimeout(step, 0); } else if (!st.refine) { // phase 2: for the most promising crop orders, try every on/off pattern of cover crops
             const pick = c => (C[c].kind === 'winter' && !inp2.exclude.has('legmix')) ? 'legmix' : !inp2.exclude.has('rye') ? 'rye' : !inp2.exclude.has('legmix') ? 'legmix' : null;
             const seenR = new Set(st.res.map(o => JSON.stringify(o.rot))), seq = new Map();
             st.res.forEach(o => { const k = o.rot.map(r => r.c).join(','), m = E.match(o.sim.sc, inp2.weights); if (!seq.has(k) || seq.get(k).m < m) seq.set(k, { m, crops: o.rot.map(r => r.c) }); });
@@ -2063,6 +2072,7 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
     } else Yh = '<p class="sub">Not enough seasons to group.</p>';
     if (!S.keepAnim) $('scroll').classList.remove('anim'); S.keepAnim = false;
     sheet(A);
+    { const sv = window.__search && Object.values(window.__search)[0]; if (!sv || !sv.done) { const pc = sv && sv.list ? Math.round(sv.i / Math.max(1, sv.list.length) * 100) : 0; R = '<div class="loader"><div class="ldspin"><span></span><span></span><span></span></div><h2>Finding the best rotation for your field</h2><p class="muted">We test every rotation of 2 to 5 years against 25 years of your weather.</p><div class="ldtrack"><i id="ldbar" style="width:' + pc + '%"></i></div><p class="small muted" id="ldtxt">' + (sv && sv.list ? sv.i.toLocaleString('en') + ' of ' + sv.list.length.toLocaleString('en') + ' rotations checked' : 'Starting…') + '</p></div>'; } }
     $('out').innerHTML = pane('result', R) + pane('climate', Cm) + pane('calendar', K) + pane('options', O) + pane('years', Yh);
     story();
   }
