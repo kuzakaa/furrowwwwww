@@ -917,3 +917,8 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .s2ov{transition:opacity .6s ease;image-rendering:auto}
 .s2ov{-webkit-mask-image:radial-gradient(closest-side,#000 62%,transparent 100%);mask-image:radial-gradient(closest-side,#000 62%,transparent 100%)}
 .key .kp{grid-template-columns:150px 1fr!important;column-gap:20px!important;align-items:center}.key .kp .big{white-space:nowrap}
+.key .kp{grid-template-columns:96px 1fr!important;column-gap:18px!important}
+.big2{display:flex;flex-direction:column;align-items:flex-end;line-height:1}
+.big2 em{font-style:normal;font-size:30px;font-weight:800;letter-spacing:-.5px}
+.big2 s{text-decoration:none;font-size:13px;color:var(--muted);margin-top:5px;white-space:nowrap}
+.big2.good em{color:#8FD694}.big2.bad em{color:#F2907E}.big2.same em{color:#E8EFE6}
