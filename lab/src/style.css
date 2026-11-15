@@ -859,3 +859,11 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .pencilwrap{left:10px;top:146px}
 .pencil{width:34px;height:34px;border-radius:8px;border-width:2px}
 .pencil svg{width:20px;height:20px}
+.xanim .a-sun{transform-origin:160px 26px;animation:a-sunp 2s ease-in-out infinite alternate}
+@keyframes a-sunp{to{transform:scale(1.35);fill:#f29a4f}}
+.xanim .a-wilt{fill:#9fd67a;transform-origin:50% 100%;transform-box:fill-box;animation:a-wiltk 4s ease-in-out infinite}
+@keyframes a-wiltk{0%,15%{transform:none;fill:#9fd67a}55%,80%{transform:rotate(38deg) scaleY(.75);fill:#b8964f}100%{transform:none;fill:#9fd67a}}
+.xanim .a-sun{transform-origin:160px 26px;animation:a-sunp 2s ease-in-out infinite alternate}
+@keyframes a-sunp{to{transform:scale(1.35);fill:#f29a4f}}
+.xanim .a-wilt{fill:#9fd67a;transform-origin:50% 100%;transform-box:fill-box;animation:a-wiltk 4s ease-in-out infinite}
+@keyframes a-wiltk{0%,15%{transform:none;fill:#9fd67a}55%,80%{transform:rotate(38deg) scaleY(.75);fill:#b8964f}100%{transform:none;fill:#9fd67a}}
