@@ -1021,3 +1021,9 @@ body:not(.wiz) .wrow.wc .lvl,body:not(.wiz) #acc .wrow .lvl{grid-column:2!import
 body:not(.wiz) .wrow.wc input,body:not(.wiz) #acc .wrow input{grid-column:1 / -1!important;grid-row:2!important}
 body:not(.wiz) #acc .wrow .ends{grid-column:1 / -1!important;grid-row:3!important}
 body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
+.knownbox{margin:4px 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:14px}
+.khead{font-weight:700;font-size:15px;margin:0 0 2px}
+#known{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#known .chip[aria-pressed="true"]{background:#8FD694;color:#10231A;border-color:#8FD694}
+#known .chip:disabled{opacity:.75;cursor:default}
+#known .knall{border-style:dashed}

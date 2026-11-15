@@ -1032,6 +1032,12 @@ body:not(.wiz) .wrow.wc .lvl,body:not(.wiz) #acc .wrow .lvl{grid-column:2!import
 body:not(.wiz) .wrow.wc input,body:not(.wiz) #acc .wrow input{grid-column:1 / -1!important;grid-row:2!important}
 body:not(.wiz) #acc .wrow .ends{grid-column:1 / -1!important;grid-row:3!important}
 body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
+.knownbox{margin:4px 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:14px}
+.khead{font-weight:700;font-size:15px;margin:0 0 2px}
+#known{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#known .chip[aria-pressed="true"]{background:#8FD694;color:#10231A;border-color:#8FD694}
+#known .chip:disabled{opacity:.75;cursor:default}
+#known .knall{border-style:dashed}
 
 </style>
 </head>
@@ -1112,6 +1118,7 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
     </div>
   </details>
   <details class="box" data-wiz="acc"><summary>What you can take on</summary>
+    <div class="knownbox"><p class="khead">Crops you already know how to grow and sell</p><p class="small muted">Tap every crop you could grow tomorrow. These will not count as “new” for you.</p><div class="chips" id="known"></div></div>
     <div class="wrow money-row"><div class="wh"><label for="maxdrop">Largest income drop you can accept</label><span class="lvl" id="maxdropv">15% a year</span></div><input id="maxdrop" type="range" min="0" max="40" step="1" value="15"><div class="ends"><span>0%, no drop at all</span><span>40%</span></div>
       <div class="slider dropy"><label for="dropy">For how long</label><input id="dropy" type="range" min="1" max="5" step="1" value="2"><span class="num" id="dropyv">2 years</span></div>
       <p class="mwhy" id="mwhy"></p>
@@ -1639,7 +1646,7 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
   };
   const DIMTIP = { water: 'How much of the water your crops wanted they actually got from rain and the soil. 100 means they never ran short.', soil: 'Estimated from days with living roots, nitrogen from legumes, leftover residue, how many crop families you grow, deep roots, and few bare days.', erosion: 'How much of the heavy rain lands on covered ground instead of bare soil. 100 means none of it hits bare soil.', income: '<b>How it is scored.</b> Each crop has a 1 to 5 rating for typical cost to grow and for how many buyers it has (see the crop table in How it works). The score combines these over the rotation and drops in years when the crop runs short of water, since yield falls. It compares options with each other; it is not a forecast in euros.<br><b>Where the data comes from.</b> The ratings are general values from extension guides, the same for every country. Furrow has no regional price, cost or yield data, so it cannot see that sunflower pays better in Odesa than in Iowa.<br><b>Reliability and volatility.</b> Prices are not modelled at all, so price swings between years do not show up. Only the weather part (water shortage) varies year to year, and that part is reliable.<br><b>What it does not include.</b> Import tariffs, export bans, closed ports and sea routes, currency moves, input prices (fertiliser, diesel), subsidies and contracts. These can outweigh everything else. Add them yourself: tap “Export prices or tariffs are unstable” in step 7, and enter your own yield, price and costs under “Help me work out my margin” in step 6.', resilience: 'How rarely crops get stressed by drought or heat, whether they ripen before frost, and how spread out your crops are across families and seasons.' };
   const TREND = { 'clear trend': 'trend, p < 0.05', 'possible trend': 'weak signal, p < 0.2', 'no clear trend': 'no clear trend' };
-  const S = { dropYears: 2, later: true, exReason: {}, area: 100, fw: 1000, fl: 1000, stockOn: false, stockType: 'beef', stockN: 0, maxDrop: 15, mY: 4.5, mP: 200, mC: 550, slopePct: 3, later: false, years: 3, w2: { water: 3, soil: 5, erosion: 4, income: 2, resilience: 3 }, acc: {}, text: '', exp: null, lat: 0, lon: 0, name: '', rot: [], soil: 'loam', slope: 'custom', till: 'reduced', irrigated: false, livestock: false, exclude: new Set(), weights: { water: 3, soil: 3, erosion: 3, income: 3, resilience: 3 }, scen: { rain: 0, temp: 0 }, raw: null, demo: null, sel: 0, terrain: null, soilSug: null, touched: {} };
+  const S = { known: [], dropYears: 2, later: true, exReason: {}, area: 100, fw: 1000, fl: 1000, stockOn: false, stockType: 'beef', stockN: 0, maxDrop: 15, mY: 4.5, mP: 200, mC: 550, slopePct: 3, later: false, years: 3, w2: { water: 3, soil: 5, erosion: 4, income: 2, resilience: 3 }, acc: {}, text: '', exp: null, lat: 0, lon: 0, name: '', rot: [], soil: 'loam', slope: 'custom', till: 'reduced', irrigated: false, livestock: false, exclude: new Set(), weights: { water: 3, soil: 3, erosion: 3, income: 3, resilience: 3 }, scen: { rain: 0, temp: 0 }, raw: null, demo: null, sel: 0, terrain: null, soilSug: null, touched: {} };
   const COL = { bare: '#F2A541', et: '#F2907E', straw: '#B7A98A', crop: '#8FD694', cover: '#D6EBAE', peren: '#3E8E5A', water: '#7CC6E8', waterSoft: '#2F5D6B', ink: '#EEF2E6', muted: '#A8A89C', line: 'rgba(240,236,220,.13)', panel: '#171816' };
 
   async function fetchPower(lat, lon) {
@@ -1831,9 +1838,15 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
     box.innerHTML = ids.length ? '<p class="exhead">Why can’t you grow these? <span class="muted">Optional. It helps us improve Furrow for farmers like you.</span></p>' + ids.map(k => '<div class="exrow"><b>' + esc((C[k] || CV[k]).short) + '</b><select data-exr="' + k + '"><option value="">Choose a reason</option>' + EXR.map(r => '<option' + (S.exReason[k] === r ? ' selected' : '') + '>' + r + '</option>').join('') + '</select></div>').join('') : '';
     box.querySelectorAll('[data-exr]').forEach(sel => sel.onchange = () => { S.exReason[sel.dataset.exr] = sel.value; save(); });
   }
+  function knownUI() {
+    const box = $('known'); if (!box) return; const set = new Set(S.known || []), grown = new Set(S.rot.map(r => r.c));
+    box.innerHTML = CORDER.filter(c => c !== 'fallow').map(c => '<button type="button" class="chip kn" data-kn="' + c + '" aria-pressed="' + (set.has(c) || grown.has(c)) + '"' + (grown.has(c) ? ' disabled title="You already grow it"' : '') + '>' + C[c].short + '</button>').join('') + '<button type="button" class="chip knall" id="knall">I can grow and sell all of them</button>';
+    box.querySelectorAll('[data-kn]').forEach(b => b.onclick = () => { const c = b.dataset.kn; if (set.has(c)) set.delete(c); else set.add(c); S.known = [...set]; knownUI(); recompute(); });
+    $('knall').onclick = () => { S.known = CORDER.filter(c => c !== 'fallow'); knownUI(); recompute(); };
+  }
   function margin() { return Math.max(0, (S.mY || 0) * (S.mP || 0) - (S.mC || 0)); }
   function setSlope(p) { S.slopePct = Math.round(Math.max(0, Math.min(20, +p || 0)) * 10) / 10; S.slope = 'custom'; E.SLOPES.custom = { name: S.slopePct + '%', f: Math.max(0.3, Math.min(3, S.slopePct / 4)) }; if ($('slopep')) { $('slopep').value = S.slopePct; if (document.activeElement !== $('slopev')) $('slopev').value = S.slopePct; } }
-  const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), exReason: S.exReason, weights: S.weights, area: S.area, fw: S.fw, fl: S.fl, fN: S.fN, fS: S.fS, fE: S.fE, fW: S.fW, poly: S.poly, polyAt: S.polyAt, stockOn: S.stockOn, stockType: S.stockType, stockN: S.stockN, maxDrop: S.maxDrop, dropYears: S.dropYears, mY: S.mY, mP: S.mP, mC: S.mC, slopePct: S.slopePct, later: S.later, years: S.years, w2: S.w2, acc: S.acc, text: S.text, exp: S.exp });
+  const choices = () => ({ lat: S.lat, lon: S.lon, demo: S.demo, rot: S.rot, soil: S.soil, slope: S.slope, till: S.till, irrigated: S.irrigated, livestock: S.livestock, exclude: Array.from(S.exclude), exReason: S.exReason, weights: S.weights, area: S.area, fw: S.fw, fl: S.fl, fN: S.fN, fS: S.fS, fE: S.fE, fW: S.fW, poly: S.poly, polyAt: S.polyAt, stockOn: S.stockOn, stockType: S.stockType, stockN: S.stockN, maxDrop: S.maxDrop, dropYears: S.dropYears, known: S.known, mY: S.mY, mP: S.mP, mC: S.mC, slopePct: S.slopePct, later: S.later, years: S.years, w2: S.w2, acc: S.acc, text: S.text, exp: S.exp });
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(Object.assign(choices(), { done: !S.intro && S.wiz == null }))); } catch (e) {}
   }
@@ -1848,11 +1861,11 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
     let v = fromLink(); if (!v) { try { v = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
     if (!v || !v.done || !isFinite(v.lat) || !isFinite(v.lon) || Math.abs(v.lat) > 70 || Math.abs(v.lon) > 180 || !Array.isArray(v.rot) || !v.rot.length || v.rot.length > 6 || v.rot.some(r => !r || !C[r.c])) return null;
     S.rot = v.rot.filter(r => C[r.c]).map(r => ({ c: r.c, cv: CV[r.cv] ? r.cv : null, as: r.as || null }));
-    if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp', 'area', 'fw', 'fl', 'fN', 'fS', 'fE', 'fW', 'poly', 'polyAt', 'stockOn', 'stockType', 'stockN', 'maxDrop', 'dropYears', 'mY', 'mP', 'mC'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
+    if (E.SOILS[v.soil]) S.soil = v.soil; setSlope(isFinite(v.slopePct) ? v.slopePct : 3); ['later', 'years', 'text', 'exp', 'area', 'fw', 'fl', 'fN', 'fS', 'fE', 'fW', 'poly', 'polyAt', 'stockOn', 'stockType', 'stockN', 'maxDrop', 'dropYears', 'known', 'mY', 'mP', 'mC'].forEach(k => { if (v[k] != null) S[k] = v[k]; }); if (v.w2) Object.assign(S.w2, v.w2); if (v.acc) S.acc = v.acc; if (E.TILLAGE[v.till]) S.till = v.till;
     S.irrigated = !!v.irrigated; S.livestock = !!v.livestock; S.exclude = new Set((Array.isArray(v.exclude) ? v.exclude : []).filter(k => C[k] || CV[k])); S.exReason = v.exReason && typeof v.exReason === 'object' ? v.exReason : {};
     DIMS.forEach(d => { const w = v.weights && v.weights[d[0]]; if (w >= 0 && w <= 5) S.weights[d[0]] = Math.round(w); $('w_' + d[0]).value = S.weights[d[0]]; $('w_v' + d[0]).textContent = LEVEL[S.weights[d[0]]]; });
     $('soil').value = S.soil; $('till').value = S.till; $('irrig').checked = S.irrigated; if (window.syncExtra) window.syncExtra(); S.later = true; $('later').checked = true; $('laterbox').hidden = false; $('years').value = S.years; $('yearsv').textContent = S.years + ' yrs'; $('free').value = S.text || ''; showUnd(); if (window.syncChips) window.syncChips(); DIMS.forEach(d => { $('w2_' + d[0]).value = S.w2[d[0]]; $('w2_v' + d[0]).textContent = LEVEL[S.w2[d[0]]]; });
-    document.querySelectorAll('#excl .chip').forEach(b => b.setAttribute('aria-pressed', S.exclude.has(b.dataset.id) ? 'true' : 'false')); exReasons();
+    document.querySelectorAll('#excl .chip').forEach(b => b.setAttribute('aria-pressed', S.exclude.has(b.dataset.id) ? 'true' : 'false')); exReasons(); knownUI();
     renderRot(); return v;
   }
   function sheet(A) {
@@ -1922,7 +1935,7 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
     }
     const mg = margin(), curC = new Set(S.rot.map(r => r.c));
     const ADJ = x => {
-      x.need = Lab.needs(x, S.rot); x.adj = Lab.adjust(x, x.need, acc); x.rawMatch = x.match;
+      x.need = Lab.needs(x, S.rot.concat((S.known || []).map(c => ({ c, cv: null })))); x.adj = Lab.adjust(x, x.need, acc); x.rawMatch = x.match;
       const ci = A.current.sc.income || 1; x.incPct = (x.sc.income - ci) / ci * 100; x.incEur = x.incPct / 100 * mg * (S.area || 0);
       if (x.incPct < -S.maxDrop && x.id !== 'current') { x.adj.blocked.push('incomeDip'); x.need.incomeDip = 'about ' + Math.round(-x.incPct) + '% less income, more than the ' + S.maxDrop + '% you can accept'; }
       const big = x.rot.map(r => r.c).filter(c => !curC.has(c) && Lab.CROPINFO[c] && Lab.CROPINFO[c].niche >= 3).map(c => { const t = (S.area || 0) / x.rot.length * (YIELD[c] || 3); return t >= 300 ? C[c].short.toLowerCase() + ' (about ' + r0(t) + ' t a year)' : null; }).filter(Boolean);
@@ -2160,7 +2173,7 @@ body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
       $('rv' + i).onchange = e => { r.cv = e.target.value || null; recompute(); };
       if ($('rx' + i)) $('rx' + i).onclick = () => { S.rot.splice(i, 1); renderRot(); recompute(); };
     });
-    $('addyr').disabled = S.rot.length >= 6;
+    $('addyr').disabled = S.rot.length >= 6; if (typeof knownUI === 'function') knownUI();
   }
   const EV = ['climate', 'calendar', 'years', 'method'];
   const ICON = { field: '<path d="M12 21s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.500 15.400 12 21 12 21z"/><circle cx="12" cy="10.500" r="2.300"/>', result: '<path d="M12 21V11"/><path d="M12 13c0-4 2.500-6.500 7-7 0 4.500-2.500 7-7 7z"/><path d="M12 16c0-3-2-5-5.500-5.500C6.500 14 8.500 16 12 16z"/>', options: '<path d="M4 7h16M4 12h16M4 17h10"/>', evidence: '<path d="M4 20V4"/><path d="M4 20h16"/><path d="M7 15l4-4 3 2.500L19 8"/>' };
