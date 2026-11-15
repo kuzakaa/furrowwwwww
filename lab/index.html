@@ -971,6 +971,15 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .qm{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(143,214,148,.6);background:transparent;color:#8FD694;font:700 12px/1 inherit;cursor:pointer;padding:0;display:inline-grid;place-items:center}
 .qm:hover{background:rgba(143,214,148,.15)}
 .phead{margin-top:8px!important}
+#weights,#weights2{display:flex!important;flex-direction:column!important;gap:0!important;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.wrow.wc{display:grid!important;grid-template-columns:minmax(190px,1.1fr) 1.6fr 150px;align-items:center;gap:14px;padding:10px 14px!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;background:transparent!important}
+.wrow.wc:last-child{border-bottom:0!important}
+.wrow.wc .wh{display:contents}
+.wrow.wc label{grid-column:1;grid-row:1;white-space:nowrap;margin:0}
+.wrow.wc input{grid-column:2;grid-row:1;width:100%;margin:0}
+.wrow.wc .lvl{grid-column:3;grid-row:1;text-align:right;white-space:nowrap}
+.phz{grid-template-columns:190px 1fr 150px!important;padding-left:14px;padding-right:14px}
+.phz .num{text-align:right}
 
 </style>
 </head>
@@ -1822,6 +1831,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
     try { LAST = E.analyse(S.raw, inp); labAdjust(LAST, inp, acc, cons); } catch (e) { status('err', 'Something went wrong while analysing this field: ' + esc(e.message)); return; }
     S.sel = LAST.alts.length ? 1 : 0; render(); save(); if (S.wiz != null && WIZ[S.wiz][0] === 'acc') drawAcc();
   }
+  window.__searchDone = () => { if (typeof recompute === 'function') recompute(); };
   function labAdjust(A, inp, acc, cons) {
     let all = A.alts.concat(A.others);
     if (S.exp && window.Lab) {
@@ -1836,6 +1846,27 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
         exps.forEach((x, j) => { const v = d[j].slice().sort((a, b) => a - b); x.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; });
         all = all.concat(exps);
       }
+    }
+    { // exhaustive search over every rotation of 2 to 4 years, with and without cover crops
+      const sk = [S.lat.toFixed(3), S.lon.toFixed(3), inp.soil, inp.slopePct, inp.till, inp.irrigated, [...inp.exclude].sort().join('.'), A.cl.n].join('|');
+      const SR = window.__search || (window.__search = {}); const st = SR[sk] || (SR[sk] = { done: false, res: [], i: 0, list: null });
+      if (!st.list) {
+        const crops = CORDER.filter(c => c !== 'fallow' && !inp.exclude.has(c) && (!A.cal[c] || A.cal[c].reliab == null || A.cal[c].reliab >= 0.6)), seen = new Set(), L = [];
+        const canon = r => { let best = null; for (let k = 0; k < r.length; k++) { const t = r.slice(k).concat(r.slice(0, k)).join(','); if (best == null || t < best) best = t; } return best; };
+        const rec = (r, n) => { if (r.length === n) { if (r[0] === r[n - 1] && n > 1) return; const c = canon(r); if (!seen.has(c)) { seen.add(c); L.push(r.slice()); } return; } for (const c of crops) { if (r.length && r[r.length - 1] === c) continue; if (C[c].kind === 'perennial' && r.includes(c)) continue; r.push(c); rec(r, n); r.pop(); } };
+        [2, 3, 4].forEach(n => rec([], n));
+        const covOK = id => !inp.exclude.has(id);
+        st.list = []; L.forEach(r => { st.list.push(r.map(c => ({ c, cv: null }))); if (covOK('rye') || covOK('legmix')) st.list.push(r.map(c => ({ c, cv: (C[c].kind === 'summer' || C[c].kind === 'winter') ? (C[c].kind === 'winter' && covOK('legmix') ? 'legmix' : covOK('rye') ? 'rye' : 'legmix') : null }))); });
+      }
+      if (!st.done && !st.busy) { st.busy = true; const cl = A.cl, cal = A.cal, inp2 = Object.assign({}, inp); const step = () => { const t0 = performance.now(); while (st.i < st.list.length && performance.now() - t0 < 25) { const rot = st.list[st.i++]; try { const r = E.simulate(rot, cl, cal, inp2); st.res.push({ rot, sim: r }); } catch (e) {} } if (st.i < st.list.length) setTimeout(step, 0); else { st.done = true; st.busy = false; if (window.__searchDone) window.__searchDone(); } }; setTimeout(step, 0); }
+      const key2 = x => JSON.stringify(x.rot.map(r => [r.c, r.cv || null]));
+      const have = new Set(all.map(key2).concat([key2(A.current)]));
+      const top = st.res.map(o => ({ o, m: E.match(o.sim.sc, inp.weights) })).sort((a, b) => b.m - a.m).slice(0, 8).filter(t => !have.has(key2({ rot: t.o.rot })));
+      const nx = top.map(t => Object.assign({ id: 'best' + key2({ rot: t.o.rot }), name: 'Best mix found for this field', tag: 'Found by testing every rotation of 2 to 4 years', rot: t.o.rot }, t.o.sim, { match: t.m }));
+      if (nx.length) { let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300, d = nx.map(() => []);
+        for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)), mc = E.match(E.scoreSet(A.current, inp, idx), inp.weights); nx.forEach((x, j) => d[j].push(E.match(E.scoreSet(x, inp, idx), inp.weights) - mc)); }
+        nx.forEach((x, j) => { const v = d[j].slice().sort((a, b) => a - b); x.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; all.push(x); }); }
+      A.search = { total: st.list.length, done: st.i, finished: st.done };
     }
     const mg = margin(), curC = new Set(S.rot.map(r => r.c));
     if (window.Lab) all.forEach(x => {
