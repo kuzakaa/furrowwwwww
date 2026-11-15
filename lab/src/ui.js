@@ -317,7 +317,7 @@
     }
     const mg = margin(), curC = new Set(S.rot.map(r => r.c));
     const ADJ = x => {
-      x.need = Lab.needs(x, S.rot.concat((S.known || []).map(c => ({ c, cv: null })))); x.adj = Lab.adjust(x, x.need, acc); x.rawMatch = x.match;
+      x.need = Lab.needs(x, S.rot.concat(CORDER.filter(c => !S.exclude.has(c)).map(c => ({ c, cv: null })))); x.adj = Lab.adjust(x, x.need, acc); x.rawMatch = x.match;
       const ci = A.current.sc.income || 1; x.incPct = (x.sc.income - ci) / ci * 100; x.incEur = x.incPct / 100 * mg * (S.area || 0);
       if (x.incPct < -S.maxDrop && x.id !== 'current') { x.adj.blocked.push('incomeDip'); x.need.incomeDip = 'about ' + Math.round(-x.incPct) + '% less income, more than the ' + S.maxDrop + '% you can accept'; }
       const big = x.rot.map(r => r.c).filter(c => !curC.has(c) && Lab.CROPINFO[c] && Lab.CROPINFO[c].niche >= 3).map(c => { const t = (S.area || 0) / x.rot.length * (YIELD[c] || 3); return t >= 300 ? C[c].short.toLowerCase() + ' (about ' + r0(t) + ' t a year)' : null; }).filter(Boolean);
