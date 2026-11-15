@@ -410,9 +410,9 @@
   function countUp() { document.querySelectorAll('.vs2 .n[data-v]:not(.done)').forEach(el => { el.classList.add('done'); const v = +el.dataset.v, t0 = performance.now(), D = 900; const f = t => { const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(v * e); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }); }
   new MutationObserver(countUp).observe(document.body, { childList: true, subtree: true });
   function dumbbell(cur, best) {
-    return '<div class="sct"><div class="scth"><span>Score</span><span>Now</span><span>If you switch</span><span>Change</span></div>' + DIMS.map(d => {
+    return '<div class="sct"><div class="scth"><span>Score</span><span>Now → if you switch</span><span>Change</span></div>' + DIMS.map(d => {
       const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, k = dl > 2 ? 'up' : dl < -2 ? 'down' : 'same';
-      return '<button type="button" class="sctr ' + k + '" data-term="s_' + d[0] + '"><span class="nm">' + d[1] + '</span><span class="v0">' + a + '</span><span class="v1">' + b + '<i style="width:' + b + '%"></i></span><span class="dl">' + (dl > 0 ? '+' : dl < 0 ? '−' : '±') + Math.abs(dl) + '</span><span class="go">›</span></button>';
+      return '<button type="button" class="sctr ' + k + '" data-term="s_' + d[0] + '"><span class="nm">' + d[1] + '</span><span class="big2 ' + (k === 'up' ? 'good' : k === 'down' ? 'bad' : 'same') + '"><s>' + a + '</s><i>→</i><em>' + b + '</em></span><span class="dl">' + (dl > 0 ? '+' : dl < 0 ? '−' : '±') + Math.abs(dl) + '</span><span class="go">›</span></button>';
     }).join('') + '</div><p class="scnote">Scores from 0 (bad) to 100 (very good). Tap a row to see what it means.</p>';
   }
 

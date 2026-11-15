@@ -927,3 +927,6 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .big2 s{grid-column:1;text-align:right;font-size:17px!important;font-weight:600;color:#9FB2A4!important;margin:0!important}
 .big2 i{grid-column:2;font-style:normal;text-align:center;color:#6f8a77;font-size:16px}
 .big2 em{grid-column:3;text-align:left;font-size:32px!important}
+.scth,.sctr{grid-template-columns:minmax(150px,1.6fr) 150px 70px 18px!important}
+.scth span:nth-child(2){text-align:left!important;padding-left:8px}
+.sctr .big2 em{font-size:24px!important}
