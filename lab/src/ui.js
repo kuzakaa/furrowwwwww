@@ -210,7 +210,7 @@
   const YIELD = { wheat: 4.5, corn: 7, soy: 2.5, sunflower: 2.3, sorghum: 4, oats: 3, pea: 2.5, canola: 2.8, alfalfa: 6 };
   function herd() {
     if (!S.stockOn) { S.livestock = false; return ''; }
-    const need = (S.stockN || 0) * ANIMALS[S.stockType || 'beef'][1], share = 2 / (S.rot.length + 2), supply = (S.area || 0) * share * YIELD.alfalfa, use = supply ? Math.min(1, need / supply) : 0;
+    const need = (S.stockN || 0) * ANIMALS[S.stockType || 'beef'][1], share = 0.4, supply = (S.area || 0) * share * YIELD.alfalfa, use = supply ? Math.min(1, need / supply) : 0;
     S.livestock = use >= 0.5;
     return 'Your animals eat about <b>' + r0(need) + ' t</b> of hay a year. Two years of alfalfa in your rotation on ' + (S.area || 0) + ' ha would give about <b>' + r0(supply) + ' t</b> a year, so about <b>' + Math.round(use * 100) + '%</b> would be used' + (S.livestock ? '. Alfalfa counts as feed for your own animals.' : '. That is too little to count alfalfa as feed; it would need a hay buyer.');
   }
@@ -271,7 +271,7 @@
     if (!S.raw) return;
     setSlope(S.slopePct);
     const cons = window.Lab ? Lab.parseConstraints(S.text) : [], w = Object.assign({}, S.weights), acc = Object.assign({}, S.acc), ex = new Set(S.exclude); let stock = S.livestock;
-    cons.forEach(c => { Object.assign(w, c.act.w || {}); for (const k in c.act.acc || {}) acc[k] = Math.min(acc[k] == null ? 5 : acc[k], c.act.acc[k]); (c.act.avoid || []).forEach(x => { if (!S.rot.some(r => r.c === x)) ex.add(x); }); if (c.act.livestock) stock = true; });
+    cons.forEach(c => { Object.assign(w, c.act.w || {}); for (const k in c.act.acc || {}) acc[k] = Math.min(acc[k] == null ? 5 : acc[k], c.act.acc[k]); (c.act.avoid || []).forEach(x => ex.add(x)); if (c.act.livestock) stock = true; });
     if (Object.values(w).every(v => !v)) w.income = 1;
     herd(); if (S.livestock) stock = true;
     const inp = Object.assign({}, S, { weights: w, exclude: ex, livestock: stock });
@@ -279,102 +279,74 @@
     S.sel = LAST.alts.length ? 1 : 0; render(); save(); if (S.wiz != null && WIZ[S.wiz][0] === 'acc') drawAcc();
   }
   window.__searchDone = () => { if (typeof recompute === 'function') recompute(); };
+  const ALLC = CORDER.map(c => ({ c, cv: null }));
+  const bigList = () => Object.keys(YIELD).filter(c => Lab.CROPINFO[c] && Lab.CROPINFO[c].niche >= 3).map(c => [c, (S.area || 0) * YIELD[c]]);
+  function limitsOf(x, acc) {
+    const need = Lab.needs(x, ALLC), adj = Lab.adjust({ match: 0 }, need, acc), n = x.rot.length;
+    const big = bigList().map(b => { const k = x.rot.filter(r => r.c === b[0]).length; return k && k * b[1] >= 300 * n ? C[b[0]].short.toLowerCase() + ' (about ' + r0(k * b[1] / n) + ' t a year)' : null; }).filter(Boolean);
+    if (big.length) { need.market = big.join(', ') + ' may be more than local buyers will take'; adj.pen += 3; }
+    return { need, adj };
+  }
   function labAdjust(A, inp, acc, cons) {
-    let all = A.alts.concat(A.others);
-    if (S.exp && window.Lab) {
-      const key = x => JSON.stringify(x.rot.map(r => [r.c, r.cv || null])) + x.till;
-      const have = new Set(all.map(x => key(Object.assign({ till: inp.till }, x))).concat([key(Object.assign({ till: inp.till }, A.current))]));
-      const exps = Lab.experimental(S.rot, A.cal, inp.till).filter(x => !have.has(key(x)) && !x.rot.some(r => inp.exclude.has(r.c) || (r.cv && inp.exclude.has(r.cv))));
-      exps.forEach(x => { Object.assign(x, E.simulate(x.rot, A.cl, A.cal, Object.assign({}, inp, { till: x.till }))); x.match = E.match(x.sc, inp.weights); x.tag = 'New, less tested'; });
-      if (exps.length) {
-        let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300;
-        const d = exps.map(() => []);
-        for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)), mc = E.match(E.scoreSet(A.current, inp, idx), inp.weights); exps.forEach((x, j) => d[j].push(E.match(E.scoreSet(x, Object.assign({}, inp, { till: x.till }), idx), inp.weights) - mc)); }
-        exps.forEach((x, j) => { const v = d[j].slice().sort((a, b) => a - b); x.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; });
-        all = all.concat(exps);
-      }
+    const o = { irrigated: !!inp.irrigated, livestock: !!inp.livestock }, H = 10, Y = Math.min(H - 1, Math.max(1, S.years || 3)), fa = Y / H, fb = 1 - fa;
+    const w1 = inp.weights, w2 = Object.assign({}, S.w2); cons.forEach(c => Object.assign(w2, c.act.w || {})); if (Object.values(w2).every(v => !v)) w2.income = 1;
+    const simKey = [S.lat.toFixed(3), S.lon.toFixed(3), inp.soil, inp.slope, inp.till, S.scen.rain, S.scen.temp, A.cl.n].join('|');
+    let PL = window.__plan; if (!PL || PL.simKey !== simKey || PL.raw !== S.raw) PL = window.__plan = { simKey, raw: S.raw, P: Lab.planner(A.cl, A.cal, inp), tok: 0 };
+    const P = PL.P, okc = id => !inp.exclude.has(id), types = [];
+    CORDER.filter(okc).forEach(c => { types.push({ c, cv: null }); if (P.canCv(c)) ['rye', 'legmix'].filter(okc).forEach(cv => types.push({ c, cv })); });
+    const PEN = [[{ c: 'wheat' }], [{ c: 'wheat', cv: 'rye' }], [{ c: 'alfalfa' }], [{ c: 'alfalfa' }, { c: 'wheat', cv: 'rye' }]].map(rot => { const d = Lab.adjust({ match: 0 }, Lab.needs({ rot }, ALLC), acc); return { pen: d.pen, blocked: d.blocked.length > 0 }; });
+    const maxDrop = S.maxDrop < 40 ? S.maxDrop : null, bfKey = JSON.stringify([types, w1, w2, Y, PEN, maxDrop, o, S.area]);
+    if (PL.bfKey !== bfKey && types.length) {
+      PL.bfKey = bfKey; PL.res = null; PL.objs = {}; PL.pc = 0; const tok = ++PL.tok, J = P.job({ types, o, w1, w2, share: fa, pen: PEN, big: bigList(), maxDrop, maxLen: 6 });
+      const tick = () => {
+        if (PL !== window.__plan || tok !== PL.tok) return; const fin = J.step(30);
+        PL.pc = J.done < J.total ? Math.round(J.done / J.total * 55) : 55 + Math.round((J.bf || 0) * 45);
+        const lb = $('ldbar'), lt = $('ldtxt'); if (lb) lb.style.width = PL.pc + '%'; if (lt) lt.textContent = J.done < J.total ? 'Replaying 25 years of weather: ' + J.done.toLocaleString('en') + ' of ' + J.total.toLocaleString('en') + ' crop sequences' : 'Comparing every rotation: ' + Math.round((J.bf || 0) * 100) + '%';
+        if (fin) { PL.res = J.result; recompute(); } else setTimeout(tick, 0);
+      };
+      clearTimeout(PL.t); PL.t = setTimeout(tick, 200);
     }
-    { // exhaustive search over every rotation of 2 to 5 years, with and without cover crops
-      const sk = [S.lat.toFixed(3), S.lon.toFixed(3), inp.soil, inp.slopePct, inp.till, inp.irrigated, [...inp.exclude].sort().join('.'), A.cl.n].join('|');
-      const SR = window.__search || (window.__search = {}); const st = SR[sk] || (SR[sk] = { done: false, res: [], i: 0, list: null });
-      if (!st.list) {
-        let crops = CORDER.filter(c => c !== 'fallow' && !inp.exclude.has(c) && (!A.cal[c] || A.cal[c].reliab == null || A.cal[c].reliab >= 0.6)); if (crops.length < 3) crops = CORDER.filter(c => c !== 'fallow' && !inp.exclude.has(c)); const seen = new Set(), L = [];
-        const canon = r => { let best = null; for (let k = 0; k < r.length; k++) { const t = r.slice(k).concat(r.slice(0, k)).join(','); if (best == null || t < best) best = t; } return best; };
-        const rec = (r, n) => { if (r.length === n) { if (r[0] === r[n - 1] && n > 1) return; const c = canon(r); if (!seen.has(c)) { seen.add(c); L.push(r.slice()); } return; } for (const c of crops) { if (r.length && r[r.length - 1] === c) continue; if (C[c].kind === 'perennial' && r.includes(c)) continue; r.push(c); rec(r, n); r.pop(); } };
-        [2, 3, 4, 5].forEach(n => rec([], n));
-        const covOK = id => !inp.exclude.has(id);
-        st.list = []; L.forEach(r => { st.list.push(r.map(c => ({ c, cv: null }))); if (covOK('rye') || covOK('legmix')) st.list.push(r.map(c => ({ c, cv: (C[c].kind === 'summer' || C[c].kind === 'winter') ? (C[c].kind === 'winter' && covOK('legmix') ? 'legmix' : covOK('rye') ? 'rye' : 'legmix') : null }))); });
-      }
-      { const wkey = JSON.stringify(inp.weights); st.refined = st.refined || {}; if (st.phase1 && !st.refined[wkey] && !st.busy) st.done = false;
-      if (!st.done && !st.busy) { st.busy = true; const cl = A.cl, cal = A.cal, inp2 = Object.assign({}, inp);
-        const buildRefine = w => { const okc = id => !inp2.exclude.has(id), pick = c => (C[c].kind === 'winter' && okc('legmix')) ? 'legmix' : okc('rye') ? 'rye' : okc('legmix') ? 'legmix' : null, canCv = c => C[c].kind === 'summer' || C[c].kind === 'winter';
-          const seenR = new Set(st.res.map(o => JSON.stringify(o.rot))), seq = new Map(), out = [];
-          st.res.forEach(o => { const k = o.rot.map(r => r.c).join(','), m = E.match(o.sim.sc, w); if (!seq.has(k) || seq.get(k).m < m) seq.set(k, { m, crops: o.rot.map(r => r.c) }); });
-          const top = [...seq.values()].sort((a, b) => b.m - a.m), add = rot => { const k = JSON.stringify(rot); if (!seenR.has(k)) { seenR.add(k); out.push(rot); } };
-          top.slice(0, 150).forEach(t => { const n = t.crops.length; for (let mask = 0; mask < (1 << n); mask++) add(t.crops.map((c, j) => ({ c, cv: (mask >> j) & 1 && canCv(c) ? pick(c) : null }))); });
-          const types = [null].concat(['rye', 'legmix'].filter(okc));
-          top.slice(0, 40).forEach(t => { const n = t.crops.length, T = types.length; let total = 1; for (let j = 0; j < n; j++) total *= T; for (let q = 0; q < total; q++) { let z = q; add(t.crops.map(c => { const cv = types[z % T]; z = Math.floor(z / T); return { c, cv: canCv(c) ? cv : null }; })); } });
-          return out; };
-        const step = () => { const t0 = performance.now(); while (st.i < st.list.length && performance.now() - t0 < 25) { const rot = st.list[st.i++]; try { st.res.push({ rot, sim: E.simulate(rot, cl, cal, inp2) }); } catch (e) {} }
-          if (st.i < st.list.length) { const pg = $('srchp'), pc = Math.round(st.i / st.list.length * 100); if (pg) pg.textContent = 'Checking every rotation: ' + pc + '% of ' + st.list.length.toLocaleString('en') + ' done'; const lb = $('ldbar'), lt = $('ldtxt'); if (lb) lb.style.width = pc + '%'; if (lt) lt.textContent = st.i.toLocaleString('en') + ' of ' + st.list.length.toLocaleString('en') + ' rotations checked'; setTimeout(step, 0); return; }
-          const w = window.__curW || inp2.weights, wk = JSON.stringify(w); st.phase1 = true;
-          if (!st.refined[wk]) { st.refined[wk] = 1; const more = buildRefine(w); if (more.length) { st.list = st.list.concat(more); setTimeout(step, 0); return; } }
-          st.done = true; st.busy = false; if (window.__searchDone) window.__searchDone(); };
-        setTimeout(step, 0); } }
-      window.__curW = inp.weights;
-      const key2 = x => JSON.stringify(x.rot.map(r => [r.c, r.cv || null]));
-      const have = new Set(all.map(key2).concat([key2(A.current)]));
-      const top = st.res.map(o => ({ o, m: E.match(o.sim.sc, inp.weights) })).sort((a, b) => b.m - a.m).slice(0, 8).filter(t => !have.has(key2({ rot: t.o.rot })));
-      const nx = top.map(t => Object.assign({ id: 'best' + key2({ rot: t.o.rot }), name: 'The top-scoring rotation', tag: 'Found by testing every rotation of 2 to 5 years', rot: t.o.rot }, t.o.sim, { match: t.m }));
-      if (nx.length) { let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300, d = nx.map(() => []);
-        for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)), mc = E.match(E.scoreSet(A.current, inp, idx), inp.weights); nx.forEach((x, j) => d[j].push(E.match(E.scoreSet(x, inp, idx), inp.weights) - mc)); }
-        nx.forEach((x, j) => { const v = d[j].slice().sort((a, b) => a - b); x.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; all.push(x); }); }
-      A.search = { total: st.list.length, done: st.i, finished: st.done };
+    const res = PL.res && PL.bfKey === bfKey ? PL.res : null;
+    const fill = x => { const s = P.score(x.rot, o).sc, l = limitsOf(x, acc); x.sc = s; x.need = l.need; x.adj = l.adj; x.m1 = E.match(s, w1) - l.adj.pen; x.m2 = E.match(s, w2) - l.adj.pen; x.match = fa * x.m1 + fb * x.m2; x.adj.final = x.match; x.rawMatch = x.match + l.adj.pen;
+      if (res && maxDrop != null && s.income < res.minInc) { x.adj.blocked.push('incomeDip'); x.need.incomeDip = 'earns about ' + Math.round((1 - s.income / Math.max(1, res.maxInc)) * 100) + '% less than the best-earning rotation here, more than the ' + S.maxDrop + '% you can accept'; }
+      return x; };
+    fill(A.current);
+    const mg = margin(), ci = A.current.sc.income || 1, money = x => { x.incPct = (x.sc.income - ci) / ci * 100; x.incEur = x.incPct / 100 * mg * (S.area || 0); };
+    const norm = r => r.map(x => x.c + '+' + (x.cv && P.canCv(x.c) ? x.cv : '')), prim = k => { for (let q = 1; q < k.length; q++) if (k.length % q === 0 && k.every((v, i) => v === k[i % q])) return k.slice(0, q); return k; };
+    const canon = r => { const k = prim(norm(r)); let best = null; for (let i = 0; i < k.length; i++) { const t = k.slice(i).concat(k.slice(0, i)).join(','); if (best == null || t < best) best = t; } return best; };
+    A.cons = cons; A.acc = acc; A.search = { finished: !!res, pc: PL.pc || 0, count: res ? res.count : 0 };
+    A.breaks = S.rot.filter(r => inp.exclude.has(r.c) || (r.cv && inp.exclude.has(r.cv))).map(r => 'it has a crop you ruled out').slice(0, 1).concat(A.current.adj.blocked.map(k => Lab.ACCEPT[k] ? Lab.ACCEPT[k].q.toLowerCase() + ': ' + A.current.need[k] : k));
+    if (!res) {
+      const all = A.alts.concat(A.others); all.forEach(x => { fill(x); money(x); }); all.sort((p, q) => (p.adj.blocked.length ? 1 : 0) - (q.adj.blocked.length ? 1 : 0) || q.match - p.match);
+      A.alts = all.slice(0, 3); A.others = all.slice(3); A.plan = null; return;
     }
-    const mg = margin(), curC = new Set(S.rot.map(r => r.c));
-    const ADJ = x => {
-      x.need = Lab.needs(x, S.rot.concat(CORDER.filter(c => !S.exclude.has(c)).map(c => ({ c, cv: null })))); x.adj = Lab.adjust(x, x.need, acc); x.rawMatch = x.match;
-      const ci = A.current.sc.income || 1; x.incPct = (x.sc.income - ci) / ci * 100; x.incEur = x.incPct / 100 * mg * (S.area || 0);
-      if (S.maxDrop < 40 && x.incPct < -S.maxDrop && x.id !== 'current') { x.adj.blocked.push('incomeDip'); x.need.incomeDip = 'about ' + Math.round(-x.incPct) + '% less income, more than the ' + S.maxDrop + '% you can accept'; }
-      const big = x.rot.map(r => r.c).filter(c => !curC.has(c) && Lab.CROPINFO[c] && Lab.CROPINFO[c].niche >= 3).map(c => { const t = (S.area || 0) / x.rot.length * (YIELD[c] || 3); return t >= 300 ? C[c].short.toLowerCase() + ' (about ' + r0(t) + ' t a year)' : null; }).filter(Boolean);
-      if (big.length) { x.need.market = big.join(', ') + ' may be more than local buyers will take'; x.adj.pen += 3; }
-      x.adj.final = Math.round((x.rawMatch - x.adj.pen) * 10) / 10; x.match = x.adj.final;
-    };
-    if (window.Lab) all.forEach(ADJ);
-    if (window.Lab) { // apply your limits to every rotation tested, keep the best that fits
-      const st = window.__search && Object.values(window.__search).find(v => v.done && v.res.length && v.res[0].sim);
-      const k2 = x => JSON.stringify(x.rot.map(r => [r.c, r.cv || null])), have = new Set(all.map(k2));
-      if (st) { let bestOk = null; st.res.forEach(o => { const x = Object.assign({ id: 'all' + k2(o), name: 'The top rotation that fits your limits', tag: 'Found by testing every rotation of 2 to 5 years', rot: o.rot }, o.sim); x.match = E.match(x.sc, inp.weights); ADJ(x); if (!x.adj.blocked.length && (!bestOk || x.match > bestOk.match)) bestOk = x; });
-        if (bestOk) { let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300, v = []; for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)); v.push(E.match(E.scoreSet(bestOk, inp, idx), inp.weights) - E.match(E.scoreSet(A.current, inp, idx), inp.weights)); } v.sort((a, b) => a - b); bestOk.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; all.push(bestOk); }
-        A.searched = st.res.length;
-        if (st.done) for (let i = all.length - 1; i >= 0; i--) if (!/^(all|best)/.test(all[i].id)) all.splice(i, 1);
-        if (bestOk && !all.includes(bestOk)) all.push(bestOk); }
-    }
-    all.sort((a, b) => (a.adj && a.adj.blocked.length ? 1 : 0) - (b.adj && b.adj.blocked.length ? 1 : 0) || b.match - a.match);
-    const ok = all.filter(x => !(x.adj && x.adj.blocked.length));
-    { const lk = S.lat.toFixed(3) + ',' + S.lon.toFixed(3), name = x => E.rotLabel(x.rot) + '|' + (x.till || ''), pool = ok.length ? ok : all;
-      pool.sort((a, b) => b.match - a.match || (name(a) < name(b) ? -1 : 1));
-      const prev = (window.__stick || (window.__stick = {}))[lk] && pool.find(x => name(x) === (window.__stick || (window.__stick = {}))[lk]);
-      if (prev && pool[0] !== prev && pool[0].match - prev.match < 1) { pool.splice(pool.indexOf(prev), 1); pool.unshift(prev); }
-      if (pool[0]) (window.__stick || (window.__stick = {}))[lk] = name(pool[0]); if (ok.length) { const rest = all.filter(x => ok.indexOf(x) < 0); all.length = 0; all.push(...ok, ...rest); } }
-    A.alts = (ok.length ? ok : all).filter(x => x.id !== 'current').slice(0, 3); A.others = all.filter(x => A.alts.indexOf(x) < 0); A.cons = cons; A.acc = acc;
-    if (S.later && ok.length) { const by = ww => ok.slice().sort((a, b) => (E.match(b.sc, ww) - (b.adj ? b.adj.pen : 0)) - (E.match(a.sc, ww) - (a.adj ? a.adj.pen : 0)))[0]; A.plan = { first: by(inp.weights), then: by(S.w2), after: S.years }; } else A.plan = null;
+    const curK = canon(S.rot), mk = (r, name) => { if (!r) return A.current; const k = canon(r.rot); if (k === curK) return A.current; return PL.objs[k] || (PL.objs[k] = fill(Object.assign({ id: 'best' + k, name, tag: 'Found by checking every rotation of up to 6 years', rot: r.rot }, E.simulate(r.rot, A.cl, A.cal, inp)))); };
+    const same = res.first && res.then && canon(res.first.rot) === canon(res.then.rot);
+    const first = mk(res.first, same ? 'The best rotation for your field' : 'Best for years 1 to ' + Y), then = same ? first : mk(res.then, 'Best from year ' + (Y + 1) + ' on');
+    const list = []; [first, then].concat(res.top.slice(0, 6).map(t => mk(t, 'Another strong rotation'))).forEach(x => { if (x !== A.current && list.indexOf(x) < 0) list.push(x); });
+    A.plan = { first, then, after: Y, score: fa * first.m1 + fb * then.m2, same: first === then, keep: first === A.current && then === A.current };
+    { let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300, d = list.map(() => []);
+      const at = (x, idx) => { const s = P.score(x.rot, o, idx).sc; return fa * E.match(s, w1) + fb * E.match(s, w2) - x.adj.pen; };
+      for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)), mc = at(A.current, idx); list.forEach((x, j) => d[j].push(at(x, idx) - mc)); }
+      list.forEach((x, j) => { const v = d[j].sort((p, q) => p - q); x.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; money(x); }); }
+    A.alts = list.slice(0, 3); A.others = list.slice(3);
   }
 
   function render() {
     const A = LAST; if (!A) return;
-    const cl = A.cl, all = [A.current].concat(A.alts), best = A.alts[0], better = best && best.match > A.current.match + 1;
+    const cl = A.cl, all = [A.current].concat(A.alts), best = A.alts[0], pl = A.plan && !A.plan.keep ? A.plan : null, top = pl ? pl.score : best ? best.match : 0, better = best && r0(top) > r0(A.current.match);
     const pane = (id, html) => '<div class="pane" data-pane="' + id + '">' + html + '</div>';
 
     let R = '';
     if (S.scen.rain || S.scen.temp) R += '<div class="banner warn"><b>Sensitivity test is on.</b> Everything here replays 2001 to 2025 with rainfall ' + (S.scen.rain > 0 ? '+' : '') + S.scen.rain + '% and temperature +' + S.scen.temp + ' °C.</div>';
     if (cl.noFrost) R += '<div class="banner warn"><b>Few or no frosts here.</b> Furrow times crops by frost dates, so sowing and harvest dates for this field are rough. Treat the results as a starting point only.</div>';
     R += '<div class="place">' + esc(S.name) + ', ' + Math.abs(S.lat).toFixed(2) + '°' + (S.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(S.lon).toFixed(2) + '°' + (S.lon < 0 ? 'W' : 'E') + '. ' + E.SOILS[S.soil].name + ', ' + E.TILLAGE[S.till].name.toLowerCase() + '.</div>';
-    R += '<h1>' + (!best ? 'We couldn’t build any other rotations from your choices' : better ? 'Best match for you: ' + esc(best.name.charAt(0).toLowerCase() + best.name.slice(1)) : 'Your rotation is already about as good as anything we tried') + '</h1>';
+    R += '<h1>' + (!best ? 'We couldn’t build any other rotations from your choices' : A.plan && A.plan.keep ? 'What you grow now is already the best rotation for this field' : better ? (pl && !pl.same ? 'Best plan for you: one rotation for the first ' + pl.after + (pl.after === 1 ? ' year' : ' years') + ', another after that' : 'Best match for you: ' + esc(best.name.charAt(0).toLowerCase() + best.name.slice(1))) : 'Your rotation is already about as good as anything we tried') + '</h1>';
     if (best) {
-      { const cm = r0(A.current.match), bm = r0(best.match), dd = bm - cm, calm = Date.now() - (RING.t || 0) < 2500; if (calm) { RING.now = cm; RING.alt = bm; } RING.t = Date.now(); const _x = setTimeout(() => { RING.now = cm; RING.alt = bm; }, 0), alt = best.match + 0.5 < A.current.match ? 'Next best option' : 'Best option';
-      R += '<div class="vs2"><div class="side now"><span class="tag">What you grow now</span><span class="ring' + (RING.now !== cm ? ' anim' : '') + '" style="--p:' + cm + '"><span class="n"' + (RING.now !== cm ? ' data-v="' + cm + '"' : '') + '>' + cm + '</span></span><span class="l">' + esc(E.rotLabel(A.current.rot)) + '</span></div><div class="mid ' + (dd > 0 ? 'pos' : dd < 0 ? 'neg' : 'eq') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg><span>' + (dd > 0 ? '+' : '') + dd + '</span></div><div class="side alt"><span class="tag">' + alt + '</span><span class="ring' + (RING.alt !== bm ? ' anim' : '') + '" style="--p:' + bm + '"><span class="n"' + (RING.alt !== bm ? ' data-v="' + bm + '"' : '') + '>' + bm + '</span></span><span class="l">' + esc(E.rotLabel(best.rot)) + '</span></div></div>'; }
-      { const sv = window.__search && Object.values(window.__search)[0]; R += '<p class="small srch" id="srchp">' + (sv && !sv.done ? 'Checking every rotation: ' + Math.round(sv.i / Math.max(1, sv.list.length) * 100) + '% done' : sv && sv.done ? 'Checked all ' + sv.list.length.toLocaleString('en') + ' rotations of 2 to 5 years, with every cover crop pattern for the best ones. This is the best one.' : '') + '</p>'; }
+      { const cm = r0(A.current.match), bm = r0(top), dd = bm - cm, calm = Date.now() - (RING.t || 0) < 2500; if (calm) { RING.now = cm; RING.alt = bm; } RING.t = Date.now(); const _x = setTimeout(() => { RING.now = cm; RING.alt = bm; }, 0), alt = pl ? (pl.same ? 'Best option' : 'Best plan') : 'Next best option', altl = pl && !pl.same ? 'Years 1 to ' + pl.after + ': ' + E.rotLabel(pl.first.rot) + '. After that: ' + E.rotLabel(pl.then.rot) : E.rotLabel(best.rot);
+      R += '<div class="vs2"><div class="side now"><span class="tag">What you grow now</span><span class="ring' + (RING.now !== cm ? ' anim' : '') + '" style="--p:' + cm + '"><span class="n"' + (RING.now !== cm ? ' data-v="' + cm + '"' : '') + '>' + cm + '</span></span><span class="l">' + esc(E.rotLabel(A.current.rot)) + '</span></div><div class="mid ' + (dd > 0 ? 'pos' : dd < 0 ? 'neg' : 'eq') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg><span>' + (dd > 0 ? '+' : '') + dd + '</span></div><div class="side alt"><span class="tag">' + alt + '</span><span class="ring' + (RING.alt !== bm ? ' anim' : '') + '" style="--p:' + bm + '"><span class="n"' + (RING.alt !== bm ? ' data-v="' + bm + '"' : '') + '>' + bm + '</span></span><span class="l">' + esc(altl) + '</span></div></div>'; }
+      if (A.breaks && A.breaks.length) R += '<p class="small muted">What you grow now breaks a limit you set (' + esc(A.breaks.join('; ')) + '), so it is not counted as an option.</p>';
+      R += '<p class="small srch" id="srchp">' + (A.search && A.search.finished ? 'Checked all ' + A.search.count.toLocaleString('en') + ' rotations of 1 to 6 years, with every cover crop pattern, against your priorities and limits. Changing what you grow now does not change this answer.' : '') + '</p>';
       R += '<p class="small muted">Scores out of 100, weighted by your priorities' + (A.acc && Object.keys(A.acc).length ? ' and adjusted for what you can take on' : '') + '.</p>';
       if (A.cons && A.cons.length) R += '<div class="note"><h4>Applied from your notes</h4><ul>' + A.cons.map(c => '<li><b>' + esc(c.tag) + '.</b> ' + esc(c.why) + '</li>').join('') + '</ul></div>';
       if (A.plan) R += '<div class="plan"><div><span class="tag">Years 1 to ' + A.plan.after + '</span><b>' + esc(A.plan.first.name) + '</b><small>' + esc(E.rotLabel(A.plan.first.rot)) + '</small></div><div><span class="tag">From year ' + (A.plan.after + 1) + '</span><b>' + esc(A.plan.then.name) + '</b><small>' + esc(E.rotLabel(A.plan.then.rot)) + '</small></div></div>' + (A.plan.first === A.plan.then ? '<p class="small muted">The same option fits both phases.</p>' : '');
@@ -454,7 +426,7 @@
     } else Yh = '<p class="sub">Not enough seasons to group.</p>';
     if (!S.keepAnim) $('scroll').classList.remove('anim'); S.keepAnim = false;
     sheet(A);
-    { const sq = LAST && LAST.search, sv = sq && window.__search && Object.values(window.__search).find(v => v.list && v.list.length === sq.total) || (window.__search && Object.values(window.__search).slice(-1)[0]); if (sq && !sq.finished && !(sv && sv.done)) { const pc = sv && sv.list ? Math.round(sv.i / Math.max(1, sv.list.length) * 100) : 0; R = '<div class="loader"><div class="ldspin"><span></span><span></span><span></span></div><h2>Finding the best rotation for your field</h2><p class="muted">We test every rotation of 2 to 5 years against 25 years of your weather.</p><div class="ldtrack"><i id="ldbar" style="width:' + pc + '%"></i></div><p class="small muted" id="ldtxt">' + (sv && sv.list ? sv.i.toLocaleString('en') + ' of ' + sv.list.length.toLocaleString('en') + ' rotations checked' : 'Starting…') + '</p></div>'; } }
+    { const sq = LAST && LAST.search; if (sq && !sq.finished) R = '<div class="loader"><div class="ldspin"><span></span><span></span><span></span></div><h2>Finding the best rotation for your field</h2><p class="muted">We test every rotation of 1 to 6 years against 25 years of your weather.</p><div class="ldtrack"><i id="ldbar" style="width:' + sq.pc + '%"></i></div><p class="small muted" id="ldtxt">Starting…</p></div>'; }
     $('out').innerHTML = pane('result', R) + pane('climate', Cm) + pane('calendar', K) + pane('options', O) + pane('years', Yh);
     story();
   }
@@ -691,7 +663,7 @@
   }
   function drawAcc() {
     if (!LAST || !window.Lab) { $('acc').innerHTML = '<p class="muted">Loading options…</p>'; return; }
-    const top = LAST.alts.concat(LAST.others).slice(0, 6), keys = Object.keys(Lab.ACCEPT).filter(k => top.some(t => t.need && k in t.need));
+    const top = LAST.alts.concat(LAST.others).slice(0, 6), keys = Object.keys(Lab.ACCEPT).filter(k => k !== 'market' && (k === 'seedCost' || k === 'equipment' || k === 'incomeDip' || top.some(t => t.need && k in t.need)));
     if ($('acc').dataset.keys === keys.join()) return;
     $('acc').dataset.keys = keys.join();
     $('acc').innerHTML = keys.length ? keys.map(k => { const A = Lab.ACCEPT[k], v = S.acc[k] == null ? 5 : S.acc[k], who = top.filter(t => t.need && k in t.need).map(t => t.name).slice(0, 1).join(''); return '<div class="wrow" title="Needed for: ' + esc(who) + '"><div class="wh"><label for="a_' + k + '">' + A.q + '</label><span class="lvl" id="av_' + k + '">' + (A.steps ? A.steps[v] : v + ' of 5') + '</span></div><input id="a_' + k + '" type="range" min="0" max="5" step="1" value="' + v + '"><div class="ends"><span>' + (A.steps ? A.lo : '0 ' + A.lo.toLowerCase()) + '</span><span>' + (A.steps ? A.hi : '5 ' + A.hi.toLowerCase()) + '</span></div></div>'; }).join('') : '<p class="muted">The best options don’t need anything new from you.</p>';

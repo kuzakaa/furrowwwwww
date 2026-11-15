@@ -335,6 +335,110 @@
     });
   }
 
-  const API = { CROPINFO, EXPERIMENTAL, experimental, needs, ACCEPT, adjust, RULES, parseConstraints, plan, qc, confidence, MODELS, projections, IPCC, inputLevel, carbonIPCC, calibrate, errors, calFor, withPatch, ndviYears, corr, oracle, rainChange, pack, unpack, fromIssues, summarise, SCEN, INFO, strategies, run, extra, parseFarm, compareFarm, doyOf, credits };
+  function planner(cl, cal, inp0) {
+    const COV = E.COVERS, clip = E.clip, inpS = { soil: inp0.soil, slope: inp0.slope, till: inp0.till };
+    const ids = Object.keys(C), ci = {}; ids.forEach((c, i) => { ci[c] = i; });
+    const canCv = c => C[c].kind === 'summer' || C[c].kind === 'winter', Q = v => Math.round(v * 1000), sims = new Map();
+    function slot(p, ph, c, ch, n) {
+      ph = ph && canCv(p) ? 1 : 0; ch = ch && canCv(c) ? 1 : 0;
+      const k = p + ph + '|' + c + ch + '|' + n; let s = sims.get(k); if (s) return s;
+      const R = E.simulate([{ c: p, cv: ph ? 'rye' : null }, { c: c, cv: ch ? 'rye' : null }, { c: n, cv: null }], cl, cal, inpS), tl = R.tl;
+      let bare = 0, living = 0, exp = 0;
+      for (let t = 365; t < 730; t++) { const st = tl.st[t]; if (st === 0) bare++; else if (st !== 1) living++; exp += cl.eros[t - 365] * (1 - tl.cov[t]); }
+      const c1 = tl.covers.find(x => x.i === 1), c0 = tl.covers.find(x => x.i === 0), cr = R.crops[1];
+      s = { bare, living, exp: cl.erosTotal > 0 ? exp / cl.erosTotal : 0, g1: c1 ? c1.growth : -1, g0: c0 ? 1 : 0, fallow: !!cr.fallow, rel: cr.rel, hd: cr.hdY, def: cr.defY, reliab: cr.reliab };
+      sims.set(k, s); return s;
+    }
+    const norm = r => ({ c: r.c, cv: r.cv && COV[r.cv] && canCv(r.c) ? r.cv : null });
+    function year(pT, cT, nT, o, idx) {
+      const p = pT.c, c = cT.c, n = nT.c, s = slot(p, pT.cv, c, cT.cv, n), cc = C[c], fams = new Set(), kinds = new Set();
+      [p, c, n].forEach(x => { if (C[x].fam !== '-') fams.add(C[x].fam); if (C[x].kind !== 'fallow') kinds.add(C[x].kind); });
+      const cvOn = !!cT.cv && s.g1 >= 0; if (cvOn) fams.add(COV[cT.cv].fam + ' cover'); if (pT.cv && s.g0) fams.add(COV[pT.cv].fam + ' cover');
+      const nfix = cc.nfix + (cvOn ? COV[cT.cv].nfix * Math.min(1, s.g1 / 90) : 0), deep = C[p].deep || cc.deep || C[n].deep ? 1 : 0;
+      const soil = 35 * s.living / 365 + 15 * clip(nfix / 60) + 15 * cc.res / 5 + 15 * clip((fams.size - 1) / 3) + 10 * deep + 10 * (1 - s.bare / 365);
+      let rel = 0, hd = 0, def = 0, st = 0; const Yn = s.rel.length, m = idx ? idx.length : Yn;
+      for (let j = 0; j < m; j++) { const k = idx ? idx[j] : j; rel += s.rel[k]; hd += s.hd[k]; def += s.def[k]; if (s.rel[k] > 0.25) st++; }
+      rel /= m; hd /= m; def /= m; st /= m;
+      const wat = o.irrigated ? 1 : 1 - 0.8 * clip(rel / 0.6);
+      let inc = s.fallow ? 0 : cc.margin * (cc.market / 5) * wat * (0.5 + 0.5 * s.reliab) * (p === c && cc.kind !== 'perennial' ? 0.88 : 1) + (o.livestock && cc.forage ? 1 : 0);
+      if (cvOn) inc -= COV[cT.cv].cost - (o.livestock ? 0.3 : 0);
+      return {
+        soil, eros: 100 * (1 - s.exp), inc: inc / 4.2 * 100, cash: s.fallow ? 0 : 1,
+        water: s.fallow ? 0 : o.irrigated ? 100 * (1 - clip(def / 450)) : 100 * (1 - clip(rel / 0.45)),
+        res: s.fallow ? 0 : 100 * (0.35 * (1 - clip(st)) + 0.2 * (1 - clip(hd / 10)) + 0.2 * s.reliab + 0.15 * clip((fams.size - 1) / 2) + 0.1 * clip(kinds.size / 2))
+      };
+    }
+    const fin = (a, b, d, e, f, L, cash) => ({ water: cash ? Math.round(e / (cash * 1000)) : 0, soil: Math.round(a / (L * 1000)), erosion: Math.round(b / (L * 1000)), income: Math.round(Math.min(100, Math.max(0, d / (L * 1000)))), resilience: cash ? Math.round(f / (cash * 1000)) : 0 });
+    function score(rot, o, idx) {
+      const T = rot.map(norm), L = T.length; let a = 0, b = 0, d = 0, e = 0, f = 0, cash = 0; const years = [];
+      for (let i = 0; i < L; i++) { const y = year(T[(i - 1 + L) % L], T[i], T[(i + 1) % L], o, idx); years.push(y); a += Q(y.soil); b += Q(y.eros); d += Q(y.inc); if (y.cash) { e += Q(y.water); f += Q(y.res); cash++; } }
+      return { sc: fin(a, b, d, e, f, L, cash), years };
+    }
+    const mt = (wa, so, er, inc, re, w) => { const tw = w[5]; return tw ? (0 + wa * w[0] + so * w[1] + er * w[2] + inc * w[3] + re * w[4]) / tw : (wa + so + er + inc + re) / 5; };
+    const wv = w => { const v = ['water', 'soil', 'erosion', 'income', 'resilience'].map(k => w[k] || 0); v.push(v[0] + v[1] + v[2] + v[3] + v[4]); return v; };
+    function job(cfg) {
+      const T = cfg.types.map(norm), NT = T.length, n3 = NT * NT * NT, maxLen = cfg.maxLen || 6;
+      const SO = new Int32Array(n3), ER = new Int32Array(n3), IN = new Int32Array(n3), WA = new Int32Array(n3), RE = new Int32Array(n3), CA = new Uint8Array(n3);
+      const fl = T.map(t => (t.cv ? 1 : 0) | (t.c === 'alfalfa' ? 2 : 0)), cb = T.map(t => 1 << (3 * ci[t.c]));
+      const w1 = wv(cfg.w1), w2 = wv(cfg.w2), fa = cfg.share, fb = 1 - fa, PEN = cfg.pen, BIG = (cfg.big || []).map(b => [3 * ci[b[0]], b[1]]);
+      const BM = new Float64Array(303).fill(-1e9), BR = new Int8Array(303 * 8), y = new Int32Array(8);
+      let ti = 0, y0 = 0, y1 = 0, maxInc = -1, count = 0, stage = 0;
+      const leaf = (L, a, b, d, e, f, cash, fg, mask) => {
+        const P = PEN[fg]; count++; if (P.blocked) return;
+        const wa = cash ? Math.round(e / (cash * 1000)) : 0, so = Math.round(a / (L * 1000)), er = Math.round(b / (L * 1000)), inc = Math.round(Math.min(100, Math.max(0, d / (L * 1000)))), re = cash ? Math.round(f / (cash * 1000)) : 0;
+        let big = 0; for (let j = 0; j < BIG.length; j++) { const n = (mask >> BIG[j][0]) & 7; if (n && n * BIG[j][1] >= 300 * L) { big = 3; break; } } const pen = P.pen + big; if (inc > maxInc) maxInc = inc;
+        const m1 = mt(wa, so, er, inc, re, w1) - pen, m2 = mt(wa, so, er, inc, re, w2) - pen, mb = fa * m1 + fb * m2;
+        if (m1 > BM[inc]) { BM[inc] = m1; const q = inc * 8; BR[q] = L; for (let i = 0; i < L; i++) BR[q + 1 + i] = y[i]; }
+        if (m2 > BM[101 + inc]) { BM[101 + inc] = m2; const q = (101 + inc) * 8; BR[q] = L; for (let i = 0; i < L; i++) BR[q + 1 + i] = y[i]; }
+        if (mb > BM[202 + inc]) { BM[202 + inc] = mb; const q = (202 + inc) * 8; BR[q] = L; for (let i = 0; i < L; i++) BR[q + 1 + i] = y[i]; }
+      };
+      const rec = (L, p, a, b, dd, e, f, cash, fg, mask) => {
+        if (p === L) {
+          const i0 = (y[L - 1] * NT + y[0]) * NT + y[1 % L], i1 = (y[L > 1 ? L - 2 : 0] * NT + y[L - 1]) * NT + y[0];
+          if (L === 1) leaf(1, a + SO[i0], b + ER[i0], dd + IN[i0], e + WA[i0], f + RE[i0], cash + CA[i0], fg, mask);
+          else leaf(L, a + SO[i0] + SO[i1], b + ER[i0] + ER[i1], dd + IN[i0] + IN[i1], e + WA[i0] + WA[i1], f + RE[i0] + RE[i1], cash + CA[i0] + CA[i1], fg, mask);
+        }
+        if (L === maxLen) return;
+        for (let t = y[L - p]; t < NT; t++) {
+          y[L] = t; const np = t === y[L - p] ? p : L + 1;
+          if (L >= 2) { const q = (y[L - 2] * NT + y[L - 1]) * NT + t; rec(L + 1, np, a + SO[q], b + ER[q], dd + IN[q], e + WA[q], f + RE[q], cash + CA[q], fg | fl[t], mask + cb[t]); }
+          else rec(L + 1, np, a, b, dd, e, f, cash, fg | fl[t], mask + cb[t]);
+        }
+      };
+      const J = {
+        total: n3, done: 0, finished: false, result: null,
+        step(ms) {
+          const t0 = Date.now();
+          if (stage === 0) {
+            while (ti < n3) {
+              const n = ti % NT, c = ((ti - n) / NT) % NT, p = (ti - n - c * NT) / (NT * NT), v = year(T[p], T[c], T[n], cfg.o);
+              SO[ti] = Q(v.soil); ER[ti] = Q(v.eros); IN[ti] = Q(v.inc); WA[ti] = v.cash ? Q(v.water) : 0; RE[ti] = v.cash ? Q(v.res) : 0; CA[ti] = v.cash; ti++;
+              if ((ti & 15) === 0 && Date.now() - t0 > ms) break;
+            }
+            J.done = ti; if (ti >= n3) stage = 1; return false;
+          }
+          if (stage === 1) {
+            while (y0 < NT) {
+              y[0] = y0;
+              if (y1 === y0) { const q = (y0 * NT + y0) * NT + y0; leaf(1, SO[q], ER[q], IN[q], WA[q], RE[q], CA[q], fl[y0], cb[y0]); if (maxLen > 1) { y[1] = y0; rec(2, 1, 0, 0, 0, 0, 0, 0, fl[y0], cb[y0] + cb[y0]); } }
+              else if (maxLen > 1) { y[1] = y1; rec(2, 2, 0, 0, 0, 0, 0, 0, fl[y0] | fl[y1], cb[y0] + cb[y1]); }
+              y1++; if (y1 >= NT) { y0++; y1 = y0; }
+              if (Date.now() - t0 > ms) break;
+            }
+            J.bf = y0 / NT; if (y0 < NT) return false; stage = 2;
+          }
+          const lo = cfg.maxDrop == null ? -1 : maxInc * (1 - cfg.maxDrop / 100), rotOf = q => { const L = BR[q * 8], r = []; for (let i = 0; i < L; i++) r.push({ c: T[BR[q * 8 + 1 + i]].c, cv: T[BR[q * 8 + 1 + i]].cv }); return r; };
+          const pick = off => { let b = -1; for (let i = 0; i <= 100; i++) if (i >= lo && BM[off + i] > -1e8 && (b < 0 || BM[off + i] > BM[off + b])) b = i; return b < 0 ? null : { m: BM[off + b], rot: rotOf(off + b) }; };
+          const top = []; for (let i = 0; i <= 100; i++) if (i >= lo && BM[202 + i] > -1e8) top.push({ m: BM[202 + i], rot: rotOf(202 + i) });
+          top.sort((p, q) => q.m - p.m);
+          J.result = { first: pick(0), then: pick(101), top, maxInc, minInc: lo, count }; J.finished = true; return true;
+        }
+      };
+      return J;
+    }
+    return { score, job, year, ci, canCv, sims };
+  }
+
+  const API = { CROPINFO, EXPERIMENTAL, experimental, needs, ACCEPT, adjust, planner, RULES, parseConstraints, plan, qc, confidence, MODELS, projections, IPCC, inputLevel, carbonIPCC, calibrate, errors, calFor, withPatch, ndviYears, corr, oracle, rainChange, pack, unpack, fromIssues, summarise, SCEN, INFO, strategies, run, extra, parseFarm, compareFarm, doyOf, credits };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else G.Lab = API;
 })(typeof window !== 'undefined' ? window : globalThis);
