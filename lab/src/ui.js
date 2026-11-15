@@ -308,11 +308,11 @@
       clearTimeout(PL.t); PL.t = setTimeout(tick, 200);
     }
     const curInc = P.score(S.rot, o).sc.income, res0 = PL.res && PL.bfKey === bfKey ? PL.res : null, res = res0 && (maxDrop == null ? res0 : P.within(res0, curInc * (1 - maxDrop / 100)));
-    const fill = x => { const s = P.score(x.rot, o).sc, l = limitsOf(x, acc); x.sc = s; x.need = l.need; x.adj = l.adj; x.m1 = E.match(s, w1) - l.adj.pen; x.m2 = E.match(s, w2) - l.adj.pen; x.match = fa * x.m1 + fb * x.m2; x.adj.final = x.match; x.rawMatch = x.match + l.adj.pen;
-      if (res && maxDrop != null && s.income < res.minInc) { x.adj.blocked.push('incomeDip'); x.need.incomeDip = 'about ' + Math.round((1 - s.income / Math.max(1, curInc)) * 100) + '% less income than what you grow now, more than the ' + S.maxDrop + '% you can accept'; }
+    const RK = sc => res0 ? P.rankRaw(res0, sc) : sc, fill = x => { const raw = P.score(x.rot, o).sc, s = RK(raw), l = limitsOf(x, acc); x.raw = raw; x.sc = res0 ? P.rank(res0, raw) : raw; x.need = l.need; x.adj = l.adj; x.m1 = E.match(s, w1) - l.adj.pen; x.m2 = E.match(s, w2) - l.adj.pen; x.match = fa * x.m1 + fb * x.m2; x.adj.final = x.match; x.rawMatch = x.match + l.adj.pen;
+      if (res && maxDrop != null && raw.income < res.minInc) { x.adj.blocked.push('incomeDip'); x.need.incomeDip = 'about ' + Math.round((1 - raw.income / Math.max(1, curInc)) * 100) + '% less income than what you grow now, more than the ' + S.maxDrop + '% you can accept'; }
       return x; };
     fill(A.current);
-    const ci = A.current.sc.income || 1, money = x => { x.incPct = (x.sc.income - ci) / ci * 100; };
+    const ci = (A.current.raw || A.current.sc).income || 1, money = x => { x.incPct = ((x.raw || x.sc).income - ci) / ci * 100; };
     const norm = r => r.map(x => x.c + '+' + (x.cv && P.canCv(x.c) ? x.cv : '')), prim = k => { for (let q = 1; q < k.length; q++) if (k.length % q === 0 && k.every((v, i) => v === k[i % q])) return k.slice(0, q); return k; };
     const canon = r => { const k = prim(norm(r)); let best = null; for (let i = 0; i < k.length; i++) { const t = k.slice(i).concat(k.slice(0, i)).join(','); if (best == null || t < best) best = t; } return best; };
     A.cons = cons; A.acc = acc; A.search = { finished: !!res, pc: PL.pc || 0, count: res ? res.count : 0 };
@@ -326,10 +326,10 @@
     const first = mk(res.first, same ? 'The best rotation for your field' : 'Best for years 1 to ' + Y), then = same ? first : mk(res.then, 'Best from year ' + (Y + 1) + ' on');
     const list = []; [first, then].concat(res.top.slice(0, 6).map(t => mk(t, 'Another strong rotation'))).forEach(x => { if (x !== A.current && list.indexOf(x) < 0) list.push(x); });
     A.plan = { first, then, after: Y, score: fa * first.m1 + fb * then.m2, same: first === then, keep: first === A.current && then === A.current };
-    { const sy = (x, k, w) => E.match(P.score(x.rot, o, [k]).sc, w) - x.adj.pen, yb = A.plan.keep ? (list[0] ? { first: list[0], then: list[0] } : null) : A.plan;
+    { const sy = (x, k, w) => E.match(RK(P.score(x.rot, o, [k]).sc), w) - x.adj.pen, yb = A.plan.keep ? (list[0] ? { first: list[0], then: list[0] } : null) : A.plan;
       A.yearly = yb ? { count: res.count, n: A.cl.n, years: A.cl.years.map((Yr, k) => { const b = fa * sy(yb.first, k, w1) + fb * sy(yb.then, k, w2), c = fa * sy(A.current, k, w1) + fb * sy(A.current, k, w2); return { label: Yr.label, b: Math.round(b), c: Math.round(c) }; }) } : null; }
     { let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300, d = list.map(() => []);
-      const at = (x, idx) => { const s = P.score(x.rot, o, idx).sc; return fa * E.match(s, w1) + fb * E.match(s, w2) - x.adj.pen; };
+      const at = (x, idx) => { const s = RK(P.score(x.rot, o, idx).sc); return fa * E.match(s, w1) + fb * E.match(s, w2) - x.adj.pen; };
       for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)), mc = at(A.current, idx); list.forEach((x, j) => d[j].push(at(x, idx) - mc)); }
       list.forEach((x, j) => { const v = d[j].sort((p, q) => p - q); x.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; money(x); }); }
     A.alts = list.slice(0, 3); A.others = list.slice(3);
@@ -350,7 +350,7 @@
       R += '<div class="vs2"><div class="side now"><span class="tag">What you grow now</span><span class="ring' + (RING.now !== cm ? ' anim' : '') + '" style="--p:' + cm + '"><span class="n"' + (RING.now !== cm ? ' data-v="' + cm + '"' : '') + '>' + cm + '</span></span><span class="l">' + esc(E.rotLabel(A.current.rot)) + '</span></div><div class="mid ' + (dd > 0 ? 'pos' : dd < 0 ? 'neg' : 'eq') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg><span>' + (dd > 0 ? '+' : '') + dd + '</span></div><div class="side alt"><span class="tag">' + alt + '</span><span class="ring' + (RING.alt !== bm ? ' anim' : '') + '" style="--p:' + bm + '"><span class="n"' + (RING.alt !== bm ? ' data-v="' + bm + '"' : '') + '>' + bm + '</span></span><span class="l">' + esc(altl) + '</span></div></div>'; }
       if (A.breaks && A.breaks.length) R += '<p class="small muted">What you grow now breaks a limit you set (' + esc(A.breaks.join('; ')) + '), so it is not counted as an option.</p>';
       R += '<p class="small srch" id="srchp">' + (A.search && A.search.finished ? 'Checked all ' + A.search.count.toLocaleString('en') + ' rotations of 1 to 6 years, with every cover crop pattern.' : '') + '</p>';
-      R += '<p class="small muted">Scores out of 100, weighted by your priorities' + (A.acc && Object.keys(A.acc).length ? ' and adjusted for what you can take on' : '') + '.</p>';
+      R += '<p class="small muted">' + (A.search && A.search.finished ? 'Each goal score is the share of all ' + A.search.count.toLocaleString('en') + ' rotations that this one beats on that goal over the 25 years. The total weights them by your priorities' : 'Scores out of 100, weighted by your priorities') + (A.acc && Object.keys(A.acc).length ? ' and adjusted for what you can take on' : '') + '.</p>';
       if (A.cons && A.cons.length) R += '<div class="note"><h4>Applied from your notes</h4><ul>' + A.cons.map(c => '<li><b>' + esc(c.tag) + '.</b> ' + esc(c.why) + '</li>').join('') + '</ul></div>';
       if (A.plan) R += '<div class="plan"><div><span class="tag">Years 1 to ' + A.plan.after + '</span><b>' + esc(A.plan.first.name) + '</b><small>' + esc(E.rotLabel(A.plan.first.rot)) + '</small></div><div><span class="tag">From year ' + (A.plan.after + 1) + '</span><b>' + esc(A.plan.then.name) + '</b><small>' + esc(E.rotLabel(A.plan.then.rot)) + '</small></div></div>' + (A.plan.first === A.plan.then ? '<p class="small muted">The same option fits both phases.</p>' : '');
       const gains = (from, to) => { const out = [], d = (x, y) => Math.round(y) - Math.round(x);
@@ -459,7 +459,7 @@
     return '<div class="sct"><div class="scth"><span>Score</span><span>Now → if you switch</span><span>Change</span></div>' + DIMS.map(d => {
       const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, k = dl > 2 ? 'up' : dl < -2 ? 'down' : 'same';
       return '<button type="button" class="sctr ' + k + '" data-term="s_' + d[0] + '"><span class="nm">' + d[1] + '</span><span class="big2 ' + (k === 'up' ? 'good' : k === 'down' ? 'bad' : 'same') + '"><s>' + a + '</s><i>→</i><em>' + b + '</em></span><span class="dl">' + (dl > 0 ? '+' : dl < 0 ? '−' : '±') + Math.abs(dl) + '</span><span class="go">›</span></button>';
-    }).join('') + '</div><p class="scnote">Scores from 0 (bad) to 100 (very good). Tap a row to see what it means.</p>';
+    }).join('') + '</div><p class="scnote">A score of 90 means the rotation does better on that goal than 90% of all rotations we tried. Tap a row to see what it means.</p>';
   }
 
 

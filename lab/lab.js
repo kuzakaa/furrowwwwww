@@ -383,19 +383,24 @@
       top.sort((p, q) => q.m - p.m);
       return { first: pick(0), then: pick(101), top, minInc: lo };
     }
-    function within(res, lo) { const r = choose(res.T, res.BM, res.BR, lo); r.count = res.count; r.maxInc = res.maxInc; return r; }
+    function rank(res, sc) { if (!res || !res.F) return sc; const F = res.F, k = ['water', 'soil', 'erosion', 'income', 'resilience'], out = {}; k.forEach((n, i) => { out[n] = Math.round(F[i * 101 + Math.max(0, Math.min(100, Math.round(sc[n])))]); }); return out; }
+    function rankRaw(res, sc) { if (!res || !res.F) return sc; const F = res.F, k = ['water', 'soil', 'erosion', 'income', 'resilience'], out = {}; k.forEach((n, i) => { out[n] = F[i * 101 + Math.max(0, Math.min(100, Math.round(sc[n])))]; }); return out; }
+    function within(res, lo) { const r = choose(res.T, res.BM, res.BR, lo); r.count = res.count; r.maxInc = res.maxInc; r.F = res.F; return r; }
     function job(cfg) {
       const T = cfg.types.map(norm), NT = T.length, n3 = NT * NT * NT, maxLen = cfg.maxLen || 6;
       const SO = new Int32Array(n3), ER = new Int32Array(n3), IN = new Int32Array(n3), WA = new Int32Array(n3), RE = new Int32Array(n3), CA = new Uint8Array(n3);
       const fl = T.map(t => (t.cv ? 1 : 0) | (t.c === 'alfalfa' ? 2 : 0)), cb = T.map(t => 1 << (3 * ci[t.c]));
       const w1 = wv(cfg.w1), w2 = wv(cfg.w2), fa = cfg.share, fb = 1 - fa, PEN = cfg.pen, BIG = (cfg.big || []).map(b => [3 * ci[b[0]], b[1]]);
       const BM = new Float64Array(303).fill(-1e9), BR = new Int8Array(303 * 8), y = new Int32Array(8);
-      let ti = 0, y0 = 0, y1 = 0, maxInc = -1, count = 0, stage = 0;
+      let ti = 0, y0 = 0, y1 = 0, maxInc = -1, count = 0, stage = 0, pass = 0;
+      const H = new Float64Array(505), F = new Float64Array(505);
       const leaf = (L, a, b, d, e, f, cash, fg, mask) => {
-        const P = PEN[fg]; count++; if (P.blocked) return;
         const wa = cash ? Math.round(e / (cash * 1000)) : 0, so = Math.round(a / (L * 1000)), er = Math.round(b / (L * 1000)), inc = Math.round(Math.min(100, Math.max(0, d / (L * 1000)))), re = cash ? Math.round(f / (cash * 1000)) : 0;
+        if (pass === 0) { count++; H[wa]++; H[101 + so]++; H[202 + er]++; H[303 + inc]++; H[404 + re]++; return; }
+        const P = PEN[fg]; if (P.blocked) return;
         let big = 0; for (let j = 0; j < BIG.length; j++) { const n = (mask >> BIG[j][0]) & 7; if (n && n * BIG[j][1] >= 300 * L) { big = 3; break; } } const pen = P.pen + big; if (inc > maxInc) maxInc = inc;
-        const m1 = mt(wa, so, er, inc, re, w1) - pen, m2 = mt(wa, so, er, inc, re, w2) - pen, mb = fa * m1 + fb * m2;
+        const pw = F[wa], pso = F[101 + so], per = F[202 + er], pin = F[303 + inc], pre = F[404 + re];
+        const m1 = mt(pw, pso, per, pin, pre, w1) - pen, m2 = mt(pw, pso, per, pin, pre, w2) - pen, mb = fa * m1 + fb * m2;
         if (m1 > BM[inc]) { BM[inc] = m1; const q = inc * 8; BR[q] = L; for (let i = 0; i < L; i++) BR[q + 1 + i] = y[i]; }
         if (m2 > BM[101 + inc]) { BM[101 + inc] = m2; const q = (101 + inc) * 8; BR[q] = L; for (let i = 0; i < L; i++) BR[q + 1 + i] = y[i]; }
         if (mb > BM[202 + inc]) { BM[202 + inc] = mb; const q = (202 + inc) * 8; BR[q] = L; for (let i = 0; i < L; i++) BR[q + 1 + i] = y[i]; }
@@ -433,14 +438,16 @@
               y1++; if (y1 >= NT) { y0++; y1 = y0; }
               if (Date.now() - t0 > ms) break;
             }
-            J.bf = y0 / NT; if (y0 < NT) return false; stage = 2;
+            J.bf = (pass + y0 / NT) / 2; if (y0 < NT) return false;
+            if (pass === 0) { for (let k = 0; k < 5; k++) { let below = 0; for (let v = 0; v <= 100; v++) { const h = H[k * 101 + v]; F[k * 101 + v] = count ? (below + h / 2) / count * 100 : 0; below += h; } } pass = 1; y0 = 0; y1 = 0; return false; }
+            stage = 2;
           }
-          J.result = choose(T, BM, BR, -1); J.result.BM = BM; J.result.BR = BR; J.result.T = T; J.result.maxInc = maxInc; J.result.count = count; J.finished = true; return true;
+          J.result = choose(T, BM, BR, -1); J.result.BM = BM; J.result.BR = BR; J.result.T = T; J.result.maxInc = maxInc; J.result.count = count; J.result.F = F; J.finished = true; return true;
         }
       };
       return J;
     }
-    return { score, job, within, year, ci, canCv, sims };
+    return { score, job, within, rank, rankRaw, year, ci, canCv, sims };
   }
 
   const API = { CROPINFO, EXPERIMENTAL, experimental, needs, ACCEPT, adjust, planner, RULES, parseConstraints, plan, qc, confidence, MODELS, projections, IPCC, inputLevel, carbonIPCC, calibrate, errors, calFor, withPatch, ndviYears, corr, oracle, rainChange, pack, unpack, fromIssues, summarise, SCEN, INFO, strategies, run, extra, parseFarm, compareFarm, doyOf, credits };
