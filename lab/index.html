@@ -2267,9 +2267,9 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
   }
   let s2ov = null;
   function cellBounds() { const cy = Math.round(S.lat / 0.5) * 0.5, cx = Math.round(S.lon / 0.625) * 0.625; return [[cy - 0.25, cx - 0.3125], [cy + 0.25, cx + 0.3125]]; }
-  let coOff = '';
+  let coOff = '', coSeen = {}, coLast = 0;
   function callout(html) {
-    const key = $('layer').value + '|' + $('ldate').value; if (coOff === key) return;
+    const key = $('layer').value + '|' + $('ldate').value; if (coOff === key) return; const lk = $('layer').value, now = Date.now(); if (coSeen[lk] || now - coLast < 25000) return; coSeen[lk] = 1; coLast = now;
     const top = S.poly && S.poly.length ? S.poly.reduce((a, p) => p[0] > a[0] ? p : a) : [S.lat, S.lon], m = window.L.marker([top[0], S.lon], { interactive: true, keyboard: false, icon: window.L.divIcon({ className: 'co', html: '<i></i><div><button class="cox" type="button" aria-label="Hide this label" title="Hide this label">&times;</button>' + html + '</div>', iconSize: [0, 0] }) }).addTo(map);
     m.on('click', e => { window.L.DomEvent.stop(e); setPlaying(false); const t = e.originalEvent && e.originalEvent.target; if (t && t.closest && t.closest('.cox')) { coOff = key; co.forEach(x => map.removeLayer(x)); co = []; } });
     co.push(m);
@@ -2652,7 +2652,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
       const loopLeft = () => { placeLeft(); requestAnimationFrame(loopLeft); }; loopLeft();
 
       map.on('click', e => { if (drawing) return; if (S.intro) { if (introPick) introPick(e.latlng.lat, e.latlng.lng, null); return; } setPlaying(false); const ll = e.latlng; const pop = window.L.popup({ closeButton: false, className: 'mvpop', autoPanPadding: [60, 60] }).setLatLng(ll).setContent('<b>Move your field here?</b><div class="mvrow"><button class="btn" type="button" data-mv="1">Yes, move it</button><button class="btn ghost" type="button" data-mv="0">No</button></div>').openOn(map);
-        const el = pop.getElement(); if (el) { window.L.DomEvent.disableClickPropagation(el); el.querySelectorAll('[data-mv]').forEach(b => b.onclick = () => { map.closePopup(pop); if (b.dataset.mv === '1') { setPlace(ll.lat, ll.lng, null); if (S.wiz != null && S.wiz > 0) wizard(0); } }); }
+        setTimeout(() => { if (map.hasLayer(pop)) map.closePopup(pop); }, 5000); const el = pop.getElement(); if (el) { window.L.DomEvent.disableClickPropagation(el); el.querySelectorAll('[data-mv]').forEach(b => b.onclick = () => { map.closePopup(pop); if (b.dataset.mv === '1') { setPlace(ll.lat, ll.lng, null); if (S.wiz != null && S.wiz > 0) wizard(0); } }); }
       });
       window.addEventListener('resize', () => map.invalidateSize());
     } else { $('play').hidden = true;
