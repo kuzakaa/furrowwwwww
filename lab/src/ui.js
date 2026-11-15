@@ -296,7 +296,8 @@
     CORDER.filter(okc).forEach(c => { types.push({ c, cv: null }); if (P.canCv(c)) ['rye', 'legmix'].filter(okc).forEach(cv => types.push({ c, cv })); });
     const PEN = [[{ c: 'wheat' }], [{ c: 'wheat', cv: 'rye' }], [{ c: 'alfalfa' }], [{ c: 'alfalfa' }, { c: 'wheat', cv: 'rye' }]].map(rot => { const d = Lab.adjust({ match: 0 }, Lab.needs({ rot }, ALLC), acc); return { pen: d.pen, blocked: d.blocked.length > 0 }; });
     const maxDrop = S.maxDrop < 40 ? S.maxDrop : null, bfKey = JSON.stringify([types, w1, w2, Y, PEN, o, S.area]);
-    if (PL.bfKey !== bfKey && types.length) {
+    const hold = S.intro || S.wiz != null || document.body.classList.contains('fdrag');
+    if (PL.bfKey !== bfKey && types.length && !hold) {
       PL.bfKey = bfKey; PL.res = null; PL.objs = {}; PL.pc = 0; const tok = ++PL.tok, J = P.job({ types, o, w1, w2, share: fa, pen: PEN, big: bigList(), maxLen: 6 });
       const tick = () => {
         if (PL !== window.__plan || tok !== PL.tok) return; const fin = J.step(30);
@@ -688,11 +689,11 @@
   function wizEnd() {
     S.wiz = null; document.body.classList.remove('wiz'); document.body.classList.add('noset'); save();
     document.querySelectorAll('[data-wiz]').forEach(b => { b.classList.remove('cur'); b.open = b.dataset.wiz === 'rot'; }); document.querySelectorAll('.setup details.box:not([data-wiz])').forEach(b => b.open = false); document.body.classList.remove('wacc', 'wpri', 'wfree', 'wfield');
-    setTab('result'); if (map) goStep(0, true); moveInk();
+    setTab('result'); if (map) goStep(0, true); moveInk(); recompute();
   }
   let introPick = null, mask = null;
   function intro(quick) {
-    const el = $('intro'), off = () => { document.body.classList.remove('intro'); S.intro = false; introPick = null; setTimeout(drawField, 50); };
+    const el = $('intro'), off = () => { document.body.classList.remove('intro'); S.intro = false; introPick = null; setTimeout(drawField, 50); if (S.wiz == null) setTimeout(recompute, 60); };
     if (!el) { off(); return; }
     const calm = quick || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     if (quick) el.classList.add('quick');
