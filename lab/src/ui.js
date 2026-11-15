@@ -759,7 +759,7 @@
     if (!map || S.intro) return; step = (i + STEPS.length) % STEPS.length; const k = STEPS[step];
     if ($('layer').value !== k) { $('layer').value = k; setLayer(); }
     map.invalidateSize();
-    fieldInit(); const fb = fBounds(), grow = (f, minM) => { const cla = (fb[0][0] + fb[1][0]) / 2, clo = (fb[0][1] + fb[1][1]) / 2, hla = Math.max((fb[1][0] - fb[0][0]) / 2 * f, minM / 111320), hlo = Math.max((fb[1][1] - fb[0][1]) / 2 * f, minM / (111320 * cosl())); return [[cla - hla, clo - hlo], [cla + hla, clo + hlo]]; }, b = k === '' ? grow(1.6, 400) : k === 'ndvi' ? grow(4, 2500) : grow(12, 15000);
+    fieldInit(); const fb = fBounds(), grow = (f, minM) => { const cla = (fb[0][0] + fb[1][0]) / 2, clo = (fb[0][1] + fb[1][1]) / 2, hla = Math.max((fb[1][0] - fb[0][0]) / 2 * f, minM / 111320), hlo = Math.max((fb[1][1] - fb[0][1]) / 2 * f, minM / (111320 * cosl())); return [[cla - hla, clo - hlo], [cla + hla, clo + hlo]]; }, b = k === '' ? grow(1.6, 400) : grow(2.2, 700);
     const wide = window.innerWidth > 900, wz = S.wiz != null, o = wz ? { paddingTopLeft: [16, 40], paddingBottomRight: [wide ? Math.round(window.innerWidth * 0.07) + 490 : 16, wide ? 40 : Math.round(window.innerHeight * 0.62)], maxZoom: 13 } : { paddingTopLeft: [wide ? 376 : 16, wide ? 190 : 118], paddingBottomRight: [wide ? document.querySelector('.res').offsetWidth + 36 : 16, wide ? 110 : 60], maxZoom: 13 };
     if (quick) map.fitBounds(b, o); else map.flyToBounds(b, Object.assign({ duration: 1.8 }, o));
     story();
@@ -858,7 +858,7 @@
     if (!map) return;
     if (S.intro) { clearShapes(); return; }
     fieldInit();
-    if (!fpoly) fpoly = window.L.polygon(S.poly, { color: '#F5FAF2', weight: 2.5, fill: false, interactive: false }).addTo(map); else fpoly.setLatLngs(S.poly);
+    if (!fpoly) fpoly = window.L.polygon(S.poly, { color: '#FFFFFF', weight: 3.5, fill: false, interactive: false, className: 'fline' }).addTo(map); else fpoly.setLatLngs(S.poly);
     buildHandles();
   }
   function syncField() {
