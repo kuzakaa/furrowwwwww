@@ -1115,3 +1115,12 @@ body:not(.wiz) .plen{grid-template-columns:auto minmax(0,1fr) auto;padding:7px 1
 .mtot{min-height:20px}
 .mlegend{font-size:12px;color:var(--muted);margin:4px 0 0}.mlegend .mcv{margin-right:4px}
 .mgrid{align-items:start}.mcard .mbot{margin-top:0}.mchips{min-height:54px;align-content:flex-start}
+@media print{
+  @page{margin:14mm 12mm}
+  #sheet table{width:100%;border-collapse:collapse;break-inside:auto}
+  #sheet tr{break-inside:avoid}
+  #sheet th{text-align:left;vertical-align:top}
+  #sheet tbody th{width:34%;font-weight:600}
+  #sheet td{vertical-align:top}
+  #sheet td ul{margin:0;padding-left:14pt}
+}
