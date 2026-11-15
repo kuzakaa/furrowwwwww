@@ -1093,3 +1093,12 @@ body:not(.wiz) .plen{grid-template-columns:auto minmax(0,1fr) auto;padding:7px 1
 .gfac{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}
 .gfac div{border:1px solid var(--line);border-radius:12px;padding:10px 12px}.gfac p{margin:4px 0 0;font-size:13px}
 .mnote{margin-top:16px}
+
+.mcard.best{border-color:rgba(143,214,148,.45)}
+.mtop{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.mlen{font-size:12px;color:var(--muted)}
+.mchips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}.mchips span{background:rgba(255,255,255,.06);border-radius:999px;padding:4px 10px;font-size:13px}.mchips em{font-style:normal;color:#9BE3A0}
+.mstats .main{background:rgba(143,214,148,.10)}.mstats .pos{color:#9BE3A0}
+.mtot{margin:10px 0 0;font-size:14px}
+.mdet{margin-top:10px}.mdet summary{cursor:pointer;font-size:14px;color:#9BE3A0}
+.mtbl .mr{border-bottom:none}.mtip{font-size:12px;color:var(--muted);padding:0 0 8px;border-bottom:1px solid var(--line)}
+@media(max-width:600px){.mstats{grid-template-columns:repeat(2,1fr)}.mtbl .mh,.mtbl .mr{grid-template-columns:1.2fr 1.4fr .8fr .8fr .8fr;font-size:12px}}

@@ -350,9 +350,13 @@
     fallow: { y: 0, unit: 't', price: 0, cv: 0, costs: { nitrogen: 0, seed: 0, protection: 0, drying: 0, fuel: 40, other: 20 }, bench: '-' }
   };
   const COVER_COST = { rye: 70, legmix: 110 }, LEGUME_N_CREDIT = 0.4;
-  function econYear(c, prevLegume, wat, reliab, cv, livestock) {
-    const e = ECON[c] || ECON.fallow, cost = Object.assign({}, e.costs); if (prevLegume) cost.nitrogen = Math.round(cost.nitrogen * (1 - LEGUME_N_CREDIT));
-    const yf = wat * (0.6 + 0.4 * reliab), rev = e.y * yf * e.price * (livestock && c === 'alfalfa' ? 1.1 : 1), cov = cv ? COVER_COST[cv] || 0 : 0;
+  // Inputs follow the yield a farm can expect there: nitrogen and spraying are planned for the expected harvest, drying follows the actual one.
+  const BASE_YF = 0.85;
+  function econYear(c, prevLegume, wat, reliab, cv, livestock, yexp) {
+    const e = ECON[c] || ECON.fallow, cost = Object.assign({}, e.costs), yf = wat * (0.6 + 0.4 * reliab), r = Math.min(1.15, (yexp == null ? yf : yexp) / BASE_YF);
+    cost.nitrogen = Math.round(cost.nitrogen * (0.3 + 0.7 * r) * (prevLegume ? 1 - LEGUME_N_CREDIT : 1));
+    cost.protection = Math.round(cost.protection * (0.5 + 0.5 * r)); cost.drying = Math.round(cost.drying * Math.min(1.15, yf / BASE_YF));
+    const rev = e.y * yf * e.price * (livestock && c === 'alfalfa' ? 1.1 : 1), cov = cv ? COVER_COST[cv] || 0 : 0;
     const tot = Object.values(cost).reduce((a, b) => a + b, 0) + cov;
     return { rev, cost, cov, tot, margin: rev - tot, yf };
   }
@@ -381,7 +385,7 @@
       for (let j = 0; j < m; j++) { const k = idx ? idx[j] : j; rel += s.rel[k]; hd += s.hd[k]; def += s.def[k]; if (s.rel[k] > 0.25) st++; }
       rel /= m; hd /= m; def /= m; st /= m;
       const wat = o.irrigated ? 1 : 1 - 0.8 * clip(rel / 0.6);
-      const prevLeg = C[p].nfix > 0 || (pT.cv === 'legmix' && s.g0), ey = econYear(s.fallow ? 'fallow' : c, prevLeg, wat, s.reliab, cvOn ? cT.cv : null, o.livestock);
+      const prevLeg = C[p].nfix > 0 || (pT.cv === 'legmix' && s.g0), ey = econYear(s.fallow ? 'fallow' : c, prevLeg, wat, s.reliab, cvOn ? cT.cv : null, o.livestock, wat * (0.6 + 0.4 * s.reliab));
       const inc = clip((ey.margin + 600) / 1700) * 4.2;
       return {
         soil, eros: 100 * (1 - s.exp), inc: inc / 4.2 * 100, mar: ey.margin, cash: s.fallow ? 0 : 1,
@@ -393,9 +397,11 @@
     function money(rot, o) {
       const T = rot.map(norm), L = T.length, out = [];
       for (let i = 0; i < L; i++) { const pT = T[(i - 1 + L) % L], cT = T[i], nT = T[(i + 1) % L], s = slot(pT.c, pT.cv, cT.c, cT.cv, nT.c), cvOn = !!cT.cv && s.g1 >= 0, prevLeg = C[pT.c].nfix > 0 || (pT.cv === 'legmix' && s.g0);
-        const perYear = s.rel.map(r => econYear(s.fallow ? 'fallow' : cT.c, prevLeg, o.irrigated ? 1 : 1 - 0.8 * clip(r / 0.6), s.reliab, cvOn ? cT.cv : null, o.livestock).margin);
-        const mean = econYear(s.fallow ? 'fallow' : cT.c, prevLeg, o.irrigated ? 1 : 1 - 0.8 * clip(s.rel.reduce((a, b) => a + b, 0) / s.rel.length / 0.6), s.reliab, cvOn ? cT.cv : null, o.livestock);
-        out.push({ c: cT.c, cv: cvOn ? cT.cv : null, prevLeg, perYear, mean }); }
+        const c = s.fallow ? 'fallow' : cT.c, wats = s.rel.map(r => o.irrigated ? 1 : 1 - 0.8 * clip(r / 0.6)), yexp = wats.reduce((a, b) => a + b, 0) / wats.length * (0.6 + 0.4 * s.reliab);
+        const perYear = wats.map(w => econYear(c, prevLeg, w, s.reliab, cvOn ? cT.cv : null, o.livestock, yexp)), n = perYear.length;
+        const avg = k => perYear.reduce((a, y) => a + y[k], 0) / n, cost = {}; Object.keys(perYear[0].cost).forEach(k => { cost[k] = perYear.reduce((a, y) => a + y.cost[k], 0) / n; });
+        const mean = { rev: avg('rev'), tot: avg('tot'), margin: avg('margin'), yf: avg('yf'), cov: perYear[0].cov, cost };
+        out.push({ c, cv: cvOn ? cT.cv : null, prevLeg, perYear, mean }); }
       return out;
     }
     function score(rot, o, idx) {
