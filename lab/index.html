@@ -1875,7 +1875,7 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
       const key2 = x => JSON.stringify(x.rot.map(r => [r.c, r.cv || null]));
       const have = new Set(all.map(key2).concat([key2(A.current)]));
       const top = st.res.map(o => ({ o, m: E.match(o.sim.sc, inp.weights) })).sort((a, b) => b.m - a.m).slice(0, 8).filter(t => !have.has(key2({ rot: t.o.rot })));
-      const nx = top.map(t => Object.assign({ id: 'best' + key2({ rot: t.o.rot }), name: 'Best mix found for this field', tag: 'Found by testing every rotation of 2 to 4 years', rot: t.o.rot }, t.o.sim, { match: t.m }));
+      const nx = top.map(t => Object.assign({ id: 'best' + key2({ rot: t.o.rot }), name: 'The top-scoring rotation', tag: 'Found by testing every rotation of 2 to 4 years', rot: t.o.rot }, t.o.sim, { match: t.m }));
       if (nx.length) { let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, n = A.cl.n, B = 300, d = nx.map(() => []);
         for (let b = 0; b < B; b++) { const idx = Array.from({ length: n }, () => Math.floor(rnd() * n)), mc = E.match(E.scoreSet(A.current, inp, idx), inp.weights); nx.forEach((x, j) => d[j].push(E.match(E.scoreSet(x, inp, idx), inp.weights) - mc)); }
         nx.forEach((x, j) => { const v = d[j].slice().sort((a, b) => a - b); x.boot = { win: v.filter(z => z > 0).length / B, lo: v[Math.floor(B * 0.1)], hi: v[Math.floor(B * 0.9)], runs: B }; all.push(x); }); }
