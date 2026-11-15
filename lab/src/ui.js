@@ -410,11 +410,11 @@
   function countUp() { document.querySelectorAll('.vs2 .n[data-v]:not(.done)').forEach(el => { el.classList.add('done'); const v = +el.dataset.v, t0 = performance.now(), D = 900; const f = t => { const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(v * e); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }); }
   new MutationObserver(countUp).observe(document.body, { childList: true, subtree: true });
   function dumbbell(cur, best) {
-    const W = 600, L = 196, R = 150, pw = W - L - R, X = v => L + v / 100 * pw, RH = 56; let g = '', y = 26;
+    const W = 640, L = 236, R = 150, pw = W - L - R, X = v => L + v / 100 * pw, RH = 56; let g = '', y = 26;
     for (const d of DIMS) {
       const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, c = dl > 2 ? '#8FD694' : dl < -2 ? '#F2907E' : '#C9C9BE', vt = dl > 2 ? 'Better by ' + dl : dl < -2 ? 'Worse by ' + -dl : 'About the same';
       g += '<g class="drow" data-term="s_' + d[0] + '" tabindex="0" role="button" aria-label="' + esc(d[1] + ': ' + vt + '. Tap to learn more') + '"><rect class="dbg" x="-8" y="' + (y - 22) + '" width="' + (W + 16) + '" height="' + (RH - 6) + '" rx="12"/>';
-      g += '<text x="4" y="' + (y + 0) + '" font-size="16" font-weight="600" fill="' + COL.ink + '">' + d[1] + '</text><text x="4" y="' + (y + 19) + '" font-size="13.5" font-weight="700" fill="' + c + '">' + vt + '</text>';
+      g += '<text x="4" y="' + (y + 0) + '" font-size="15.5" font-weight="700" fill="' + COL.ink + '">' + d[1] + '</text><text x="4" y="' + (y + 18) + '" font-size="12" font-weight="500" fill="' + c + '">' + vt + '</text>';
       const ty = y - 4, th = 16, lo = Math.min(a, b), hi = Math.max(a, b);
       g += '<rect x="' + X(0) + '" y="' + ty + '" width="' + (X(100) - X(0)) + '" height="' + th + '" rx="8" fill="rgba(255,255,255,.08)"/>';
       g += '<rect x="' + X(0) + '" y="' + ty + '" width="' + (X(lo) - X(0)) + '" height="' + th + '" rx="8" fill="rgba(201,201,190,.35)"/>';
