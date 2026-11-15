@@ -439,6 +439,7 @@
     if (!S.keepAnim) $('scroll').classList.remove('anim'); S.keepAnim = false;
     sheet(A);
     { const sq = LAST && LAST.search; if (sq && !sq.finished) R = '<div class="loader"><div class="ldspin"><span></span><span></span><span></span></div><h2>Finding the best rotation for your field</h2><p class="muted">We test every rotation of 1 to 6 years against 25 years of your weather.</p><div class="ldtrack"><i id="ldbar" style="width:' + sq.pc + '%"></i></div><p class="small muted" id="ldtxt">Starting…</p></div>'; }
+    setTimeout(() => { const ds = [...document.querySelectorAll('.mdet')]; ds.forEach(d => d.addEventListener('toggle', () => ds.forEach(x => { if (x !== d && x.open !== d.open) x.open = d.open; }))); }, 0);
     $('out').innerHTML = pane('result', R) + pane('climate', Cm) + pane('calendar', K) + pane('options', O) + pane('years', Yh) + pane('money', (() => { window.__lastA = A; if (LAST && LAST.search && !LAST.search.finished) return '<p class="sub">Still comparing rotations. This page fills in when the search is done.</p>'; try { return moneyPane(A); } catch (e) { return '<p class="muted">Could not build this page: ' + esc(e.message) + '</p>'; } })());
     story();
   }
@@ -605,6 +606,7 @@
     else { document.body.dataset.view = 'results'; document.body.dataset.tab = id; $('scroll').scrollTop = 0; }
     const sc = $('scroll'); sc.classList.remove('anim'); void sc.offsetWidth; sc.classList.add('anim');
     if (window.innerWidth <= 900) { const lim = Math.round(window.innerHeight * 0.36) - 46; if (window.scrollY > lim) window.scrollTo(0, lim); }
+    if (id === 'money') setTimeout(() => { const ds = [...document.querySelectorAll('.mdet')]; ds.forEach(d => d.addEventListener('toggle', () => ds.forEach(x => { if (x !== d && x.open !== d.open) x.open = d.open; }))); }, 0);
     if (id === 'money' && window.__lastA && !(LAST && LAST.search && !LAST.search.finished)) { const mp = document.querySelector('[data-pane="money"]'); if (mp) try { mp.innerHTML = moneyPane(window.__lastA); } catch (e) { mp.innerHTML = '<p class="muted">Could not build this page: ' + esc(e.message) + '</p>'; } }
     const ev = EV.indexOf(id) >= 0; if (ev) S.ev = id;
     document.body.dataset.group = id === 'field' ? 'field' : ev ? 'ev' : 'main';

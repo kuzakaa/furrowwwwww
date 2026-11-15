@@ -1114,3 +1114,4 @@ body:not(.wiz) .plen{grid-template-columns:auto minmax(0,1fr) auto;padding:7px 1
 .mstats{margin-top:10px}.mstats div{min-height:64px}
 .mtot{min-height:20px}
 .mlegend{font-size:12px;color:var(--muted);margin:4px 0 0}.mlegend .mcv{margin-right:4px}
+.mgrid{align-items:start}.mcard .mbot{margin-top:0}.mchips{min-height:54px;align-content:flex-start}
