@@ -981,3 +981,4 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 #acc .wrow .lvl{grid-column:3;grid-row:1;text-align:right;white-space:nowrap;font-size:13.5px}
 #acc .wrow .ends{grid-column:2;grid-row:2;font-size:12px;margin:0}
 .topfound{margin:12px 0 4px;padding:12px 14px;border-radius:14px;border:1px dashed rgba(143,214,148,.5);background:rgba(143,214,148,.06);font-size:14.5px;line-height:1.5}
+.rotrow{grid-template-columns:56px minmax(0,1fr) minmax(0,1fr) 20px!important}.rotrow .yr{white-space:nowrap}
