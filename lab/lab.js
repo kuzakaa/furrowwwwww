@@ -335,6 +335,27 @@
     });
   }
 
+
+  // Economics per crop: typical Austrian conditions, rough 2024-2025 values (to be replaced by IDB Deckungsbeiträge and exchange data)
+  const ECON = {
+    wheat: { y: 6.5, unit: 't', price: 210, cv: 0.18, costs: { nitrogen: 230, seed: 90, protection: 120, drying: 0, fuel: 200, other: 110 }, bench: 'Euronext milling wheat' },
+    corn: { y: 10, unit: 't', price: 190, cv: 0.2, costs: { nitrogen: 220, seed: 230, protection: 90, drying: 230, fuel: 230, other: 120 }, bench: 'CBOT and Euronext corn' },
+    soy: { y: 3, unit: 't', price: 430, cv: 0.2, costs: { nitrogen: 0, seed: 190, protection: 110, drying: 0, fuel: 180, other: 100 }, bench: 'CBOT soybeans plus a non-GMO premium' },
+    sunflower: { y: 2.8, unit: 't', price: 420, cv: 0.22, costs: { nitrogen: 80, seed: 150, protection: 90, drying: 20, fuel: 180, other: 90 }, bench: 'Physical quotes (no futures)' },
+    sorghum: { y: 7, unit: 't', price: 170, cv: 0.25, costs: { nitrogen: 140, seed: 90, protection: 60, drying: 120, fuel: 190, other: 90 }, bench: 'Corn price minus a discount' },
+    oats: { y: 5, unit: 't', price: 190, cv: 0.2, costs: { nitrogen: 120, seed: 80, protection: 60, drying: 0, fuel: 170, other: 90 }, bench: 'Feed grain prices' },
+    pea: { y: 3.2, unit: 't', price: 280, cv: 0.25, costs: { nitrogen: 0, seed: 150, protection: 100, drying: 0, fuel: 170, other: 90 }, bench: 'Local buyers (no exchange price)' },
+    canola: { y: 3.3, unit: 't', price: 450, cv: 0.2, costs: { nitrogen: 200, seed: 90, protection: 170, drying: 0, fuel: 190, other: 100 }, bench: 'Euronext rapeseed' },
+    alfalfa: { y: 9, unit: 't hay', price: 150, cv: 0.3, costs: { nitrogen: 0, seed: 60, protection: 30, drying: 0, fuel: 260, other: 120 }, bench: 'Local hay market' },
+    fallow: { y: 0, unit: 't', price: 0, cv: 0, costs: { nitrogen: 0, seed: 0, protection: 0, drying: 0, fuel: 40, other: 20 }, bench: '-' }
+  };
+  const COVER_COST = { rye: 70, legmix: 110 }, LEGUME_N_CREDIT = 0.4;
+  function econYear(c, prevLegume, wat, reliab, cv, livestock) {
+    const e = ECON[c] || ECON.fallow, cost = Object.assign({}, e.costs); if (prevLegume) cost.nitrogen = Math.round(cost.nitrogen * (1 - LEGUME_N_CREDIT));
+    const yf = wat * (0.6 + 0.4 * reliab), rev = e.y * yf * e.price * (livestock && c === 'alfalfa' ? 1.1 : 1), cov = cv ? COVER_COST[cv] || 0 : 0;
+    const tot = Object.values(cost).reduce((a, b) => a + b, 0) + cov;
+    return { rev, cost, cov, tot, margin: rev - tot, yf };
+  }
   function planner(cl, cal, inp0) {
     const COV = E.COVERS, clip = E.clip, inpS = { soil: inp0.soil, slope: inp0.slope, till: inp0.till };
     const ids = Object.keys(C), ci = {}; ids.forEach((c, i) => { ci[c] = i; });
@@ -360,15 +381,23 @@
       for (let j = 0; j < m; j++) { const k = idx ? idx[j] : j; rel += s.rel[k]; hd += s.hd[k]; def += s.def[k]; if (s.rel[k] > 0.25) st++; }
       rel /= m; hd /= m; def /= m; st /= m;
       const wat = o.irrigated ? 1 : 1 - 0.8 * clip(rel / 0.6);
-      let inc = s.fallow ? 0 : cc.margin * (cc.market / 5) * wat * (0.5 + 0.5 * s.reliab) + (o.livestock && cc.forage ? 1 : 0);
-      if (cvOn) inc -= COV[cT.cv].cost - (o.livestock ? 0.3 : 0);
+      const prevLeg = C[p].nfix > 0 || (pT.cv === 'legmix' && s.g0), ey = econYear(s.fallow ? 'fallow' : c, prevLeg, wat, s.reliab, cvOn ? cT.cv : null, o.livestock);
+      const inc = clip((ey.margin + 300) / 1400) * 4.2;
       return {
-        soil, eros: 100 * (1 - s.exp), inc: inc / 4.2 * 100, cash: s.fallow ? 0 : 1,
+        soil, eros: 100 * (1 - s.exp), inc: inc / 4.2 * 100, mar: ey.margin, cash: s.fallow ? 0 : 1,
         water: s.fallow ? 0 : o.irrigated ? 100 * (1 - clip(def / 450)) : 100 * (1 - clip(rel / 0.45)),
         res: s.fallow ? 0 : 100 * (0.35 * (1 - clip(st)) + 0.2 * (1 - clip(hd / 10)) + 0.2 * s.reliab + 0.15 * clip((fams.size - 1) / 2) + 0.1 * clip(kinds.size / 2))
       };
     }
     const fin = (a, b, d, e, f, L, cash) => ({ water: cash ? Math.round(e / (cash * 1000)) : 0, soil: Math.round(a / (L * 1000)), erosion: Math.round(b / (L * 1000)), income: Math.round(Math.min(100, Math.max(0, d / (L * 1000)))), resilience: cash ? Math.round(f / (cash * 1000)) : 0 });
+    function money(rot, o) {
+      const T = rot.map(norm), L = T.length, out = [];
+      for (let i = 0; i < L; i++) { const pT = T[(i - 1 + L) % L], cT = T[i], nT = T[(i + 1) % L], s = slot(pT.c, pT.cv, cT.c, cT.cv, nT.c), cvOn = !!cT.cv && s.g1 >= 0, prevLeg = C[pT.c].nfix > 0 || (pT.cv === 'legmix' && s.g0);
+        const perYear = s.rel.map(r => econYear(s.fallow ? 'fallow' : cT.c, prevLeg, o.irrigated ? 1 : 1 - 0.8 * clip(r / 0.6), s.reliab, cvOn ? cT.cv : null, o.livestock).margin);
+        const mean = econYear(s.fallow ? 'fallow' : cT.c, prevLeg, o.irrigated ? 1 : 1 - 0.8 * clip(s.rel.reduce((a, b) => a + b, 0) / s.rel.length / 0.6), s.reliab, cvOn ? cT.cv : null, o.livestock);
+        out.push({ c: cT.c, cv: cvOn ? cT.cv : null, prevLeg, perYear, mean }); }
+      return out;
+    }
     function score(rot, o, idx) {
       const T = rot.map(norm), L = T.length; let a = 0, b = 0, d = 0, e = 0, f = 0, cash = 0; const years = [];
       for (let i = 0; i < L; i++) { const y = year(T[(i - 1 + L) % L], T[i], T[(i + 1) % L], o, idx); years.push(y); a += Q(y.soil); b += Q(y.eros); d += Q(y.inc); if (y.cash) { e += Q(y.water); f += Q(y.res); cash++; } }
@@ -450,9 +479,9 @@
       };
       return J;
     }
-    return { score, job, within, rank, rankRaw, levels, lexKey, year, ci, canCv, sims };
+    return { score, money, job, within, rank, rankRaw, levels, lexKey, year, ci, canCv, sims };
   }
 
-  const API = { CROPINFO, EXPERIMENTAL, experimental, needs, ACCEPT, adjust, planner, RULES, parseConstraints, plan, qc, confidence, MODELS, projections, IPCC, inputLevel, carbonIPCC, calibrate, errors, calFor, withPatch, ndviYears, corr, oracle, rainChange, pack, unpack, fromIssues, summarise, SCEN, INFO, strategies, run, extra, parseFarm, compareFarm, doyOf, credits };
+  const API = { ECON, COVER_COST, CROPINFO, EXPERIMENTAL, experimental, needs, ACCEPT, adjust, planner, RULES, parseConstraints, plan, qc, confidence, MODELS, projections, IPCC, inputLevel, carbonIPCC, calibrate, errors, calFor, withPatch, ndviYears, corr, oracle, rainChange, pack, unpack, fromIssues, summarise, SCEN, INFO, strategies, run, extra, parseFarm, compareFarm, doyOf, credits };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else G.Lab = API;
 })(typeof window !== 'undefined' ? window : globalThis);
