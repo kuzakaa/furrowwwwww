@@ -942,5 +942,5 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 [data-pane] h3 + .sub{margin-top:6px}
 [data-pane] h2.second{margin-top:26px}
 .sct{margin-top:14px}
-.xanim .a-nod{transform-origin:24px 22px;transform-box:view-box;animation:a-nodk 1.8s ease-in-out infinite}
+.xanim .a-nod{transform-origin:0% 60%;transform-box:fill-box;animation:a-nodk 1.8s ease-in-out infinite}
 @keyframes a-nodk{0%,60%,100%{transform:rotate(0)}75%{transform:rotate(22deg)}}
