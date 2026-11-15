@@ -88,6 +88,7 @@
   </details>
   <details class="box" data-wiz="acc"><summary>What you can take on</summary>
     <div class="wrow money-row"><div class="wh"><label for="maxdrop">Largest income drop you can accept</label><span class="lvl" id="maxdropv">15% a year</span></div><input id="maxdrop" type="range" min="0" max="40" step="1" value="15"><div class="ends"><span>0%, no drop at all</span><span>40%</span></div>
+      <p class="mwhy" id="mwhy"></p>
       <details class="calc"><summary>Help me work out my margin</summary><div class="row"><div class="field"><label for="my">Yield, t/ha</label><input id="my" type="number" step="0.1" min="0"></div><div class="field"><label for="mp">Price, € per t</label><input id="mp" type="number" step="5" min="0"></div><div class="field"><label for="mc">Costs, € per ha</label><input id="mc" type="number" step="10" min="0"></div></div><p class="small" id="mout"></p></details></div>
     <div id="acc"></div>
   </details>
@@ -114,6 +115,7 @@
           </details>
   <details class="box" data-wiz="excl"><summary>Crops you can’t grow or sell</summary>
     <div class="chips" id="excl"></div>
+    <div id="exwhy" class="exwhy"></div>
   </details>
   <details class="box"><summary>What if the weather changes?</summary>
     <div class="slider"><label for="srain">Rainfall</label><input id="srain" type="range" min="-30" max="30" step="5" value="0"><span class="num" id="srainv">0%</span></div>

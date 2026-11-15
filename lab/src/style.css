@@ -867,3 +867,6 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 @keyframes a-sunp{to{transform:scale(1.35);fill:#f29a4f}}
 .xanim .a-wilt{fill:#9fd67a;transform-origin:50% 100%;transform-box:fill-box;animation:a-wiltk 4s ease-in-out infinite}
 @keyframes a-wiltk{0%,15%{transform:none;fill:#9fd67a}55%,80%{transform:rotate(38deg) scaleY(.75);fill:#b8964f}100%{transform:none;fill:#9fd67a}}
+.mwhy{font-size:13.5px;color:var(--muted);margin:8px 0 4px;line-height:1.45}
+.exwhy{margin-top:12px}.exhead{font-size:15px;margin:0 0 8px}.exhead .muted{display:block;font-size:13px;margin-top:2px}
+.exrow{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin:6px 0}.exrow b{font-size:14.5px}.exrow select{width:100%}
