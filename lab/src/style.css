@@ -885,3 +885,21 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 .dleg .lnew2{width:22px!important;height:10px!important;border-radius:2px!important;background:linear-gradient(90deg,#F2907E 50%,#8FD694 50%)}
 .dleg .lnow3{width:10px!important;height:10px!important;border-radius:50%!important;box-shadow:inset 0 0 0 2px #E8EFE6;background:#163323}
 .dleg .lnew3{width:22px!important;height:8px!important;border-radius:4px!important;background:linear-gradient(90deg,#4f9a5c,#9BE3A0)}
+.cropin input{border:1px solid rgba(163,230,53,.35);border-radius:10px;padding:7px 9px;background:#123d27;color:#F5FAF2;font:inherit;font-size:14.6px;height:100%;color-scheme:dark}
+.cropin input:focus{outline:2px solid #a3e635;outline-offset:1px}
+.sct{margin:10px 0 4px;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.scth,.sctr{display:grid;grid-template-columns:minmax(150px,1.6fr) 60px minmax(110px,1.4fr) 70px 18px;gap:12px;align-items:center;padding:0 14px}
+.scth{font-size:12.5px;color:var(--muted);font-weight:600;padding-top:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.scth span:nth-child(2),.scth span:nth-child(4){text-align:right}
+.sctr{width:100%;min-height:52px;border:0;border-bottom:1px solid var(--line);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background .15s}
+.sctr:last-child{border-bottom:0}
+.sctr:hover,.sctr:focus-visible{background:rgba(143,214,148,.08)}
+.sctr .nm{font-size:15.5px;font-weight:600}
+.sctr .v0{text-align:right;font-size:17px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sctr .v1{position:relative;font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;padding-bottom:6px}
+.sctr .v1 i{position:absolute;left:0;bottom:0;height:4px;border-radius:2px;background:#C9D1C6;opacity:.7}
+.sctr.up .v1{color:#9BE3A0}.sctr.up .v1 i{background:#8FD694}
+.sctr.down .v1{color:#F5A08E}.sctr.down .v1 i{background:#F2907E}
+.sctr .dl{justify-self:end;min-width:46px;text-align:center;padding:4px 8px;border-radius:999px;font-weight:800;font-size:14px;background:rgba(255,255,255,.08);color:#C9D1C6}
+.sctr.up .dl{background:#8FD694;color:#10231A}.sctr.down .dl{background:#F2907E;color:#10231A}
+.sctr .go{color:#8FD694;font-size:20px;font-weight:700}

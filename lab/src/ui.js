@@ -410,23 +410,12 @@
   function countUp() { document.querySelectorAll('.vs2 .n[data-v]:not(.done)').forEach(el => { el.classList.add('done'); const v = +el.dataset.v, t0 = performance.now(), D = 900; const f = t => { const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(v * e); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }); }
   new MutationObserver(countUp).observe(document.body, { childList: true, subtree: true });
   function dumbbell(cur, best) {
-    const W = 640, L = 236, R = 150, pw = W - L - R, X = v => L + v / 100 * pw, RH = 56; let g = '', y = 26;
-    for (const d of DIMS) {
-      const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, c = dl > 2 ? '#8FD694' : dl < -2 ? '#F2907E' : '#C9C9BE', vt = dl > 2 ? 'Better by ' + dl : dl < -2 ? 'Worse by ' + -dl : 'About the same';
-      g += '<g class="drow" data-term="s_' + d[0] + '" tabindex="0" role="button" aria-label="' + esc(d[1] + ': ' + vt + '. Tap to learn more') + '"><rect class="dbg" x="-8" y="' + (y - 22) + '" width="' + (W + 16) + '" height="' + (RH - 6) + '" rx="12"/>';
-      g += '<text x="4" y="' + (y + 0) + '" font-size="15.5" font-weight="700" fill="' + COL.ink + '">' + d[1] + '</text><text x="4" y="' + (y + 18) + '" font-size="12" font-weight="500" fill="' + c + '">' + vt + '</text>';
-      const ty = y - 1, th = 10, fillc = dl > 2 ? 'url(#gUp)' : dl < -2 ? 'url(#gDn)' : 'url(#gEq)';
-      g += '<rect x="' + X(0) + '" y="' + ty + '" width="' + (X(100) - X(0)) + '" height="' + th + '" rx="5" fill="rgba(255,255,255,.08)"/>';
-      g += '<rect x="' + X(0) + '" y="' + ty + '" width="' + Math.max(th, X(b) - X(0)) + '" height="' + th + '" rx="5" fill="' + fillc + '"/>';
-      g += '<circle cx="' + X(a) + '" cy="' + (ty + th / 2) + '" r="6" fill="#163323" stroke="#E8EFE6" stroke-width="2.2"/>';
-      const pill = (dl > 0 ? '+' : dl < 0 ? '−' : '±') + Math.abs(dl), px = W - 58;
-      g += '<text x="' + (px - 14) + '" y="' + (y + 9) + '" text-anchor="end" font-size="14" fill="' + COL.muted + '">' + a + ' → <tspan font-weight="800" fill="' + c + '">' + b + '</tspan></text>';
-      g += '<rect x="' + px + '" y="' + (y - 9) + '" width="44" height="26" rx="13" fill="' + c + '" opacity="' + (Math.abs(dl) > 2 ? '.95' : '.25') + '"/><text x="' + (px + 22) + '" y="' + (y + 9) + '" text-anchor="middle" font-size="14" font-weight="800" fill="' + (Math.abs(dl) > 2 ? '#10231A' : '#E8EFE6') + '">' + pill + '</text>';
-      g += '<text x="' + (W + 4) + '" y="' + (y + 10) + '" text-anchor="end" font-size="18" font-weight="700" fill="#8FD694">›</text></g>';
-      y += RH;
-    }
-    return '<div class="legend dleg"><span><i class="lnow3"></i>what you grow now</span><span><i class="lnew3"></i>if you switch</span><span class="muted">Tap a row to learn more</span></div><svg class="dumb" viewBox="-8 0 ' + (W + 16) + ' ' + (y - 16) + '" role="img" aria-label="How each score changes if you switch"><defs><linearGradient id="gUp"><stop offset="0" stop-color="#4f9a5c"/><stop offset="1" stop-color="#9BE3A0"/></linearGradient><linearGradient id="gDn"><stop offset="0" stop-color="#a35a4c"/><stop offset="1" stop-color="#F5A08E"/></linearGradient><linearGradient id="gEq"><stop offset="0" stop-color="#6d7a70"/><stop offset="1" stop-color="#C9D1C6"/></linearGradient></defs>' + g + '</svg><p class="scnote">0 is bad, 100 is very good.</p>';
+    return '<div class="sct"><div class="scth"><span>Score</span><span>Now</span><span>If you switch</span><span>Change</span></div>' + DIMS.map(d => {
+      const a = cur.sc[d[0]], b = best.sc[d[0]], dl = b - a, k = dl > 2 ? 'up' : dl < -2 ? 'down' : 'same';
+      return '<button type="button" class="sctr ' + k + '" data-term="s_' + d[0] + '"><span class="nm">' + d[1] + '</span><span class="v0">' + a + '</span><span class="v1">' + b + '<i style="width:' + b + '%"></i></span><span class="dl">' + (dl > 0 ? '+' : dl < 0 ? '−' : '±') + Math.abs(dl) + '</span><span class="go">›</span></button>';
+    }).join('') + '</div><p class="scnote">Scores from 0 (bad) to 100 (very good). Tap a row to see what it means.</p>';
   }
+
 
 
   function terrainHTML(T) {
@@ -516,7 +505,7 @@
     if (!$('croplist')) document.body.insertAdjacentHTML('beforeend', '<datalist id="croplist">' + CROPLIB.map(x => '<option value="' + esc(x.n) + '">').join('') + '</datalist>');
     $('rot').innerHTML = S.rot.map((r, i) => {
       const noCv = C[r.c].kind === 'fallow' || C[r.c].kind === 'perennial';
-      return '<div class="rotrow"><span class="yr">Year ' + (i + 1) + '</span><span class="cropin"><input id="rc' + i + '" list="croplist" autocomplete="off" aria-label="Crop in year ' + (i + 1) + '" value="' + esc(r.as || C[r.c].name) + '">' + (r.as ? '<small>modelled like ' + esc(C[r.c].short.toLowerCase()) + '</small>' : '') + '</span><select id="rv' + i + '" aria-label="Cover crop after year ' + (i + 1) + '"' + (noCv ? ' disabled' : '') + '><option value="">No cover crop</option>' + Object.keys(CV).map(k => '<option value="' + k + '"' + (k === r.cv ? ' selected' : '') + '>+ ' + CV[k].short + '</option>').join('') + '</select>' + (S.rot.length > 1 ? '<button id="rx' + i + '" aria-label="Remove year ' + (i + 1) + '" title="Remove this year">×</button>' : '<span></span>') + '</div>';
+      return '<div class="rotrow"><span class="yr">Year ' + (i + 1) + '</span><span class="cropin"><input id="rc' + i + '" list="croplist" autocomplete="off" placeholder="Type a crop" aria-label="Crop in year ' + (i + 1) + '" value="' + esc(r.as || C[r.c].name) + '"' + (r.as ? ' title="We have no separate crop model for ' + esc(r.as) + ' yet, so its water use and timing are estimated like ' + esc(C[r.c].short.toLowerCase()) + '."' : '') + '></span><select id="rv' + i + '" aria-label="Cover crop after year ' + (i + 1) + '"' + (noCv ? ' disabled' : '') + '><option value="">No cover crop</option>' + Object.keys(CV).map(k => '<option value="' + k + '"' + (k === r.cv ? ' selected' : '') + '>+ ' + CV[k].short + '</option>').join('') + '</select>' + (S.rot.length > 1 ? '<button id="rx' + i + '" aria-label="Remove year ' + (i + 1) + '" title="Remove this year">×</button>' : '<span></span>') + '</div>';
     }).join('');
     S.rot.forEach((r, i) => {
       $('rc' + i).onfocus = e => e.target.select();
