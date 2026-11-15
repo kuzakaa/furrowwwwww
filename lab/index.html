@@ -1026,6 +1026,12 @@ body.wiz:not(.wfield) .slopeleg,body.wiz:not(.wfield) .pencilwrap{display:none}
 #acc .wrow .ends{display:flex;justify-content:space-between}
 .money-row{box-sizing:border-box}
 .slider.dropy{grid-template-columns:120px minmax(0,1fr) 90px!important}
+body:not(.wiz) #weights .wrow.wc,body:not(.wiz) #weights2 .wrow.wc,body:not(.wiz) #acc .wrow{grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto auto auto!important;row-gap:6px!important}
+body:not(.wiz) .wrow.wc label,body:not(.wiz) #acc .wrow label{grid-column:1!important;grid-row:1!important;white-space:normal}
+body:not(.wiz) .wrow.wc .lvl,body:not(.wiz) #acc .wrow .lvl{grid-column:2!important;grid-row:1!important}
+body:not(.wiz) .wrow.wc input,body:not(.wiz) #acc .wrow input{grid-column:1 / -1!important;grid-row:2!important}
+body:not(.wiz) #acc .wrow .ends{grid-column:1 / -1!important;grid-row:3!important}
+body:not(.wiz) .phz{grid-template-columns:auto minmax(0,1fr) auto!important}
 
 </style>
 </head>
